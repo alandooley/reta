@@ -1,9 +1,9 @@
 // Service Worker for Injection Tracker PWA
 const CACHE_NAME = 'injection-tracker-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js',
   'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js'
 ];
@@ -14,7 +14,19 @@ self.addEventListener('install', event => {
     caches.open(CACHE_NAME)
       .then(cache => {
         console.log('Opened cache');
-        return cache.addAll(urlsToCache);
+        // Cache files individually to handle failures gracefully
+        return Promise.allSettled(
+          urlsToCache.map(url => {
+            return cache.add(url).catch(error => {
+              console.warn(`Failed to cache ${url}:`, error);
+              return null;
+            });
+          })
+        );
+      })
+      .then(() => {
+        console.log('Cache installation completed');
+        self.skipWaiting();
       })
       .catch(error => {
         console.error('Cache install failed:', error);

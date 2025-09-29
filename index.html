@@ -2110,8 +2110,8 @@
                     }
                 }
 
-                // Calculate remaining doses based on average 2mg dose
-                const remainingDoses = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0);
+                // Calculate remaining doses based on average 2mg dose (only for active vials)
+                const remainingDoses = vial.concentration_mg_ml ? Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0) : 0;
 
                 div.innerHTML = `
                     <div class="vial-header">
@@ -2123,6 +2123,7 @@
                         <div class="vial-status ${status}">${statusText}</div>
                     </div>
                     <div class="vial-details">
+                        ${vial.concentration_mg_ml ? `
                         <div class="vial-detail-row">
                             <span>Concentration:</span>
                             <span>${vial.concentration_mg_ml.toFixed(1)} mg/ml</span>
@@ -2135,14 +2136,22 @@
                             <span>Reconstituted:</span>
                             <span>${this.formatDate(vial.reconstitution_date)}</span>
                         </div>
+                        ` : `
+                        <div class="vial-detail-row">
+                            <span>Status:</span>
+                            <span>Ready for activation with BAC water</span>
+                        </div>
+                        `}
                         <div class="vial-detail-row">
                             <span>Expires:</span>
                             <span>${this.formatDate(vial.expiration_date)}</span>
                         </div>
+                        ${vial.concentration_mg_ml ? `
                         <div class="vial-detail-row">
                             <span>Doses Used:</span>
                             <span>${vial.doses_used}</span>
                         </div>
+                        ` : ''}
                     </div>
                 `;
                 return div;
