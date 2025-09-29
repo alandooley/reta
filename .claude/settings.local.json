@@ -14,7 +14,11 @@
       "Bash(npx playwright test:*)",
       "Bash(curl:*)",
       "Bash(node:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(npm test:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
