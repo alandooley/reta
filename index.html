@@ -2521,32 +2521,32 @@
                 const now = new Date();
                 const lastShot = new Date(this.data.injections[0].timestamp);
 
-                // Find the next Saturday
+                // Calculate next Saturday at 8 AM
                 let nextShot = new Date(now);
-                const currentDay = now.getDay();
+                const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
 
-                // If today is Sunday (0) through Friday (5), go to next Saturday
-                // If today is Saturday (6), check if we've had our shot today
+                // Calculate days until next Saturday
+                let daysUntilSaturday;
                 if (currentDay === 6) {
-                    // It's Saturday - check if last shot was today
-                    const lastShotDate = new Date(lastShot);
-                    lastShotDate.setHours(0, 0, 0, 0);
-                    const today = new Date(now);
-                    today.setHours(0, 0, 0, 0);
+                    // Today is Saturday
+                    const saturdayMorning = new Date(now);
+                    saturdayMorning.setHours(8, 0, 0, 0);
 
-                    if (lastShotDate.getTime() === today.getTime()) {
-                        // Shot was today, next one is next Saturday
-                        nextShot.setDate(nextShot.getDate() + 7);
+                    if (now < saturdayMorning) {
+                        // It's Saturday but before 8 AM - injection is today
+                        daysUntilSaturday = 0;
+                    } else {
+                        // It's Saturday after 8 AM - next injection is next Saturday
+                        daysUntilSaturday = 7;
                     }
-                    // Otherwise, shot is due today
                 } else {
-                    // Calculate days until Saturday (6)
-                    const daysUntilSaturday = (6 - currentDay + 7) % 7;
-                    nextShot.setDate(nextShot.getDate() + daysUntilSaturday);
+                    // Not Saturday - calculate days until next Saturday
+                    daysUntilSaturday = (6 - currentDay) % 7;
+                    if (daysUntilSaturday === 0) daysUntilSaturday = 7;
                 }
 
-                // Set time to 9 AM for the shot
-                nextShot.setHours(9, 0, 0, 0);
+                nextShot.setDate(nextShot.getDate() + daysUntilSaturday);
+                nextShot.setHours(8, 0, 0, 0); // Set to 8 AM"
 
                 // Use the already declared 'now' variable
                 const timeDiff = nextShot.getTime() - now.getTime();
