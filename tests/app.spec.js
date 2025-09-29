@@ -83,7 +83,6 @@ test.describe('Retatrutide Tracker App', () => {
     await page.fill('#vial-order-date', today);
     await page.fill('#vial-supplier', 'Test Pharmacy');
     await page.fill('#vial-lot', 'TEST123');
-    await page.fill('#vial-cost', '299.99');
     await page.fill('#vial-mg', '15');
     await page.fill('#vial-bac-water', '1.5');
 
@@ -242,7 +241,6 @@ test.describe('Retatrutide Tracker App', () => {
     await page.fill('#vial-order-date', today);
     await page.fill('#vial-mg', '15');
     await page.fill('#vial-bac-water', '1.5');
-    await page.fill('#vial-cost', '299.99');
     const reconDate = new Date().toISOString().slice(0, 16);
     await page.fill('#vial-reconstitution-date', reconDate);
     await page.click('#add-vial-form button[type="submit"]');
@@ -257,8 +255,6 @@ test.describe('Retatrutide Tracker App', () => {
     const daysRemaining = page.locator('#days-remaining');
     await expect(daysRemaining).toBeVisible();
 
-    const costPerDose = page.locator('#cost-per-dose');
-    await expect(costPerDose).toContainText('$');
 
     // Check analytics cards
     const reorderAlert = page.locator('#reorder-alert');

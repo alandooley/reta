@@ -19,7 +19,8 @@
       "Bash(netstat:*)",
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
-      "Bash(start index.html)"
+      "Bash(start index.html)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []

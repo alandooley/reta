@@ -1034,14 +1034,6 @@
                         <div class="inventory-value" id="days-remaining">0</div>
                         <div class="inventory-label">Days Remaining</div>
                     </div>
-                    <div class="inventory-card">
-                        <div class="inventory-value" id="monthly-cost">$0</div>
-                        <div class="inventory-label">Monthly Cost</div>
-                    </div>
-                    <div class="inventory-card">
-                        <div class="inventory-value" id="cost-per-dose">$0</div>
-                        <div class="inventory-label">Cost per Dose</div>
-                    </div>
                 </div>
 
                 <div class="inventory-analytics">
@@ -1212,10 +1204,6 @@
                     <input type="text" id="vial-lot" placeholder="LOT123456">
                 </div>
                 <div class="form-group">
-                    <label for="vial-cost">Cost (USD)</label>
-                    <input type="number" id="vial-cost" step="0.01" min="0" placeholder="299.99">
-                </div>
-                <div class="form-group">
                     <label for="vial-mg">Total mg</label>
                     <input type="number" id="vial-mg" step="0.1" min="0" required placeholder="15">
                 </div>
@@ -1331,7 +1319,6 @@
                     order_date: new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 15 days ago
                     supplier: 'Sample Pharmacy',
                     lot_number: 'LOT123456',
-                    cost_usd: 299.99,
                     total_mg: 15,
                     bac_water_ml: 1.5,
                     reconstitution_date: new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000).toISOString() // 10 days ago
@@ -1416,6 +1403,18 @@
                     const doseVolumeML = doseMg / vial.concentration_mg_ml;
                     vial.remaining_ml = Math.max(0, vial.remaining_ml - doseVolumeML);
                     vial.doses_used++;
+
+                    // Check if vial has less than next required dose
+                    const plannedDose = parseFloat(document.getElementById('planned-dose')?.value || 4.0);
+                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+
+                    if (remainingMg < plannedDose && remainingMg > 0) {
+                        // Mark vial as empty if it can't provide the next dose
+                        vial.status = 'insufficient';
+                        vial.remaining_ml = 0;
+                    } else if (vial.remaining_ml <= 0) {
+                        vial.status = 'empty';
+                    }
                 }
             }
 
@@ -1430,12 +1429,11 @@
                     order_date: vial.order_date,
                     supplier: vial.supplier || '',
                     lot_number: vial.lot_number || '',
-                    cost_usd: parseFloat(vial.cost_usd) || 0,
                     total_mg: parseFloat(vial.total_mg),
                     bac_water_ml: parseFloat(vial.bac_water_ml),
                     concentration_mg_ml: concentration,
                     reconstitution_date: vial.reconstitution_date,
-                    expiration_date: this.calculateExpirationDate(vial.reconstitution_date),
+                    expiration_date: this.calculateExpirationDate(vial.reconstitution_date, vial.order_date),
                     remaining_ml: parseFloat(vial.bac_water_ml),
                     doses_used: 0,
                     status: 'active'
@@ -1447,18 +1445,32 @@
                 this.updateUI();
             }
 
-            calculateExpirationDate(reconstitutionDate) {
-                const date = new Date(reconstitutionDate);
-                date.setDate(date.getDate() + 28);
+            calculateExpirationDate(reconstitutionDate, orderDate) {
+                if (reconstitutionDate) {
+                    // Reconstituted peptide lasts 30 days in refrigerator
+                    const date = new Date(reconstitutionDate);
+                    date.setDate(date.getDate() + 30);
+                    return date.toISOString();
+                } else if (orderDate) {
+                    // Lyophilized powder lasts 2 years in freezer
+                    const date = new Date(orderDate);
+                    date.setFullYear(date.getFullYear() + 2);
+                    return date.toISOString();
+                }
+                // Default to 2 years from now
+                const date = new Date();
+                date.setFullYear(date.getFullYear() + 2);
                 return date.toISOString();
             }
 
             getActiveVial() {
-                return this.data.vials.find(v =>
-                    v.status === 'active' &&
-                    v.remaining_ml > 0 &&
-                    new Date(v.expiration_date) > new Date()
-                );
+                const plannedDose = parseFloat(document.getElementById('planned-dose')?.value || 4.0);
+                return this.data.vials.find(v => {
+                    const remainingMg = v.remaining_ml * v.concentration_mg_ml;
+                    return v.status === 'active' &&
+                           remainingMg >= plannedDose && // Must have enough for next dose
+                           new Date(v.expiration_date) > new Date();
+                });
             }
 
             // ====================================
@@ -1926,7 +1938,6 @@
                     order_date: document.getElementById('vial-order-date').value,
                     supplier: document.getElementById('vial-supplier').value,
                     lot_number: document.getElementById('vial-lot').value,
-                    cost_usd: document.getElementById('vial-cost').value,
                     total_mg: parseFloat(document.getElementById('vial-mg').value),
                     bac_water_ml: parseFloat(document.getElementById('vial-bac-water').value),
                     reconstitution_date: document.getElementById('vial-reconstitution-date').value
@@ -1990,8 +2001,6 @@
 
                 // Calculate remaining doses based on average 2mg dose
                 const remainingDoses = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0);
-                const totalCost = parseFloat(vial.cost_usd) || 0;
-                const costPerDose = totalCost > 0 ? (totalCost / ((vial.total_mg / 2.0))) : 0;
 
                 div.innerHTML = `
                     <div class="vial-header">
@@ -2019,12 +2028,6 @@
                             <span>Expires:</span>
                             <span>${this.formatDate(vial.expiration_date)}</span>
                         </div>
-                        ${totalCost > 0 ? `
-                        <div class="vial-detail-row">
-                            <span>Cost:</span>
-                            <span>$${totalCost.toFixed(2)} ($${costPerDose.toFixed(2)}/dose)</span>
-                        </div>
-                        ` : ''}
                         <div class="vial-detail-row">
                             <span>Doses Used:</span>
                             <span>${vial.doses_used}</span>
@@ -2415,13 +2418,11 @@
                 );
 
                 let totalDoses = 0;
-                let totalCost = 0;
                 let totalMgUsed = 0;
 
                 activeVials.forEach(vial => {
                     const dosesInVial = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0); // Assuming 2mg average dose
                     totalDoses += dosesInVial;
-                    totalCost += parseFloat(vial.cost_usd) || 0;
                 });
 
                 this.data.vials.forEach(vial => {
@@ -2430,15 +2431,11 @@
 
                 const daysRemaining = Math.floor(totalDoses * this.data.settings.injectionFrequency);
 
-                // Calculate costs
-                const averageCostPerDose = totalDoses > 0 ? (totalCost / (totalDoses + this.data.injections.length)) : 0;
-                const monthlyCost = (30 / this.data.settings.injectionFrequency) * averageCostPerDose;
 
                 // Update basic stats
                 document.getElementById('total-stock').textContent = totalDoses;
                 document.getElementById('days-remaining').textContent = daysRemaining;
-                document.getElementById('monthly-cost').textContent = `$${monthlyCost.toFixed(0)}`;
-                document.getElementById('cost-per-dose').textContent = `$${averageCostPerDose.toFixed(2)}`;
+                // Cost fields removed - no longer tracking costs
 
                 // Update colors based on stock levels
                 const stockElement = document.getElementById('total-stock');
