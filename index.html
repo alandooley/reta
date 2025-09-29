@@ -19,7 +19,7 @@
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32'%3E%3Crect width='32' height='32' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='16' fill='white' text-anchor='middle' dominant-baseline='central'%3ESR%3C/text%3E%3C/svg%3E">
 
     <!-- Chart.js for data visualization -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
     <style>
@@ -1175,13 +1175,20 @@
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
                     } else {
-                        // Load sample data for demo purposes
-                        this.loadSampleData();
+                        // Check if we should load sample data (not in test mode)
+                        const urlParams = new URLSearchParams(window.location.search);
+                        if (!urlParams.get('test')) {
+                            // Load sample data for demo purposes
+                            this.loadSampleData();
+                        }
                     }
                 } catch (error) {
                     console.error('Error loading data:', error);
-                    // Load sample data if there's an error
-                    this.loadSampleData();
+                    // Load sample data if there's an error (unless in test mode)
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (!urlParams.get('test')) {
+                        this.loadSampleData();
+                    }
                 }
             }
 
@@ -1887,7 +1894,14 @@
 
             updateMedicationChart() {
                 const canvas = document.getElementById('medication-chart');
+                if (!canvas) return;
                 const ctx = canvas.getContext('2d');
+
+                // Check if Chart.js is loaded
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js not loaded, skipping chart update');
+                    return;
+                }
 
                 // Destroy existing chart if it exists
                 if (this.charts.medicationChart) {
@@ -2017,7 +2031,14 @@
 
             updateWeightChart() {
                 const canvas = document.getElementById('weight-chart');
+                if (!canvas) return;
                 const ctx = canvas.getContext('2d');
+
+                // Check if Chart.js is loaded
+                if (typeof Chart === 'undefined') {
+                    console.warn('Chart.js not loaded, skipping weight chart update');
+                    return;
+                }
 
                 // Destroy existing chart if it exists
                 if (this.charts.weightChart) {

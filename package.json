@@ -1,0 +1,28 @@
+{
+  "name": "reta",
+  "version": "1.0.0",
+  "description": "A comprehensive Progressive Web App (PWA) for tracking Retatrutide injections with advanced vial management, weight tracking, and cloud synchronization capabilities.",
+  "main": "sw.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:report": "playwright show-report",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alandooley/reta.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/alandooley/reta/issues"
+  },
+  "homepage": "https://github.com/alandooley/reta#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "playwright": "^1.55.1"
+  }
+}

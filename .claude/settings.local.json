@@ -3,7 +3,18 @@
     "allow": [
       "Bash(git init:*)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npx playwright install:*)",
+      "Bash(npm test)",
+      "Bash(npx playwright test:*)",
+      "Bash(curl:*)",
+      "Bash(node:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
