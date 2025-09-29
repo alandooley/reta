@@ -420,10 +420,10 @@ test.describe('Retatrutide Tracker App', () => {
   });
 
   test('chart containers are rendered', async ({ page }) => {
-    // Check medication chart on summary tab
+    // Check supply forecast on summary tab (replaced medication chart)
     await page.click('[data-tab="summary"]');
-    const medChart = page.locator('#medication-chart');
-    await expect(medChart).toBeVisible();
+    const supplyForecast = page.locator('.supply-forecast-container');
+    await expect(supplyForecast).toBeVisible();
 
     // Check weight chart on results tab
     await page.click('[data-tab="results"]');
