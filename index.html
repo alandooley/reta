@@ -1577,9 +1577,19 @@
                 this.updateSettingsTab();
             }
 
+            getMostRecentInjection() {
+                if (this.data.injections.length === 0) return null;
+
+                return this.data.injections.reduce((mostRecent, current) => {
+                    const currentDate = new Date(current.timestamp);
+                    const mostRecentDate = new Date(mostRecent.timestamp);
+                    return currentDate > mostRecentDate ? current : mostRecent;
+                });
+            }
+
             updateSummaryTab() {
                 const totalShots = this.data.injections.length;
-                const lastInjection = this.data.injections[this.data.injections.length - 1];
+                const lastInjection = this.getMostRecentInjection();
                 const lastLevel = lastInjection ? lastInjection.medication_level_at_injection || 0 : 0;
                 const nextShotDays = this.calculateNextShotDays();
 
@@ -1633,7 +1643,8 @@
             calculateNextShotDays() {
                 if (this.data.injections.length === 0) return 0;
 
-                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
+                const lastInjection = this.getMostRecentInjection();
+                const lastShot = new Date(lastInjection.timestamp);
                 const nextShot = new Date(lastShot);
                 nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
 
@@ -2707,7 +2718,8 @@
                 }
 
                 const now = new Date();
-                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
+                const lastInjection = this.getMostRecentInjection();
+                const lastShot = new Date(lastInjection.timestamp);
 
                 // Calculate next shot based on injection frequency
                 const nextShot = new Date(lastShot);
@@ -3155,7 +3167,8 @@
 
                 if (this.data.injections.length === 0) return;
 
-                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
+                const lastInjection = this.getMostRecentInjection();
+                const lastShot = new Date(lastInjection.timestamp);
                 const nextShot = new Date(lastShot);
                 nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
 
