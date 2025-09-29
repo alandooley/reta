@@ -940,7 +940,7 @@
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="current-level">0%</div>
-                        <div class="stat-label">Current Level</div>
+                        <div class="stat-label">Level at Last Shot</div>
                     </div>
                     <div class="stat-card">
                         <div class="stat-value" id="next-shot">0 days</div>
@@ -1575,13 +1575,13 @@
             updateSummaryTab() {
                 const totalShots = this.data.injections.length;
                 const lastInjection = this.data.injections[0];
-                const currentLevel = this.calculateCurrentMedicationLevel();
+                const lastLevel = lastInjection ? lastInjection.medication_level_at_injection || 0 : 0;
                 const nextShotDays = this.calculateNextShotDays();
 
                 document.getElementById('total-shots').textContent = totalShots;
                 document.getElementById('last-dose').textContent = lastInjection ?
                     `${lastInjection.dose_mg} mg` : '0 mg';
-                document.getElementById('current-level').textContent = `${currentLevel.toFixed(1)} mg`;
+                document.getElementById('current-level').textContent = `${lastLevel.toFixed(1)} mg`;
                 document.getElementById('next-shot').textContent = `${nextShotDays} days`;
 
                 this.updateCountdown();
@@ -1592,7 +1592,12 @@
                 const shotsList = document.getElementById('shots-list');
                 shotsList.innerHTML = '';
 
-                this.data.injections.forEach(injection => {
+                // Sort injections by date (newest first) and display
+                const sortedInjections = [...this.data.injections].sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                sortedInjections.forEach(injection => {
                     const shotItem = this.createShotListItem(injection);
                     shotsList.appendChild(shotItem);
                 });
