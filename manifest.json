@@ -1,56 +1,60 @@
 {
-  "name": "Retatrutide Tracker",
-  "short_name": "RetaTracker",
-  "description": "Comprehensive Retatrutide injection tracker with vial management and weight tracking",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#1a1a1a",
-  "theme_color": "#1a1a1a",
-  "orientation": "portrait",
-  "scope": "/",
-  "lang": "en-US",
-  "categories": ["health", "medical", "productivity"],
-  "icons": [
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Crect width='192' height='192' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='48' fill='white' text-anchor='middle' dominant-baseline='central'%3ESR%3C/text%3E%3C/svg%3E",
-      "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='128' fill='white' text-anchor='middle' dominant-baseline='central'%3ESR%3C/text%3E%3C/svg%3E",
-      "sizes": "512x512",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Add Shot",
-      "short_name": "Add Shot",
-      "description": "Quickly add a new injection",
-      "url": "/?action=add_shot",
-      "icons": [
-        {
-          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%23007AFF'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='48' fill='white' text-anchor='middle' dominant-baseline='central'%3E+%3C/text%3E%3C/svg%3E",
-          "sizes": "96x96",
-          "type": "image/svg+xml"
-        }
-      ]
-    },
-    {
-      "name": "View Results",
-      "short_name": "Results",
-      "description": "View weight and progress charts",
-      "url": "/?tab=results",
-      "icons": [
-        {
-          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%2334C759'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='24' fill='white' text-anchor='middle' dominant-baseline='central'%3E📈%3C/text%3E%3C/svg%3E",
-          "sizes": "96x96",
-          "type": "image/svg+xml"
-        }
-      ]
-    }
-  ],
-  "prefer_related_applications": false
+	"name": "Retatrutide Tracker",
+	"short_name": "RetaTracker",
+	"description": "Comprehensive Retatrutide injection tracker with vial management and weight tracking",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#1a1a1a",
+	"theme_color": "#1a1a1a",
+	"orientation": "portrait",
+	"scope": "/",
+	"lang": "en-US",
+	"categories": [
+		"health",
+		"medical",
+		"productivity"
+	],
+	"icons": [
+		{
+			"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Crect width='192' height='192' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='48' fill='white' text-anchor='middle' dominant-baseline='central'%3ESR%3C/text%3E%3C/svg%3E",
+			"sizes": "192x192",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' fill='%231a1a1a'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='128' fill='white' text-anchor='middle' dominant-baseline='central'%3ESR%3C/text%3E%3C/svg%3E",
+			"sizes": "512x512",
+			"type": "image/svg+xml",
+			"purpose": "any maskable"
+		}
+	],
+	"shortcuts": [
+		{
+			"name": "Add Shot",
+			"short_name": "Add Shot",
+			"description": "Quickly add a new injection",
+			"url": "/?action=add_shot",
+			"icons": [
+				{
+					"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%23007AFF'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='48' fill='white' text-anchor='middle' dominant-baseline='central'%3E+%3C/text%3E%3C/svg%3E",
+					"sizes": "96x96",
+					"type": "image/svg+xml"
+				}
+			]
+		},
+		{
+			"name": "View Results",
+			"short_name": "Results",
+			"description": "View weight and progress charts",
+			"url": "/?tab=results",
+			"icons": [
+				{
+					"src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Crect width='96' height='96' fill='%2334C759'/%3E%3Ctext x='50%25' y='50%25' font-family='sans-serif' font-size='24' fill='white' text-anchor='middle' dominant-baseline='central'%3E📈%3C/text%3E%3C/svg%3E",
+					"sizes": "96x96",
+					"type": "image/svg+xml"
+				}
+			]
+		}
+	],
+	"prefer_related_applications": false
 }
