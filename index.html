@@ -1579,7 +1579,7 @@
 
             updateSummaryTab() {
                 const totalShots = this.data.injections.length;
-                const lastInjection = this.data.injections[0];
+                const lastInjection = this.data.injections[this.data.injections.length - 1];
                 const lastLevel = lastInjection ? lastInjection.medication_level_at_injection || 0 : 0;
                 const nextShotDays = this.calculateNextShotDays();
 
@@ -1633,7 +1633,7 @@
             calculateNextShotDays() {
                 if (this.data.injections.length === 0) return 0;
 
-                const lastShot = new Date(this.data.injections[0].timestamp);
+                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
                 const nextShot = new Date(lastShot);
                 nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
 
@@ -2707,7 +2707,7 @@
                 }
 
                 const now = new Date();
-                const lastShot = new Date(this.data.injections[0].timestamp);
+                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
 
                 // Calculate next shot based on injection frequency
                 const nextShot = new Date(lastShot);
@@ -3155,7 +3155,7 @@
 
                 if (this.data.injections.length === 0) return;
 
-                const lastShot = new Date(this.data.injections[0].timestamp);
+                const lastShot = new Date(this.data.injections[this.data.injections.length - 1].timestamp);
                 const nextShot = new Date(lastShot);
                 nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
 
