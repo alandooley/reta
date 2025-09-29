@@ -2577,7 +2577,7 @@
                 // Set time to 9 AM for the shot
                 nextShot.setHours(9, 0, 0, 0);
 
-                const now = new Date();
+                // Use the already declared 'now' variable
                 const timeDiff = nextShot.getTime() - now.getTime();
 
                 if (timeDiff <= 0) {
