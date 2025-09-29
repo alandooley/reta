@@ -182,7 +182,7 @@
         }
 
         /* Chart Container */
-        .chart-container {
+        .chart-container, .supply-forecast-container {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -190,7 +190,7 @@
             margin-bottom: var(--spacing-lg);
         }
 
-        .chart-container h3 {
+        .chart-container h3, .supply-forecast-container h3 {
             margin-bottom: var(--spacing-md);
             color: var(--text-primary);
             font-size: 18px;
@@ -198,7 +198,59 @@
         }
 
         .chart-container canvas {
-            max-height: 300px;
+            max-height: 450px;
+        }
+
+        .supply-forecast {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .forecast-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .forecast-row:last-child {
+            border-bottom: none;
+        }
+
+        .forecast-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .forecast-value {
+            color: var(--text-primary);
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .forecast-input-group {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .forecast-input {
+            width: 60px;
+            padding: var(--spacing-xs);
+            background-color: var(--secondary-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            font-size: 16px;
+            font-weight: 600;
+            text-align: center;
+        }
+
+        .forecast-unit {
+            color: var(--text-secondary);
+            font-size: 14px;
         }
 
         /* Countdown Container */
@@ -848,9 +900,33 @@
                     </div>
                 </div>
 
-                <div class="chart-container">
-                    <h3>Medication Level</h3>
-                    <canvas id="medication-chart"></canvas>
+                <div class="supply-forecast-container">
+                    <h3>Supply Forecast</h3>
+                    <div class="supply-forecast">
+                        <div class="forecast-row">
+                            <span class="forecast-label">Total Supply:</span>
+                            <span class="forecast-value" id="total-supply">0 mg</span>
+                        </div>
+                        <div class="forecast-row">
+                            <span class="forecast-label">Planned Weekly Dose:</span>
+                            <div class="forecast-input-group">
+                                <input type="number" id="planned-dose" step="0.5" min="0" max="20" value="4.0" class="forecast-input">
+                                <span class="forecast-unit">mg</span>
+                            </div>
+                        </div>
+                        <div class="forecast-row">
+                            <span class="forecast-label">Supply Will Last:</span>
+                            <span class="forecast-value" id="supply-duration">0 weeks</span>
+                        </div>
+                        <div class="forecast-row">
+                            <span class="forecast-label">Estimated Run Out Date:</span>
+                            <span class="forecast-value" id="run-out-date">--</span>
+                        </div>
+                        <div class="forecast-row">
+                            <span class="forecast-label">Days Until Reorder:</span>
+                            <span class="forecast-value" id="reorder-days">--</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -875,11 +951,11 @@
                 </div>
                 <div class="results-stats">
                     <div class="result-card">
-                        <div class="result-value" id="weight-change">0 lbs</div>
+                        <div class="result-value" id="weight-change">0 kg</div>
                         <div class="result-label">Weight Change</div>
                     </div>
                     <div class="result-card">
-                        <div class="result-value" id="current-weight">0 lbs</div>
+                        <div class="result-value" id="current-weight">0 kg</div>
                         <div class="result-label">Current Weight</div>
                     </div>
                 </div>
@@ -1144,7 +1220,7 @@
                     settings: {
                         injectionFrequency: 7,
                         heightCm: null,
-                        units: 'imperial',
+                        units: 'metric',
                         notifications: true,
                         googleDriveConnected: false,
                         withingsConnected: false,
@@ -1421,7 +1497,7 @@
                 document.getElementById('next-shot').textContent = `${nextShotDays} days`;
 
                 this.updateCountdown();
-                this.updateMedicationChart();
+                this.updateSupplyForecast();
             }
 
             updateShotsTab() {
@@ -1496,7 +1572,7 @@
                         document.getElementById(targetTab + '-tab').style.display = 'block';
 
                         // Update charts when switching tabs
-                        if (targetTab === 'summary') this.updateMedicationChart();
+                        if (targetTab === 'summary') this.updateSupplyForecast();
                         if (targetTab === 'results') this.updateWeightChart();
                     });
                 });
@@ -1605,6 +1681,14 @@
                 document.getElementById('export-data-btn').addEventListener('click', () => {
                     this.exportData();
                 });
+
+                // Planned dose change listener
+                const plannedDoseInput = document.getElementById('planned-dose');
+                if (plannedDoseInput) {
+                    plannedDoseInput.addEventListener('input', () => {
+                        this.updateSupplyForecast();
+                    });
+                }
 
                 // Import data
                 document.getElementById('import-data-btn').addEventListener('click', () => {
@@ -1895,10 +1979,64 @@
                 return div;
             }
 
+            updateSupplyForecast() {
+                // Calculate total remaining supply
+                const activeVials = this.data.vials.filter(v =>
+                    v.status === 'active' &&
+                    v.remaining_ml > 0 &&
+                    new Date(v.expiration_date) > new Date()
+                );
+
+                let totalSupplyMg = 0;
+                activeVials.forEach(vial => {
+                    totalSupplyMg += vial.remaining_ml * vial.concentration_mg_ml;
+                });
+
+                // Get planned dose from input
+                const plannedDoseInput = document.getElementById('planned-dose');
+                const plannedWeeklyDose = parseFloat(plannedDoseInput?.value || 4.0);
+
+                // Calculate duration
+                const weeksRemaining = plannedWeeklyDose > 0 ? Math.floor(totalSupplyMg / plannedWeeklyDose) : 0;
+                const daysRemaining = weeksRemaining * 7;
+
+                // Calculate run out date
+                const runOutDate = new Date();
+                runOutDate.setDate(runOutDate.getDate() + daysRemaining);
+
+                // Calculate reorder date (2 weeks before running out)
+                const reorderDays = Math.max(0, daysRemaining - 14);
+
+                // Update display
+                document.getElementById('total-supply').textContent = `${totalSupplyMg.toFixed(1)} mg`;
+                document.getElementById('supply-duration').textContent = `${weeksRemaining} weeks (${daysRemaining} days)`;
+                document.getElementById('run-out-date').textContent = daysRemaining > 0 ? runOutDate.toLocaleDateString() : 'No supply';
+                document.getElementById('reorder-days').textContent = reorderDays > 0 ? `${reorderDays} days` : 'Order now!';
+
+                // Update colors based on supply levels
+                const supplyDurationElement = document.getElementById('supply-duration');
+                const runOutElement = document.getElementById('run-out-date');
+                const reorderElement = document.getElementById('reorder-days');
+
+                if (daysRemaining < 7) {
+                    supplyDurationElement.style.color = '#FF3B30'; // Red
+                    runOutElement.style.color = '#FF3B30';
+                    reorderElement.style.color = '#FF3B30';
+                } else if (daysRemaining < 21) {
+                    supplyDurationElement.style.color = '#FF9500'; // Orange
+                    runOutElement.style.color = '#FF9500';
+                    reorderElement.style.color = '#FF9500';
+                } else {
+                    supplyDurationElement.style.color = '#34C759'; // Green
+                    runOutElement.style.color = '#34C759';
+                    reorderElement.style.color = '#34C759';
+                }
+            }
+
             updateMedicationChart() {
-                const canvas = document.getElementById('medication-chart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
+                // Keeping old function for compatibility - now calls updateSupplyForecast
+                this.updateSupplyForecast();
+                return;
 
                 // Check if Chart.js is loaded
                 if (typeof Chart === 'undefined') {
@@ -2177,8 +2315,8 @@
 
             updateWeightStats() {
                 if (this.data.weights.length < 2) {
-                    document.getElementById('weight-change').textContent = '0 lbs';
-                    document.getElementById('current-weight').textContent = '0 lbs';
+                    document.getElementById('weight-change').textContent = '0 kg';
+                    document.getElementById('current-weight').textContent = '0 kg';
                     return;
                 }
 
@@ -2190,15 +2328,14 @@
                 const lastWeight = sortedWeights[sortedWeights.length - 1];
 
                 const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
-                const weightChangeLbs = this.kgToLbs(Math.abs(weightChangeKg));
 
                 const changeText = weightChangeKg >= 0 ?
-                    `+${weightChangeLbs.toFixed(1)} lbs` :
-                    `-${weightChangeLbs.toFixed(1)} lbs`;
+                    `+${Math.abs(weightChangeKg).toFixed(1)} kg` :
+                    `-${Math.abs(weightChangeKg).toFixed(1)} kg`;
 
                 document.getElementById('weight-change').textContent = changeText;
                 document.getElementById('current-weight').textContent =
-                    `${this.kgToLbs(lastWeight.weight_kg).toFixed(1)} lbs`;
+                    `${lastWeight.weight_kg.toFixed(1)} kg`;
 
                 // Update color based on weight change
                 const weightChangeElement = document.getElementById('weight-change');
@@ -2356,8 +2493,12 @@
                 }
 
                 const lastShot = new Date(this.data.injections[0].timestamp);
+
+                // Calculate next Saturday after the last shot
                 const nextShot = new Date(lastShot);
-                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
+                const daysUntilSaturday = (6 - lastShot.getDay() + 7) % 7;
+                const daysToAdd = daysUntilSaturday === 0 ? 7 : daysUntilSaturday;
+                nextShot.setDate(nextShot.getDate() + daysToAdd);
 
                 const now = new Date();
                 const timeDiff = nextShot.getTime() - now.getTime();
@@ -2593,7 +2734,14 @@
 
             connectWithings() {
                 // Withings OAuth 2.0 configuration
+                // Replace with your actual Withings Client ID from developer.withings.com
                 const WITHINGS_CLIENT_ID = 'YOUR_WITHINGS_CLIENT_ID';
+
+                // Check if client ID has been configured
+                if (WITHINGS_CLIENT_ID === 'YOUR_WITHINGS_CLIENT_ID') {
+                    alert('Withings integration not configured. Please update WITHINGS_CLIENT_ID with your actual client ID from developer.withings.com');
+                    return;
+                }
                 const WITHINGS_REDIRECT_URI = window.location.origin + '/withings-callback';
                 const WITHINGS_AUTH_URL = 'https://account.withings.com/oauth2_user/authorize2';
 
