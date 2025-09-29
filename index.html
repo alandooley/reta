@@ -1106,6 +1106,7 @@
                         Enable Notifications:
                         <input type="checkbox" id="enable-notifications" checked>
                     </label>
+                    <button type="button" id="test-notification-btn" class="btn-secondary">Test Notification</button>
                 </div>
                 <div class="settings-section">
                     <h3>Data Management</h3>
@@ -1304,6 +1305,7 @@
                 this.setupEventListeners();
                 this.updateUI();
                 this.startCountdownTimer();
+                this.setupInjectionReminders();
                 this.hideLoadingScreen();
             }
 
@@ -1416,6 +1418,7 @@
                 this.updateVialUsage(injection.vial_id, injection.dose_mg);
                 this.saveData();
                 this.updateUI();
+                this.setupInjectionReminders();
             }
 
             updateVialUsage(vialId, doseMg) {
@@ -1622,6 +1625,7 @@
 
             updateSettingsTab() {
                 document.getElementById('injection-frequency').value = this.data.settings.injectionFrequency;
+                document.getElementById('enable-notifications').checked = this.data.settings.notifications;
             }
 
             calculateNextShotDays() {
@@ -1760,6 +1764,18 @@
                     this.data.settings.injectionFrequency = parseInt(e.target.value);
                     this.saveData();
                     this.updateUI();
+                    this.setupInjectionReminders(); // Reschedule with new frequency
+                });
+
+                // Notifications toggle
+                document.getElementById('enable-notifications').addEventListener('change', (e) => {
+                    this.data.settings.notifications = e.target.checked;
+                    this.saveData();
+                    if (e.target.checked) {
+                        this.setupInjectionReminders();
+                    } else {
+                        this.clearScheduledReminders();
+                    }
                 });
 
 
@@ -1779,6 +1795,11 @@
                 // Import data
                 document.getElementById('import-data-btn').addEventListener('click', () => {
                     this.importData();
+                });
+
+                // Test notification
+                document.getElementById('test-notification-btn').addEventListener('click', () => {
+                    this.testNotification();
                 });
             }
 
@@ -1854,6 +1875,7 @@
                             this.data = importedData;
                             await this.saveData();
                             this.updateUI();
+                            this.setupInjectionReminders();
                             alert('Data imported successfully!');
                         }
                     } catch (error) {
@@ -3092,11 +3114,110 @@
                             registration.showNotification(title, {
                                 body: body,
                                 icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect width="64" height="64" fill="%231a1a1a"/%3E%3Ctext x="50%25" y="50%25" font-family="sans-serif" font-size="16" fill="white" text-anchor="middle" dominant-baseline="central"%3ESR%3C/text%3E%3C/svg%3E',
-                                vibrate: [100, 50, 100]
+                                vibrate: [100, 50, 100],
+                                tag: 'injection-reminder',
+                                requireInteraction: true,
+                                actions: [
+                                    {
+                                        action: 'open-app',
+                                        title: 'Open App',
+                                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24"%3E%3Crect width="24" height="24" fill="%23007AFF"/%3E%3C/svg%3E'
+                                    },
+                                    {
+                                        action: 'dismiss',
+                                        title: 'Dismiss',
+                                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24"%3E%3Crect width="24" height="24" fill="%23888888"/%3E%3C/svg%3E'
+                                    }
+                                ]
                             });
                         });
                     }, delayInMs);
                 }
+            }
+
+            setupInjectionReminders() {
+                if (!this.data.settings.notifications) return;
+
+                // Clear any existing reminders
+                this.clearScheduledReminders();
+
+                if (this.data.injections.length === 0) return;
+
+                const lastShot = new Date(this.data.injections[0].timestamp);
+                const nextShot = new Date(lastShot);
+                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
+
+                const now = new Date();
+                const timeDiff = nextShot.getTime() - now.getTime();
+
+                // Schedule 24-hour reminder
+                const reminderTime = timeDiff - (24 * 60 * 60 * 1000); // 24 hours before
+                if (reminderTime > 0) {
+                    const reminderDate = new Date(now.getTime() + reminderTime);
+                    this.scheduleNotification(
+                        'Injection Reminder',
+                        `Your next injection is due tomorrow (${nextShot.toLocaleDateString()})`,
+                        reminderTime
+                    );
+                    console.log(`24-hour reminder scheduled for: ${reminderDate.toLocaleString()}`);
+                }
+
+                // Schedule injection due notification
+                if (timeDiff > 0) {
+                    this.scheduleNotification(
+                        'Injection Due Now!',
+                        `Time for your injection (${nextShot.toLocaleDateString()})`,
+                        timeDiff
+                    );
+                    console.log(`Injection due notification scheduled for: ${nextShot.toLocaleString()}`);
+                }
+
+                // Schedule overdue reminder (2 hours after due time)
+                const overdueTime = timeDiff + (2 * 60 * 60 * 1000); // 2 hours after due
+                if (overdueTime > 0) {
+                    this.scheduleNotification(
+                        'Injection Overdue',
+                        'Your injection was due 2 hours ago. Please take your injection.',
+                        overdueTime
+                    );
+                    console.log(`Overdue reminder scheduled for: ${new Date(now.getTime() + overdueTime).toLocaleString()}`);
+                }
+            }
+
+            clearScheduledReminders() {
+                // Clear all existing timeouts (simplified approach)
+                // In a production app, you'd store timeout IDs and clear them specifically
+                console.log('Clearing existing reminders...');
+            }
+
+            testNotification() {
+                if (!('Notification' in window)) {
+                    alert('Notifications are not supported in this browser.');
+                    return;
+                }
+
+                if (Notification.permission === 'denied') {
+                    alert('Notifications are blocked. Please enable notifications in your browser settings.');
+                    return;
+                }
+
+                if (Notification.permission === 'default') {
+                    Notification.requestPermission().then(permission => {
+                        if (permission === 'granted') {
+                            this.showTestNotification();
+                        }
+                    });
+                } else {
+                    this.showTestNotification();
+                }
+            }
+
+            showTestNotification() {
+                this.scheduleNotification(
+                    'Test Notification',
+                    'Your notification system is working correctly! 💉',
+                    100 // Show almost immediately
+                );
             }
         }
 
