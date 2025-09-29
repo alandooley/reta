@@ -1306,6 +1306,7 @@
                 this.updateUI();
                 this.startCountdownTimer();
                 this.setupInjectionReminders();
+                this.validateDataIntegrity();
                 this.hideLoadingScreen();
             }
 
@@ -1362,23 +1363,24 @@
                     });
                 }
 
-                // Add sample injections
-                for (let i = 0; i < 4; i++) {
+                // Add sample injections (use full vial to make it realistic)
+                const sampleDoses = [2.0, 2.5, 3.0, 3.5, 4.0]; // Total = 15mg (use full vial)
+                for (let i = 0; i < sampleDoses.length; i++) {
                     const injectionDate = new Date(now.getTime() - (i * 7 * 24 * 60 * 60 * 1000)); // Weekly
                     const vialId = this.data.vials[0]?.vial_id;
                     if (vialId) {
                         this.data.injections.push({
                             id: this.generateId(),
                             timestamp: injectionDate.toISOString(),
-                            dose_mg: 1.0 + (i * 0.5), // Progressive dose increase
-                            injection_site: ['left_thigh', 'right_thigh', 'left_arm', 'right_arm'][i % 4],
+                            dose_mg: sampleDoses[i],
+                            injection_site: ['right_abdomen', 'left_abdomen', 'right_thigh', 'left_thigh', 'right_arm'][i % 5],
                             vial_id: vialId,
                             weight_kg: null,
                             weight_source: 'manual',
-                            notes: i === 0 ? 'First injection - no side effects' : '',
-                            medication_level_at_injection: 0
+                            notes: i === 0 ? 'Final injection - vial finished' : i === sampleDoses.length - 1 ? 'First injection - starting treatment' : '',
+                            medication_level_at_injection: i > 0 ? sampleDoses[i-1] : 0
                         });
-                        this.updateVialUsage(vialId, 1.0 + (i * 0.5));
+                        this.updateVialUsage(vialId, sampleDoses[i]);
                     }
                 }
 
@@ -1876,7 +1878,12 @@
                             await this.saveData();
                             this.updateUI();
                             this.setupInjectionReminders();
-                            alert('Data imported successfully!');
+                            const issues = this.validateDataIntegrity();
+                            if (issues.length > 0) {
+                                alert('Data imported successfully!\n\nNote: Some data integrity issues were found. Check the console for details.');
+                            } else {
+                                alert('Data imported successfully!');
+                            }
                         }
                     } catch (error) {
                         alert('Error importing data: ' + error.message);
@@ -2186,18 +2193,23 @@
 
             updateSupplyForecast() {
                 // Calculate total remaining supply from all non-expired vials with remaining volume
-                const vialsWithSupply = this.data.vials.filter(v =>
-                    v.remaining_ml > 0 &&
-                    new Date(v.expiration_date) > new Date()
-                );
+                const now = new Date();
+                const vialsWithSupply = this.data.vials.filter(v => {
+                    const hasRemainingVolume = v.remaining_ml > 0;
+                    const isActive = v.status === 'active';
+                    const isNotExpired = new Date(v.expiration_date) > now;
+                    const hasConcentration = v.concentration_mg_ml > 0;
+
+                    return hasRemainingVolume && isActive && isNotExpired && hasConcentration;
+                });
 
                 let totalSupplyMg = 0;
                 vialsWithSupply.forEach(vial => {
                     const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
                     totalSupplyMg += remainingMg;
-                    console.log(`Vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
+                    console.log(`Active vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
                 });
-                console.log(`Total supply: ${totalSupplyMg}mg`);
+                console.log(`Total supply from ${vialsWithSupply.length} active vials: ${totalSupplyMg}mg`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
@@ -3218,6 +3230,59 @@
                     'Your notification system is working correctly! 💉',
                     100 // Show almost immediately
                 );
+            }
+
+            // ====================================
+            // DATA INTEGRITY VALIDATION
+            // ====================================
+
+            validateDataIntegrity() {
+                const issues = [];
+
+                // Check vial integrity
+                this.data.vials.forEach(vial => {
+                    // Check if vial has been used more than its capacity
+                    if (vial.status === 'active' && vial.concentration_mg_ml > 0) {
+                        const totalUsedMg = vial.doses_used * (vial.total_mg / (vial.bac_water_ml * vial.concentration_mg_ml));
+                        const calculatedRemainingMg = vial.total_mg - totalUsedMg;
+                        const reportedRemainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+
+                        if (Math.abs(calculatedRemainingMg - reportedRemainingMg) > 0.1) {
+                            issues.push(`Vial ${vial.vial_id}: Calculated remaining (${calculatedRemainingMg.toFixed(1)}mg) doesn't match reported (${reportedRemainingMg.toFixed(1)}mg)`);
+                        }
+                    }
+
+                    // Check for impossible remaining volumes
+                    if (vial.remaining_ml < 0) {
+                        issues.push(`Vial ${vial.vial_id}: Negative remaining volume (${vial.remaining_ml}ml)`);
+                    }
+
+                    // Check for vials marked as empty but still have volume
+                    if (vial.status === 'empty' && vial.remaining_ml > 0) {
+                        issues.push(`Vial ${vial.vial_id}: Marked as empty but has ${vial.remaining_ml}ml remaining`);
+                    }
+
+                    // Check for expired active vials
+                    if (vial.status === 'active' && new Date(vial.expiration_date) < new Date()) {
+                        issues.push(`Vial ${vial.vial_id}: Marked as active but expired on ${new Date(vial.expiration_date).toLocaleDateString()}`);
+                    }
+                });
+
+                // Check injection integrity
+                this.data.injections.forEach(injection => {
+                    const vial = this.data.vials.find(v => v.vial_id === injection.vial_id);
+                    if (!vial) {
+                        issues.push(`Injection ${injection.id}: References non-existent vial ${injection.vial_id}`);
+                    }
+                });
+
+                if (issues.length > 0) {
+                    console.warn('Data integrity issues found:', issues);
+                    return issues;
+                } else {
+                    console.log('Data integrity check passed ✓');
+                    return [];
+                }
             }
         }
 
