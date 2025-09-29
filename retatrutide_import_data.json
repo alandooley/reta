@@ -116,9 +116,9 @@
       "concentration_mg_ml": 10.0,
       "reconstitution_date": "2025-09-13T08:00:00.000Z",
       "expiration_date": "2025-10-13T08:00:00.000Z",
-      "remaining_ml": 0.18,
+      "remaining_ml": 0,
       "doses_used": 3,
-      "status": "active"
+      "status": "empty"
     }
   ],
   "weights": [

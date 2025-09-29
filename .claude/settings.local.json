@@ -18,7 +18,8 @@
       "Bash(npm test:*)",
       "Bash(netstat:*)",
       "Bash(findstr:*)",
-      "Bash(taskkill:*)"
+      "Bash(taskkill:*)",
+      "Bash(start index.html)"
     ],
     "deny": [],
     "ask": []

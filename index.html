@@ -80,7 +80,7 @@
             justify-content: space-between;
             padding: 0 var(--spacing-md);
             height: 100%;
-            max-width: 480px;
+            max-width: 1200px;
             margin: 0 auto;
         }
 
@@ -125,8 +125,60 @@
 
         .container {
             padding: var(--spacing-lg) var(--spacing-md);
-            max-width: 480px;
+            max-width: 1200px;
             margin: 0 auto;
+        }
+
+        /* Responsive design */
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .results-stats {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .inventory-stats {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .chart-container, .supply-forecast-container {
+                padding: var(--spacing-xl);
+            }
+
+            .chart-container canvas {
+                max-height: 600px;
+            }
+
+            .shot-item, .vial-item {
+                padding: var(--spacing-lg);
+            }
+
+            .form-container {
+                max-width: 600px;
+                margin: 0 auto;
+            }
+
+            .countdown-container {
+                max-width: 600px;
+                margin: 0 auto var(--spacing-lg);
+            }
+        }
+
+        /* Tablet specific */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            .container {
+                max-width: 90%;
+            }
+        }
+
+        /* Large desktop */
+        @media (min-width: 1200px) {
+            .tab-content {
+                max-width: 1000px;
+                margin: 0 auto;
+            }
         }
 
         .loading {
@@ -199,6 +251,8 @@
 
         .chart-container canvas {
             max-height: 450px;
+            width: 100% !important;
+            height: auto !important;
         }
 
         .supply-forecast {
@@ -2492,13 +2546,35 @@
                     return;
                 }
 
+                const now = new Date();
                 const lastShot = new Date(this.data.injections[0].timestamp);
 
-                // Calculate next Saturday after the last shot
-                const nextShot = new Date(lastShot);
-                const daysUntilSaturday = (6 - lastShot.getDay() + 7) % 7;
-                const daysToAdd = daysUntilSaturday === 0 ? 7 : daysUntilSaturday;
-                nextShot.setDate(nextShot.getDate() + daysToAdd);
+                // Find the next Saturday
+                let nextShot = new Date(now);
+                const currentDay = now.getDay();
+
+                // If today is Sunday (0) through Friday (5), go to next Saturday
+                // If today is Saturday (6), check if we've had our shot today
+                if (currentDay === 6) {
+                    // It's Saturday - check if last shot was today
+                    const lastShotDate = new Date(lastShot);
+                    lastShotDate.setHours(0, 0, 0, 0);
+                    const today = new Date(now);
+                    today.setHours(0, 0, 0, 0);
+
+                    if (lastShotDate.getTime() === today.getTime()) {
+                        // Shot was today, next one is next Saturday
+                        nextShot.setDate(nextShot.getDate() + 7);
+                    }
+                    // Otherwise, shot is due today
+                } else {
+                    // Calculate days until Saturday (6)
+                    const daysUntilSaturday = (6 - currentDay + 7) % 7;
+                    nextShot.setDate(nextShot.getDate() + daysUntilSaturday);
+                }
+
+                // Set time to 9 AM for the shot
+                nextShot.setHours(9, 0, 0, 0);
 
                 const now = new Date();
                 const timeDiff = nextShot.getTime() - now.getTime();
