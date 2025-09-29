@@ -8,6 +8,7 @@
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1a1a1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Retatrutide Tracker">
     <meta name="description" content="Comprehensive Retatrutide injection tracker with vial management and weight tracking">
@@ -2952,7 +2953,7 @@
 
             registerServiceWorker() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('/sw.js')
+                    navigator.serviceWorker.register('/reta/sw.js')
                         .then(registration => {
                             console.log('Service Worker registered successfully:', registration.scope);
                         })
