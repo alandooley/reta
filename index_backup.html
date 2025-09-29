@@ -1358,6 +1358,9 @@
             async saveData() {
                 try {
                     localStorage.setItem('retatrutide_data', JSON.stringify(this.data));
+                    if (this.data.settings.googleDriveConnected) {
+                        await this.syncToGoogleDrive();
+                    }
                 } catch (error) {
                     console.error('Error saving data:', error);
                 }
@@ -2010,19 +2013,17 @@
             }
 
             updateSupplyForecast() {
-                // Calculate total remaining supply from all non-expired vials with remaining volume
-                const vialsWithSupply = this.data.vials.filter(v =>
+                // Calculate total remaining supply
+                const activeVials = this.data.vials.filter(v =>
+                    v.status === 'active' &&
                     v.remaining_ml > 0 &&
                     new Date(v.expiration_date) > new Date()
                 );
 
                 let totalSupplyMg = 0;
-                vialsWithSupply.forEach(vial => {
-                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
-                    totalSupplyMg += remainingMg;
-                    console.log(`Vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
+                activeVials.forEach(vial => {
+                    totalSupplyMg += vial.remaining_ml * vial.concentration_mg_ml;
                 });
-                console.log(`Total supply: ${totalSupplyMg}mg`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
