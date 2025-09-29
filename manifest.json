@@ -1,7 +1,7 @@
 {
-	"name": "Retatrutide Tracker",
-	"short_name": "RetaTracker",
-	"description": "Comprehensive Retatrutide injection tracker with vial management and weight tracking",
+	"name": "Injection Tracker",
+	"short_name": "InjectTracker",
+	"description": "Comprehensive injection tracker with vial management and weight tracking",
 	"start_url": "/",
 	"display": "standalone",
 	"background_color": "#1a1a1a",

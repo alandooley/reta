@@ -1,5 +1,5 @@
-// Service Worker for Retatrutide Tracker PWA
-const CACHE_NAME = 'retatrutide-tracker-v1';
+// Service Worker for Injection Tracker PWA
+const CACHE_NAME = 'injection-tracker-v1';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -95,7 +95,7 @@ self.addEventListener('push', event => {
   };
 
   event.waitUntil(
-    self.registration.showNotification('Retatrutide Tracker', options)
+    self.registration.showNotification('Injection Tracker', options)
   );
 });
 

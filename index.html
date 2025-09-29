@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Retatrutide Tracker</title>
+    <title>Injection Tracker</title>
 
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1a1a1a">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Retatrutide Tracker">
-    <meta name="description" content="Comprehensive Retatrutide injection tracker with vial management and weight tracking">
+    <meta name="apple-mobile-web-app-title" content="Injection Tracker">
+    <meta name="description" content="Comprehensive injection tracker with vial management and weight tracking">
 
     <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
@@ -338,21 +338,22 @@
             text-align: center;
         }
 
-        .countdown-days {
-            font-size: 48px;
+        .next-shot-day {
+            font-size: 24px;
             font-weight: 700;
             color: var(--accent-color);
             line-height: 1;
         }
 
-        .countdown-label {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: var(--spacing-xs);
+        .next-shot-date {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 4px 0;
         }
 
-        .countdown-time {
-            font-size: 16px;
+        .next-shot-time {
+            font-size: 18px;
             color: var(--text-secondary);
             font-weight: 500;
         }
@@ -533,6 +534,15 @@
         .vial-status.empty {
             background-color: var(--text-muted);
             color: white;
+        }
+
+        .vial-status.dry_stock {
+            background-color: var(--warning-color);
+            color: var(--bg-color);
+        }
+
+        .vial-item.dry_stock {
+            border-left: 4px solid var(--warning-color);
         }
 
         .vial-info {
@@ -913,7 +923,7 @@
     <!-- Main Content Area -->
     <main id="main-content">
         <div class="loading" id="loading-screen">
-            Loading Retatrutide Tracker...
+            Loading Injection Tracker...
         </div>
 
         <!-- Summary Tab -->
@@ -939,12 +949,12 @@
                 </div>
 
                 <div class="countdown-container">
-                    <h3>Next Shot Countdown</h3>
+                    <h3>Next Shot Due</h3>
                     <div class="countdown-circle">
                         <div class="countdown-content">
-                            <div class="countdown-days" id="countdown-days">0</div>
-                            <div class="countdown-label">days</div>
-                            <div class="countdown-time" id="countdown-time">00:00:00</div>
+                            <div class="next-shot-day" id="next-shot-day">Saturday</div>
+                            <div class="next-shot-date" id="next-shot-date">Jan 1</div>
+                            <div class="next-shot-time" id="next-shot-time">8:00 AM</div>
                         </div>
                         <svg class="countdown-progress" width="200" height="200">
                             <circle cx="100" cy="100" r="90" stroke="#333333" stroke-width="8" fill="none"/>
@@ -1022,7 +1032,8 @@
             <div class="container">
                 <h2>Vial Management</h2>
                 <div class="inventory-header">
-                    <button id="add-vial-btn" class="btn-primary">Add Vial</button>
+                    <button id="add-vial-btn" class="btn-primary">Add Vials to Stock</button>
+                    <button id="activate-vial-btn" class="btn-secondary">Activate Vial</button>
                 </div>
                 <div id="vials-list" class="vials-list"></div>
                 <div class="inventory-stats">
@@ -1182,7 +1193,7 @@
         <!-- Add Vial Modal -->
         <div id="add-vial-modal" class="modal" style="display: none;">
             <div class="modal-header">
-                <h3 class="modal-title">Add New Vial</h3>
+                <h3 class="modal-title">Add New Vials to Dry Stock</h3>
                 <button class="modal-close" data-modal="add-vial-modal">&times;</button>
             </div>
             <form id="add-vial-form">
@@ -1195,24 +1206,44 @@
                     <input type="text" id="vial-supplier" placeholder="Pharmacy name">
                 </div>
                 <div class="form-group">
-                    <label for="vial-lot">Lot Number</label>
-                    <input type="text" id="vial-lot" placeholder="LOT123456">
+                    <label for="vial-mg">mg per Vial</label>
+                    <input type="number" id="vial-mg" step="0.1" min="0" required placeholder="10" value="10">
                 </div>
                 <div class="form-group">
-                    <label for="vial-mg">Total mg</label>
-                    <input type="number" id="vial-mg" step="0.1" min="0" required placeholder="15">
+                    <label for="vial-quantity">Number of Vials</label>
+                    <input type="number" id="vial-quantity" min="1" required placeholder="2" value="1">
                 </div>
                 <div class="form-group">
-                    <label for="vial-bac-water">BAC Water (ml)</label>
-                    <input type="number" id="vial-bac-water" step="0.1" min="0" required placeholder="1.5">
-                </div>
-                <div class="form-group">
-                    <label for="vial-reconstitution-date">Reconstitution Date</label>
-                    <input type="datetime-local" id="vial-reconstitution-date" required>
-                </div>
-                <div class="form-group">
-                    <button type="submit" class="btn-primary">Add Vial</button>
+                    <button type="submit" class="btn-primary">Add to Dry Stock</button>
                     <button type="button" class="btn-secondary" data-modal="add-vial-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Activate Vial Modal -->
+        <div id="activate-vial-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 class="modal-title">Activate Vial</h3>
+                <button class="modal-close" data-modal="activate-vial-modal">&times;</button>
+            </div>
+            <form id="activate-vial-form">
+                <div class="form-group">
+                    <label for="activate-vial-id">Select Vial to Activate</label>
+                    <select id="activate-vial-id" required>
+                        <option value="">Select a vial to activate...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="activate-bac-water">BAC Water (ml)</label>
+                    <input type="number" id="activate-bac-water" step="0.1" min="0" required placeholder="1.0" value="1.0">
+                </div>
+                <div class="form-group">
+                    <label for="activate-reconstitution-date">Reconstitution Date & Time</label>
+                    <input type="datetime-local" id="activate-reconstitution-date" required>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">Activate Vial</button>
+                    <button type="button" class="btn-secondary" data-modal="activate-vial-modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -1249,7 +1280,7 @@
         // DATA STRUCTURES & STORAGE SYSTEM
         // ====================================
 
-        class RetatrutideTracker {
+        class InjectionTracker {
             constructor() {
                 this.data = {
                     injections: [],
@@ -1282,7 +1313,7 @@
 
             async loadData() {
                 try {
-                    const stored = localStorage.getItem('retatrutide_data');
+                    const stored = localStorage.getItem('injection_data');
                     if (stored) {
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
@@ -1357,7 +1388,7 @@
 
             async saveData() {
                 try {
-                    localStorage.setItem('retatrutide_data', JSON.stringify(this.data));
+                    localStorage.setItem('injection_data', JSON.stringify(this.data));
                 } catch (error) {
                     console.error('Error saving data:', error);
                 }
@@ -1488,7 +1519,7 @@
             // ====================================
 
             calculateCurrentMedicationLevel(currentTime = new Date().toISOString()) {
-                const retatrutideHalfLife = 165; // 165 hours (about 7 days)
+                const medicationHalfLife = 165; // 165 hours (about 7 days) - adjust as needed
                 const currentTimestamp = new Date(currentTime).getTime();
                 let totalLevel = 0;
 
@@ -1497,7 +1528,7 @@
                     const hoursElapsed = (currentTimestamp - injectionTime) / (1000 * 60 * 60);
 
                     if (hoursElapsed >= 0) {
-                        const remainingLevel = injection.dose_mg * Math.pow(0.5, hoursElapsed / retatrutideHalfLife);
+                        const remainingLevel = injection.dose_mg * Math.pow(0.5, hoursElapsed / medicationHalfLife);
                         totalLevel += remainingLevel;
                     }
                 });
@@ -1662,6 +1693,11 @@
                     this.openModal('add-vial-modal');
                 });
 
+                // Activate Vial Button handler
+                document.getElementById('activate-vial-btn').addEventListener('click', () => {
+                    this.openModal('activate-vial-modal');
+                });
+
                 // Results tab weight button (we'll add this)
                 const addWeightBtn = document.createElement('button');
                 addWeightBtn.textContent = 'Add Weight';
@@ -1700,6 +1736,12 @@
                 document.getElementById('add-vial-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleAddVial();
+                });
+
+                // Activate Vial Form
+                document.getElementById('activate-vial-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleActivateVial();
                 });
 
                 // Add Weight Form
@@ -1746,7 +1788,7 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `retatrutide_data_${new Date().toISOString().split('T')[0]}.json`;
+                link.download = `injection_data_${new Date().toISOString().split('T')[0]}.json`;
                 link.click();
 
                 URL.revokeObjectURL(url);
@@ -1784,7 +1826,7 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `retatrutide_injections_${new Date().toISOString().split('T')[0]}.csv`;
+                link.download = `injection_log_${new Date().toISOString().split('T')[0]}.csv`;
                 link.click();
 
                 URL.revokeObjectURL(url);
@@ -1830,7 +1872,9 @@
                     this.populateVialSelect();
                 } else if (modalId === 'add-vial-modal') {
                     document.getElementById('vial-order-date').value = now.toISOString().split('T')[0];
-                    document.getElementById('vial-reconstitution-date').value = localDateTime;
+                } else if (modalId === 'activate-vial-modal') {
+                    document.getElementById('activate-reconstitution-date').value = localDateTime;
+                    this.populateActivateVialDropdown();
                 } else if (modalId === 'add-weight-modal') {
                     document.getElementById('weight-date').value = localDateTime;
                 }
@@ -1838,6 +1882,19 @@
                 overlay.style.display = 'flex';
                 modal.style.display = 'block';
                 document.body.style.overflow = 'hidden';
+            }
+
+            populateActivateVialDropdown() {
+                const select = document.getElementById('activate-vial-id');
+                select.innerHTML = '<option value="">Select a vial to activate...</option>';
+
+                const dryStockVials = this.data.vials.filter(v => v.status === 'dry_stock');
+                dryStockVials.forEach(vial => {
+                    const option = document.createElement('option');
+                    option.value = vial.vial_id;
+                    option.textContent = `${vial.total_mg}mg from ${vial.supplier || 'Unknown'} (${new Date(vial.order_date).toLocaleDateString()})`;
+                    select.appendChild(option);
+                });
             }
 
             closeModal() {
@@ -1906,16 +1963,71 @@
             }
 
             handleAddVial() {
-                const vial = {
-                    order_date: document.getElementById('vial-order-date').value,
-                    supplier: document.getElementById('vial-supplier').value,
-                    lot_number: document.getElementById('vial-lot').value,
-                    total_mg: parseFloat(document.getElementById('vial-mg').value),
-                    bac_water_ml: parseFloat(document.getElementById('vial-bac-water').value),
-                    reconstitution_date: document.getElementById('vial-reconstitution-date').value
-                };
+                const orderDate = document.getElementById('vial-order-date').value;
+                const supplier = document.getElementById('vial-supplier').value;
+                const totalMg = parseFloat(document.getElementById('vial-mg').value);
+                const quantity = parseInt(document.getElementById('vial-quantity').value) || 1;
 
-                this.addVial(vial);
+                if (!orderDate || !totalMg || !quantity) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                // Add multiple vials to dry stock
+                for (let i = 0; i < quantity; i++) {
+                    const vial = {
+                        vial_id: this.generateId(),
+                        order_date: orderDate,
+                        supplier: supplier || '',
+                        total_mg: totalMg,
+                        bac_water_ml: null,
+                        concentration_mg_ml: null,
+                        reconstitution_date: null,
+                        expiration_date: this.calculateExpirationDate(null, orderDate),
+                        remaining_ml: 0,
+                        doses_used: 0,
+                        status: 'dry_stock'
+                    };
+
+                    this.data.vials.push(vial);
+                }
+
+                this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+                this.saveData();
+                this.updateUI();
+                this.closeModal();
+            }
+
+            handleActivateVial() {
+                const vialId = document.getElementById('activate-vial-id').value;
+                const bacWaterMl = parseFloat(document.getElementById('activate-bac-water').value);
+                const reconstitutionDate = document.getElementById('activate-reconstitution-date').value;
+
+                if (!vialId || !bacWaterMl || !reconstitutionDate) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                const vial = this.data.vials.find(v => v.vial_id === vialId);
+                if (!vial || vial.status !== 'dry_stock') {
+                    alert('Invalid vial selected');
+                    return;
+                }
+
+                // Calculate concentration and expiration
+                const concentrationMgMl = vial.total_mg / bacWaterMl;
+                const expirationDate = this.calculateExpirationDate(reconstitutionDate, null);
+
+                // Update vial to active status
+                vial.bac_water_ml = bacWaterMl;
+                vial.concentration_mg_ml = concentrationMgMl;
+                vial.reconstitution_date = reconstitutionDate;
+                vial.expiration_date = expirationDate;
+                vial.remaining_ml = bacWaterMl; // Start with full volume
+                vial.status = 'active';
+
+                this.saveData();
+                this.updateUI();
                 this.closeModal();
             }
 
@@ -1950,25 +2062,52 @@
 
             createVialListItem(vial) {
                 const div = document.createElement('div');
-                div.className = 'vial-item';
+                div.className = `vial-item ${vial.status}`;
 
+                if (vial.status === 'dry_stock') {
+                    div.innerHTML = `
+                        <div class="vial-header">
+                            <div class="vial-info">
+                                <div class="vial-title">${vial.total_mg}mg Vial</div>
+                                <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
+                                <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
+                            </div>
+                            <div class="vial-status dry_stock">Dry Stock</div>
+                        </div>
+                        <div class="vial-details">
+                            <div class="vial-detail-row">
+                                <span>Status:</span>
+                                <span>Ready for activation with BAC water</span>
+                            </div>
+                            <div class="vial-detail-row">
+                                <span>Powder Expires:</span>
+                                <span>${this.formatDate(vial.expiration_date)}</span>
+                            </div>
+                        </div>
+                    `;
+                    return div;
+                }
+
+                // Handle active and other statuses
                 const now = new Date();
                 const expirationDate = new Date(vial.expiration_date);
                 const isExpired = expirationDate < now;
                 const daysUntilExpiry = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
 
-                let status = 'active';
-                let statusText = 'Active';
+                let status = vial.status;
+                let statusText = vial.status === 'active' ? 'Active' : vial.status;
 
-                if (isExpired) {
-                    status = 'expired';
-                    statusText = 'Expired';
-                } else if (daysUntilExpiry <= 3) {
-                    status = 'expiring';
-                    statusText = `${daysUntilExpiry}d left`;
-                } else if (vial.remaining_ml <= 0) {
-                    status = 'empty';
-                    statusText = 'Empty';
+                if (vial.status === 'active') {
+                    if (isExpired) {
+                        status = 'expired';
+                        statusText = 'Expired';
+                    } else if (daysUntilExpiry <= 3) {
+                        status = 'expiring';
+                        statusText = `${daysUntilExpiry}d left`;
+                    } else if (vial.remaining_ml <= 0) {
+                        status = 'empty';
+                        statusText = 'Empty';
+                    }
                 }
 
                 // Calculate remaining doses based on average 2mg dose
@@ -1978,7 +2117,7 @@
                     <div class="vial-header">
                         <div class="vial-info">
                             <div class="vial-title">${vial.total_mg}mg Vial</div>
-                            <div class="vial-subtitle">${vial.supplier} ${vial.lot_number ? '- ' + vial.lot_number : ''}</div>
+                            <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
                             <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
                         </div>
                         <div class="vial-status ${status}">${statusText}</div>
@@ -2512,8 +2651,9 @@
 
             updateCountdown() {
                 if (this.data.injections.length === 0) {
-                    document.getElementById('countdown-days').textContent = '0';
-                    document.getElementById('countdown-time').textContent = '00:00:00';
+                    document.getElementById('next-shot-day').textContent = 'No shots recorded';
+                    document.getElementById('next-shot-date').textContent = '';
+                    document.getElementById('next-shot-time').textContent = '';
                     this.updateCountdownProgress(0);
                     return;
                 }
@@ -2521,69 +2661,56 @@
                 const now = new Date();
                 const lastShot = new Date(this.data.injections[0].timestamp);
 
-                // Calculate next Saturday at 8 AM
-                let nextShot = new Date(now);
-                const currentDay = now.getDay(); // 0=Sunday, 1=Monday, ..., 6=Saturday
+                // Calculate next shot based on injection frequency
+                const nextShot = new Date(lastShot);
+                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
 
-                // Calculate days until next Saturday
-                let daysUntilSaturday;
-                if (currentDay === 6) {
-                    // Today is Saturday
-                    const saturdayMorning = new Date(now);
-                    saturdayMorning.setHours(8, 0, 0, 0);
+                // Format the date display
+                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-                    if (now < saturdayMorning) {
-                        // It's Saturday but before 8 AM - injection is today
-                        daysUntilSaturday = 0;
-                    } else {
-                        // It's Saturday after 8 AM - next injection is next Saturday
-                        daysUntilSaturday = 7;
-                    }
-                } else {
-                    // Not Saturday - calculate days until next Saturday
-                    daysUntilSaturday = (6 - currentDay) % 7;
-                    if (daysUntilSaturday === 0) daysUntilSaturday = 7;
-                }
+                const dayName = dayNames[nextShot.getDay()];
+                const monthName = monthNames[nextShot.getMonth()];
+                const date = nextShot.getDate();
 
-                nextShot.setDate(nextShot.getDate() + daysUntilSaturday);
-                nextShot.setHours(8, 0, 0, 0); // Set to 8 AM"
+                // Format time
+                let hours = nextShot.getHours();
+                const minutes = nextShot.getMinutes();
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12; // 0 should be 12
+                const timeString = `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
 
-                // Use the already declared 'now' variable
+                document.getElementById('next-shot-day').textContent = dayName;
+                document.getElementById('next-shot-date').textContent = `${monthName} ${date}`;
+                document.getElementById('next-shot-time').textContent = timeString;
+
+                // Calculate progress and update colors
                 const timeDiff = nextShot.getTime() - now.getTime();
-
-                if (timeDiff <= 0) {
-                    // Shot is overdue
-                    document.getElementById('countdown-days').textContent = 'OVERDUE';
-                    document.getElementById('countdown-time').textContent = '';
-                    this.updateCountdownProgress(100);
-                    document.querySelector('.countdown-days').style.color = '#FF3B30';
-                    return;
-                }
-
-                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
-                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-                const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
-
-                document.getElementById('countdown-days').textContent = days;
-                document.getElementById('countdown-time').textContent =
-                    `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
-                // Calculate progress (percentage of time elapsed since last shot)
-                const totalTime = this.data.settings.injectionFrequency * 24 * 60 * 60 * 1000; // Total interval in ms
+                const totalTime = this.data.settings.injectionFrequency * 24 * 60 * 60 * 1000;
                 const elapsedTime = now.getTime() - lastShot.getTime();
                 const progress = Math.min(100, (elapsedTime / totalTime) * 100);
 
                 this.updateCountdownProgress(progress);
 
-                // Update color based on how close to next shot
-                const countdownDays = document.querySelector('.countdown-days');
-                if (days === 0) {
-                    countdownDays.style.color = '#FF9500'; // Orange for today
-                } else if (days === 1) {
-                    countdownDays.style.color = '#FF9500'; // Orange for tomorrow
+                // Update colors based on timing
+                const dayElement = document.getElementById('next-shot-day');
+                const dateElement = document.getElementById('next-shot-date');
+
+                if (timeDiff <= 0) {
+                    // Shot is overdue
+                    dayElement.style.color = '#FF3B30';
+                    dateElement.style.color = '#FF3B30';
+                    dayElement.textContent = 'OVERDUE';
+                    dateElement.textContent = '';
+                } else if (timeDiff <= 24 * 60 * 60 * 1000) {
+                    // Due within 24 hours
+                    dayElement.style.color = '#FF9500';
+                    dateElement.style.color = '#FF9500';
                 } else {
-                    countdownDays.style.color = '#007AFF'; // Blue for normal
+                    // Normal timing
+                    dayElement.style.color = 'var(--accent-color)';
+                    dateElement.style.color = 'var(--text-primary)';
                 }
             }
 
@@ -2661,7 +2788,7 @@
                     const close_delim = "\r\n--" + boundary + "--";
 
                     const metadata = {
-                        'name': 'retatrutide_data.json',
+                        'name': 'injection_data.json',
                         'mimeType': 'application/json',
                         'parents': ['appDataFolder']
                     };
@@ -2966,7 +3093,7 @@
         let app;
 
         document.addEventListener('DOMContentLoaded', function() {
-            app = new RetatrutideTracker();
+            app = new InjectionTracker();
             app.registerServiceWorker();
             app.requestNotificationPermission();
 
