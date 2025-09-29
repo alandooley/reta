@@ -3,22 +3,35 @@ const { test, expect } = require('@playwright/test');
 test.describe('Retatrutide Tracker App', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Load with test parameter to prevent sample data loading
-    await page.goto('/?test=true');
+    // Listen for console errors
+    page.on('console', msg => {
+      if (msg.type() === 'error') {
+        console.log('Console error:', msg.text());
+      }
+    });
 
-    // Clear localStorage after page loads
+    page.on('pageerror', error => {
+      console.log('Page error:', error.message);
+    });
+
+    // Clear localStorage first
+    await page.goto('/?test=true');
     await page.evaluate(() => {
       localStorage.clear();
     });
 
-    // Reload with test parameter to apply clean state
-    await page.reload();
+    // Reload with test parameter to ensure clean state
+    await page.goto('/?test=true');
 
-    // Wait for app to initialize
-    await page.waitForTimeout(1000);
+    // Wait for app to initialize and DOM to be ready
+    await page.waitForLoadState('domcontentloaded');
+    await page.waitForTimeout(2000);
   });
 
   test('app loads and displays main interface', async ({ page }) => {
+    // Wait for loading screen to disappear
+    await page.waitForSelector('#loading-screen', { state: 'hidden', timeout: 10000 });
+
     // Check header elements
     await expect(page.locator('#app-header')).toBeVisible();
     await expect(page.locator('#menu-btn')).toBeVisible();

@@ -17,10 +17,14 @@ const mimeTypes = {
 };
 
 const server = http.createServer((req, res) => {
-  let filePath = '.' + req.url;
-  if (filePath === './') {
+  // Parse URL to separate path from query parameters
+  const url = new URL(req.url, `http://localhost:${PORT}`);
+  let filePath = '.' + url.pathname;
+
+  if (filePath === './' || filePath === '.') {
     filePath = './index.html';
   }
+
 
   const extname = String(path.extname(filePath)).toLowerCase();
   const contentType = mimeTypes[extname] || 'application/octet-stream';
