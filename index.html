@@ -410,13 +410,13 @@
             font-weight: 700;
         }
 
-        .shots-list {
+        .shots-list, .weights-list {
             display: flex;
             flex-direction: column;
             gap: var(--spacing-md);
         }
 
-        .shot-item {
+        .shot-item, .weight-item {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
@@ -429,11 +429,11 @@
             position: relative;
         }
 
-        .shot-item:hover {
+        .shot-item:hover, .weight-item:hover {
             background-color: #353535;
         }
 
-        .shot-content {
+        .shot-content, .weight-content {
             flex: 1;
         }
 
@@ -1230,6 +1230,9 @@
                         <div class="result-label">Current Weight</div>
                     </div>
                 </div>
+
+                <h3 style="margin-top: 32px; margin-bottom: 16px;">Weight History</h3>
+                <div id="weights-list" class="weights-list"></div>
             </div>
         </div>
 
@@ -1827,6 +1830,7 @@
             updateResultsTab() {
                 this.updateWeightChart();
                 this.updateWeightStats();
+                this.updateWeightsList();
             }
 
             updateInventoryTab() {
@@ -2812,6 +2816,52 @@
                 }
             }
 
+            updateWeightsList() {
+                const weightsList = document.getElementById('weights-list');
+                weightsList.innerHTML = '';
+
+                if (this.data.weights.length === 0) {
+                    weightsList.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 24px;">No weight entries yet</p>';
+                    return;
+                }
+
+                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                sortedWeights.forEach(weight => {
+                    const weightItem = this.createWeightListItem(weight);
+                    weightsList.appendChild(weightItem);
+                });
+            }
+
+            createWeightListItem(weight) {
+                const div = document.createElement('div');
+                div.className = 'weight-item';
+                div.setAttribute('data-item-id', weight.timestamp);
+                div.setAttribute('data-timestamp', weight.timestamp);
+                div.innerHTML = `
+                    <div class="weight-content">
+                        <div class="shot-header">
+                            <div class="shot-dose">${weight.weight_kg.toFixed(1)} kg</div>
+                            <div class="shot-date">${this.formatDate(weight.timestamp)}</div>
+                        </div>
+                        ${weight.body_fat_percentage ? `
+                        <div class="shot-details">
+                            <div>Body Fat: ${weight.body_fat_percentage}%</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <button class="delete-btn" aria-label="Delete weight entry" title="Delete this weight entry">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                            <path d="M10 11v6M14 11v6"/>
+                        </svg>
+                    </button>
+                `;
+                return div;
+            }
+
             updateInventoryStats() {
                 const activeVials = this.data.vials.filter(v =>
                     v.status === 'active' &&
@@ -3670,6 +3720,31 @@
                 });
             }
 
+            enableDeleteForWeights() {
+                const setupDeleteButtons = () => {
+                    const weightItems = document.querySelectorAll('.weight-item');
+                    weightItems.forEach(item => {
+                        const deleteBtn = item.querySelector('.delete-btn');
+                        if (deleteBtn && !deleteBtn.dataset.initialized) {
+                            deleteBtn.dataset.initialized = 'true';
+                            deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteWeight(item, timestamp);
+                            };
+                        }
+                    });
+                };
+
+                setupDeleteButtons();
+                const observer = new MutationObserver(() => setupDeleteButtons());
+                observer.observe(document.getElementById('weights-list'), {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
             async handleDeleteShot(element, shotId, timestamp) {
                 if (!confirm('Delete this injection?')) {
                     return;
@@ -3770,6 +3845,51 @@
                 this.showUndoButton();
             }
 
+            async handleDeleteWeight(element, timestamp) {
+                if (!confirm('Delete this weight entry?')) {
+                    return;
+                }
+
+                const index = app.data.weights.findIndex(w => w.timestamp === timestamp);
+                if (index === -1) {
+                    this.notificationManager.error('Weight entry not found');
+                    return;
+                }
+
+                const deletedWeight = app.data.weights[index];
+
+                // Add to undo stack
+                this.undoStack.push({
+                    type: 'weight',
+                    data: deletedWeight,
+                    index: index,
+                    timestamp: Date.now()
+                });
+
+                if (this.undoStack.length > this.maxUndoStack) {
+                    this.undoStack.shift();
+                }
+
+                // Remove from app data
+                app.data.weights.splice(index, 1);
+
+                // Save and update UI
+                app.saveData();
+                app.updateUI();
+
+                // Animate out
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(100px)';
+                setTimeout(() => {
+                    if (element.parentNode) {
+                        element.remove();
+                    }
+                }, 300);
+
+                this.notificationManager.success('Weight entry deleted');
+                this.showUndoButton();
+            }
+
             showUndoButton() {
                 if (this.undoButton) {
                     this.undoButton.classList.add('show');
@@ -3794,12 +3914,20 @@
                     case 'vial':
                         app.data.vials.splice(operation.index, 0, operation.data);
                         break;
+                    case 'weight':
+                        app.data.weights.splice(operation.index, 0, operation.data);
+                        break;
                 }
 
                 app.saveData();
                 app.updateUI();
 
-                this.notificationManager.success(`${operation.type === 'injection' ? 'Injection' : 'Vial'} restored`);
+                const typeNames = {
+                    'injection': 'Injection',
+                    'vial': 'Vial',
+                    'weight': 'Weight entry'
+                };
+                this.notificationManager.success(`${typeNames[operation.type]} restored`);
 
                 if (this.undoButton) {
                     this.undoButton.classList.remove('show');
@@ -3824,6 +3952,7 @@
             deleteManager.initialize();
             deleteManager.enableDeleteForShots();
             deleteManager.enableDeleteForVials();
+            deleteManager.enableDeleteForWeights();
 
             // Handle URL parameters for PWA shortcuts
             const urlParams = new URLSearchParams(window.location.search);
