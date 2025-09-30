@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Protection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #ffffff;
+        }
+
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        h2 {
+            color: #007AFF;
+            margin-top: 0;
+        }
+
+        button {
+            background: #007AFF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        button.danger {
+            background: #FF3B30;
+        }
+
+        button.danger:hover {
+            background: #cc2f28;
+        }
+
+        button.success {
+            background: #34C759;
+        }
+
+        button.success:hover {
+            background: #2a9d46;
+        }
+
+        .output {
+            background: #0a0a0a;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+
+        .status.success {
+            background: #34C759;
+            color: white;
+        }
+
+        .status.error {
+            background: #FF3B30;
+            color: white;
+        }
+
+        .status.info {
+            background: #007AFF;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>🛡️ Data Protection & Management Test</h1>
+
+    <div class="section">
+        <h2>📊 Storage Status</h2>
+        <button onclick="checkStorage()">Check Storage</button>
+        <div id="storage-status" class="output">Click "Check Storage" to see status...</div>
+    </div>
+
+    <div class="section">
+        <h2>💾 Backup Management</h2>
+        <button onclick="createManualBackup()">Create Manual Backup</button>
+        <button onclick="listBackups()">List All Backups</button>
+        <button onclick="getBackupStats()">Get Stats</button>
+        <button class="success" onclick="exportData()">Export to File</button>
+        <div id="backup-output" class="output">Backup operations will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>🗑️ Delete Operations</h2>
+        <button onclick="testDeleteInjection()">Test Delete Injection</button>
+        <button onclick="testDeleteVial()">Test Delete Vial</button>
+        <button onclick="testDeleteWeight()">Test Delete Weight</button>
+        <button class="danger" onclick="undoLastDelete()">Undo Last Delete</button>
+        <div id="delete-output" class="output">Delete operations will appear here...</div>
+    </div>
+
+    <div class="section">
+        <h2>🔄 Data Recovery</h2>
+        <button onclick="syncStorage()">Sync Storage Layers</button>
+        <button onclick="testRestore()">Test Restore</button>
+        <button class="danger" onclick="clearAllData()">Clear All Data</button>
+        <div id="recovery-output" class="output">Recovery operations will appear here...</div>
+    </div>
+
+    <script type="module">
+        import resilientStorage from './src/core/resilient-storage.js';
+        import backupManager from './src/core/backup-manager.js';
+        import deleteManager from './src/managers/delete-manager.js';
+        import logger from './src/utils/logger.js';
+
+        // Initialize
+        (async () => {
+            try {
+                await resilientStorage.initialize();
+                console.log('✅ Storage initialized');
+
+                // Create test data if none exists
+                let data = await resilientStorage.loadData();
+                if (!data || !data.injections || data.injections.length === 0) {
+                    data = createTestData();
+                    await resilientStorage.saveData(data);
+                    console.log('✅ Test data created');
+                }
+            } catch (error) {
+                console.error('❌ Initialization failed:', error);
+            }
+        })();
+
+        // Create test data
+        function createTestData() {
+            const now = new Date();
+            return {
+                version: '1.1.0',
+                vials: [
+                    {
+                        vial_id: 'test_vial_1',
+                        order_date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        supplier: 'Test Supplier',
+                        lot_number: 'TEST123',
+                        total_mg: 100,
+                        bac_water_ml: 2,
+                        concentration_mg_ml: 50,
+                        reconstitution_date: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        expiration_date: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+                        remaining_ml: 1.5,
+                        doses_used: 2,
+                        status: 'active'
+                    }
+                ],
+                injections: [
+                    {
+                        id: 'test_inj_1',
+                        timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        dose_mg: 2,
+                        injection_site: 'left_thigh',
+                        vial_id: 'test_vial_1',
+                        weight_kg: 80,
+                        weight_source: 'manual',
+                        notes: 'Test injection 1',
+                        medication_level_at_injection: 0
+                    },
+                    {
+                        id: 'test_inj_2',
+                        timestamp: now.toISOString(),
+                        dose_mg: 2.5,
+                        injection_site: 'right_thigh',
+                        vial_id: 'test_vial_1',
+                        weight_kg: 79.5,
+                        weight_source: 'manual',
+                        notes: 'Test injection 2',
+                        medication_level_at_injection: 1.5
+                    }
+                ],
+                weights: [
+                    {
+                        timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        weight_kg: 80,
+                        weight_lbs: 176.4,
+                        source: 'manual',
+                        bmi: 25.5,
+                        body_fat_percentage: null
+                    },
+                    {
+                        timestamp: now.toISOString(),
+                        weight_kg: 79.5,
+                        weight_lbs: 175.3,
+                        source: 'manual',
+                        bmi: 25.3,
+                        body_fat_percentage: null
+                    }
+                ],
+                settings: {}
+            };
+        }
+
+        // Export functions to window for button handlers
+        window.checkStorage = async () => {
+            const output = document.getElementById('storage-status');
+            try {
+                const stats = await resilientStorage.getStorageStats();
+                const data = await resilientStorage.loadData();
+
+                output.innerHTML = `
+<span class="status success">✅ Storage Available</span>
+
+LocalStorage:
+  Available: ${stats.localStorage.available}
+  Has Data: ${stats.localStorage.hasData}
+  Size: ${(stats.localStorage.size / 1024).toFixed(2)} KB
+
+IndexedDB:
+  Available: ${stats.indexedDB.available}
+  Has Data: ${stats.indexedDB.hasData}
+
+Current Data:
+  Injections: ${data?.injections?.length || 0}
+  Vials: ${data?.vials?.length || 0}
+  Weights: ${data?.weights?.length || 0}
+
+Backups:
+  Manual: ${stats.backups.manualBackups}
+  Auto: ${stats.backups.autoBackups}
+  Total Size: ${(stats.backups.totalSize / 1024).toFixed(2)} KB
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.createManualBackup = async () => {
+            const output = document.getElementById('backup-output');
+            try {
+                const data = await resilientStorage.loadData();
+                const label = 'Test backup ' + new Date().toLocaleTimeString();
+                const key = backupManager.createManualBackup(data, label);
+
+                output.innerHTML = `<span class="status success">✅ Backup Created</span>\n\nKey: ${key}\nLabel: ${label}`;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.listBackups = () => {
+            const output = document.getElementById('backup-output');
+            try {
+                const backups = backupManager.listBackups();
+
+                if (backups.length === 0) {
+                    output.innerHTML = '<span class="status info">ℹ️ No backups found</span>';
+                    return;
+                }
+
+                const list = backups.map(b => `
+${b.type === 'auto' ? '🤖' : '👤'} ${b.type.toUpperCase()}
+  Date: ${new Date(b.date).toLocaleString()}
+  Label: ${b.label}
+  Data: ${b.injections} inj, ${b.vials} vials, ${b.weights} weights
+  Size: ${(b.size / 1024).toFixed(2)} KB
+  Key: ${b.key}
+                `).join('\n---\n');
+
+                output.innerHTML = `<span class="status success">✅ Found ${backups.length} backup(s)</span>\n\n${list}`;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.getBackupStats = () => {
+            const output = document.getElementById('backup-output');
+            try {
+                const stats = backupManager.getBackupStats();
+
+                output.innerHTML = `
+<span class="status info">📊 Backup Statistics</span>
+
+Manual Backups: ${stats.manualBackups}
+Auto Backups: ${stats.autoBackups}
+Total Backups: ${stats.totalBackups}
+Total Size: ${(stats.totalSize / 1024).toFixed(2)} KB
+Last Backup: ${stats.lastBackupDate ? new Date(stats.lastBackupDate).toLocaleString() : 'Never'}
+Auto-Backup: ${stats.autoBackupEnabled ? 'Enabled ✅' : 'Disabled ❌'}
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.exportData = async () => {
+            const output = document.getElementById('backup-output');
+            try {
+                const data = await resilientStorage.loadData();
+                const filename = backupManager.exportToFile(data);
+
+                output.innerHTML = `<span class="status success">✅ Data Exported</span>\n\nFile: ${filename}`;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testDeleteInjection = async () => {
+            const output = document.getElementById('delete-output');
+            try {
+                const data = await resilientStorage.loadData();
+
+                if (data.injections.length === 0) {
+                    output.innerHTML = '<span class="status info">ℹ️ No injections to delete</span>';
+                    return;
+                }
+
+                const injectionId = data.injections[0].id;
+                const result = deleteManager.deleteInjection(data.injections, injectionId);
+
+                data.injections = result.injections;
+                await resilientStorage.saveData(data);
+
+                output.innerHTML = `
+<span class="status success">✅ Injection Deleted</span>
+
+Deleted: ${result.deleted.dose_mg} mg
+Date: ${new Date(result.deleted.timestamp).toLocaleString()}
+Remaining: ${data.injections.length} injection(s)
+
+Can Undo: ${deleteManager.canUndo() ? 'Yes ✅' : 'No ❌'}
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testDeleteVial = async () => {
+            const output = document.getElementById('delete-output');
+            try {
+                const data = await resilientStorage.loadData();
+
+                if (data.vials.length === 0) {
+                    output.innerHTML = '<span class="status info">ℹ️ No vials to delete</span>';
+                    return;
+                }
+
+                const vialId = data.vials[0].vial_id;
+
+                try {
+                    const result = deleteManager.deleteVial(data.vials, vialId, data.injections);
+                    data.vials = result.vials;
+                    await resilientStorage.saveData(data);
+
+                    output.innerHTML = `<span class="status success">✅ Vial Deleted</span>\n\nRemaining: ${data.vials.length} vial(s)`;
+                } catch (error) {
+                    output.innerHTML = `<span class="status error">⚠️ ${error.message}</span>\n\nUse forceDeleteVial() to delete with injections.`;
+                }
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testDeleteWeight = async () => {
+            const output = document.getElementById('delete-output');
+            try {
+                const data = await resilientStorage.loadData();
+
+                if (data.weights.length === 0) {
+                    output.innerHTML = '<span class="status info">ℹ️ No weights to delete</span>';
+                    return;
+                }
+
+                const timestamp = data.weights[0].timestamp;
+                const result = deleteManager.deleteWeight(data.weights, timestamp);
+
+                data.weights = result.weights;
+                await resilientStorage.saveData(data);
+
+                output.innerHTML = `
+<span class="status success">✅ Weight Deleted</span>
+
+Deleted: ${result.deleted.weight_kg} kg
+Date: ${new Date(result.deleted.timestamp).toLocaleString()}
+Remaining: ${data.weights.length} weight(s)
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.undoLastDelete = async () => {
+            const output = document.getElementById('delete-output');
+            try {
+                if (!deleteManager.canUndo()) {
+                    output.innerHTML = '<span class="status info">ℹ️ Nothing to undo</span>';
+                    return;
+                }
+
+                const lastOp = deleteManager.getLastOperation();
+                const data = await resilientStorage.loadData();
+                const restored = deleteManager.undoLastDelete(data);
+
+                await resilientStorage.saveData(restored);
+
+                output.innerHTML = `
+<span class="status success">✅ Delete Undone</span>
+
+Operation: ${lastOp.type}
+Action: ${lastOp.action}
+Time: ${lastOp.date}
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.syncStorage = async () => {
+            const output = document.getElementById('recovery-output');
+            try {
+                await resilientStorage.syncStorageLayers();
+                output.innerHTML = '<span class="status success">✅ Storage layers synced</span>';
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.testRestore = () => {
+            const output = document.getElementById('recovery-output');
+            try {
+                const backups = backupManager.listBackups();
+
+                if (backups.length === 0) {
+                    output.innerHTML = '<span class="status info">ℹ️ No backups to restore</span>';
+                    return;
+                }
+
+                const latest = backups[0];
+                output.innerHTML = `
+<span class="status info">📦 Latest Backup Available</span>
+
+Type: ${latest.type}
+Date: ${new Date(latest.date).toLocaleString()}
+Label: ${latest.label}
+Key: ${latest.key}
+
+To restore, run:
+backupManager.restoreBackup('${latest.key}')
+                `;
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        window.clearAllData = async () => {
+            if (!confirm('Are you sure? This will clear ALL data (but backups will remain)')) {
+                return;
+            }
+
+            const output = document.getElementById('recovery-output');
+            try {
+                await resilientStorage.clearData();
+                output.innerHTML = '<span class="status success">✅ All data cleared</span>\n\nRefresh to create new test data.';
+            } catch (error) {
+                output.innerHTML = `<span class="status error">❌ Error: ${error.message}</span>`;
+            }
+        };
+
+        console.log('Test page ready! Use the buttons to test features.');
+    </script>
+</body>
+</html>
