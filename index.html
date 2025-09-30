@@ -1934,6 +1934,12 @@
                     const lastBackup = stats.lastBackup !== 'Never' ?
                         new Date(stats.lastBackup).toLocaleString() : 'Never';
                     document.getElementById('last-backup').textContent = lastBackup;
+                } else {
+                    // Backup manager not ready yet
+                    document.getElementById('backup-count').textContent = '0';
+                    document.getElementById('auto-backup-count').textContent = '0';
+                    document.getElementById('manual-backup-count').textContent = '0';
+                    document.getElementById('last-backup').textContent = 'Initializing...';
                 }
             }
 
@@ -4442,6 +4448,9 @@
             // Initialize backup system
             backupManager = new ResilientBackupManager();
             await backupManager.initialize();
+
+            // Update backup stats now that backup manager is ready
+            app.updateSettingsTab();
 
             // Initialize delete functionality
             deleteManager = new SimpleDeleteManager();
