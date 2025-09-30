@@ -2371,7 +2371,11 @@
                 }
 
                 this.addInjection(injection);
-                this.closeModal();
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
             }
 
             handleAddVial() {
@@ -2407,7 +2411,11 @@
                 this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
                 this.saveData();
                 this.updateUI();
-                this.closeModal();
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
             }
 
             handleActivateVial() {
@@ -2440,7 +2448,11 @@
 
                 this.saveData();
                 this.updateUI();
-                this.closeModal();
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
             }
 
             handleAddWeight() {
@@ -2453,7 +2465,11 @@
                 };
 
                 this.addWeight(weight);
-                this.closeModal();
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
             }
 
             createShotListItem(injection) {
