@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delete - Desktop Friendly</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-bg: #0a0a0a;
+            --secondary-bg: #1a1a1a;
+            --card-bg: #2a2a2a;
+            --border-color: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #cccccc;
+            --accent-color: #007AFF;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-bottom: 100px;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-secondary);
+        }
+
+        /* Item styling */
+        .item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            background: var(--card-bg);
+            margin-bottom: 1px;
+            transition: background 0.2s;
+        }
+
+        .item:first-child {
+            border-radius: 12px 12px 0 0;
+        }
+
+        .item:last-child {
+            border-radius: 0 0 12px 12px;
+            margin-bottom: 0;
+        }
+
+        .item:only-child {
+            border-radius: 12px;
+        }
+
+        .item:hover {
+            background: #333;
+        }
+
+        .item-info {
+            flex: 1;
+        }
+
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+        }
+
+        .item-date {
+            font-weight: 600;
+            font-size: 15px;
+        }
+
+        .item-value {
+            font-size: 18px;
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .item-details {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .item-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-active {
+            background: rgba(52, 199, 89, 0.2);
+            color: #34C759;
+        }
+
+        .badge-empty {
+            background: rgba(255, 59, 48, 0.2);
+            color: #FF3B30;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+            background: var(--card-bg);
+            border-radius: 12px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Stats */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--accent-color);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Info box */
+        .info-box {
+            background: rgba(0, 122, 255, 0.1);
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-box-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .info-box li {
+            padding: 6px 0;
+            padding-left: 24px;
+            position: relative;
+        }
+
+        .info-box li:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>🗑️ Delete with Visible Buttons</h1>
+    <p class="subtitle">Works perfectly on desktop! Just click the delete button.</p>
+
+    <div class="info-box">
+        <div class="info-box-title">
+            <span>✨</span>
+            <span>How to Use:</span>
+        </div>
+        <ul>
+            <li>Click any delete button to remove an item</li>
+            <li>Confirm the deletion in the dialog</li>
+            <li>Watch the smooth animation</li>
+            <li>Use the undo button if you make a mistake</li>
+            <li>Can undo last 20 deletions!</li>
+        </ul>
+    </div>
+
+    <!-- Injections Section -->
+    <div class="section">
+        <div class="section-title">💉 Recent Injections</div>
+        <div id="injections-list"></div>
+    </div>
+
+    <!-- Vials Section -->
+    <div class="section">
+        <div class="section-title">🧪 Vials</div>
+        <div id="vials-list"></div>
+    </div>
+
+    <!-- Weights Section -->
+    <div class="section">
+        <div class="section-title">⚖️ Weight History</div>
+        <div id="weights-list"></div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats">
+        <div class="stat-card">
+            <div class="stat-value" id="stat-injections">0</div>
+            <div class="stat-label">Injections</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-vials">0</div>
+            <div class="stat-label">Vials</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="stat-weights">0</div>
+            <div class="stat-label">Weights</div>
+        </div>
+    </div>
+
+    <script type="module">
+        import simpleDeleteManager from './src/ui/simple-delete.js';
+        import resilientStorage from './src/core/resilient-storage.js';
+        import notificationManager from './src/ui/notification-system.js';
+
+        // Initialize
+        await resilientStorage.initialize();
+        notificationManager.initialize();
+
+        // Create test data if none exists
+        let data = await resilientStorage.loadData();
+        if (!data || !data.injections || data.injections.length === 0) {
+            data = createTestData();
+            await resilientStorage.saveData(data);
+        }
+
+        // Render all lists
+        renderInjections();
+        renderVials();
+        renderWeights();
+        updateStats();
+
+        /**
+         * Render injections list
+         */
+        function renderInjections() {
+            const container = document.getElementById('injections-list');
+            const injections = data.injections || [];
+
+            if (injections.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">💉</div>
+                        <div>No injections yet</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Sort by date (newest first)
+            const sorted = [...injections].sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+
+            // Render items
+            container.innerHTML = sorted.map(inj => {
+                const date = new Date(inj.timestamp);
+                return `
+                    <div class="delete-item-container" data-id="${inj.id}">
+                        <div class="item">
+                            <div class="item-info">
+                                <div class="item-header">
+                                    <div class="item-date">${date.toLocaleDateString()}</div>
+                                    <div class="item-value">${inj.dose_mg} mg</div>
+                                </div>
+                                <div class="item-details">
+                                    ${inj.injection_site.replace(/_/g, ' ')}
+                                    ${inj.notes ? ` • ${inj.notes}` : ''}
+                                </div>
+                            </div>
+                            <button class="delete-btn">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Enable delete
+            simpleDeleteManager.enableDelete('.delete-item-container', {
+                itemType: 'injection',
+                onDelete: () => {
+                    setTimeout(async () => {
+                        data = await resilientStorage.loadData();
+                        renderInjections();
+                        updateStats();
+                    }, 500);
+                }
+            });
+        }
+
+        /**
+         * Render vials list
+         */
+        function renderVials() {
+            const container = document.getElementById('vials-list');
+            const vials = data.vials || [];
+
+            if (vials.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">🧪</div>
+                        <div>No vials yet</div>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = vials.map(vial => {
+                const remainingMg = (vial.remaining_ml * vial.concentration_mg_ml).toFixed(1);
+                return `
+                    <div class="delete-item-container" data-id="${vial.vial_id}">
+                        <div class="item">
+                            <div class="item-info">
+                                <div class="item-header">
+                                    <div class="item-date">${vial.supplier || 'Vial'}</div>
+                                    <div class="item-badge ${vial.status === 'active' ? 'badge-active' : 'badge-empty'}">
+                                        ${vial.status}
+                                    </div>
+                                </div>
+                                <div class="item-details">
+                                    ${vial.total_mg}mg total • ${remainingMg}mg remaining • ${vial.doses_used} doses used
+                                </div>
+                            </div>
+                            <button class="delete-btn">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            simpleDeleteManager.enableDelete('.delete-item-container', {
+                itemType: 'vial',
+                onDelete: () => {
+                    setTimeout(async () => {
+                        data = await resilientStorage.loadData();
+                        renderVials();
+                        updateStats();
+                    }, 500);
+                }
+            });
+        }
+
+        /**
+         * Render weights list
+         */
+        function renderWeights() {
+            const container = document.getElementById('weights-list');
+            const weights = data.weights || [];
+
+            if (weights.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">⚖️</div>
+                        <div>No weight entries yet</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const sorted = [...weights].sort((a, b) =>
+                new Date(b.timestamp) - new Date(a.timestamp)
+            );
+
+            container.innerHTML = sorted.map(weight => {
+                const date = new Date(weight.timestamp);
+                return `
+                    <div class="delete-item-container" data-id="${weight.timestamp}" data-timestamp="${weight.timestamp}">
+                        <div class="item">
+                            <div class="item-info">
+                                <div class="item-header">
+                                    <div class="item-date">${date.toLocaleDateString()}</div>
+                                    <div class="item-value">${weight.weight_kg} kg</div>
+                                </div>
+                                <div class="item-details">
+                                    ${weight.weight_lbs?.toFixed(1)} lbs
+                                    ${weight.bmi ? ` • BMI: ${weight.bmi.toFixed(1)}` : ''}
+                                </div>
+                            </div>
+                            <button class="delete-btn">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            simpleDeleteManager.enableDelete('.delete-item-container', {
+                itemType: 'weight',
+                onDelete: () => {
+                    setTimeout(async () => {
+                        data = await resilientStorage.loadData();
+                        renderWeights();
+                        updateStats();
+                    }, 500);
+                }
+            });
+        }
+
+        /**
+         * Update stats
+         */
+        async function updateStats() {
+            document.getElementById('stat-injections').textContent = data.injections?.length || 0;
+            document.getElementById('stat-vials').textContent = data.vials?.length || 0;
+            document.getElementById('stat-weights').textContent = data.weights?.length || 0;
+        }
+
+        /**
+         * Create test data
+         */
+        function createTestData() {
+            const now = new Date();
+
+            return {
+                version: '1.1.0',
+                vials: [
+                    {
+                        vial_id: 'test_vial_1',
+                        order_date: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                        supplier: 'Test Supplier A',
+                        lot_number: 'LOT001',
+                        total_mg: 100,
+                        bac_water_ml: 2,
+                        concentration_mg_ml: 50,
+                        reconstitution_date: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        expiration_date: new Date(now.getTime() + 21 * 24 * 60 * 60 * 1000).toISOString(),
+                        remaining_ml: 1.5,
+                        doses_used: 2,
+                        status: 'active'
+                    },
+                    {
+                        vial_id: 'test_vial_2',
+                        order_date: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+                        supplier: 'Test Supplier B',
+                        lot_number: 'LOT002',
+                        total_mg: 50,
+                        bac_water_ml: 1,
+                        concentration_mg_ml: 50,
+                        reconstitution_date: new Date(now.getTime() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+                        expiration_date: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        remaining_ml: 0,
+                        doses_used: 5,
+                        status: 'empty'
+                    }
+                ],
+                injections: [
+                    {
+                        id: 'inj_1',
+                        timestamp: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+                        dose_mg: 2,
+                        injection_site: 'left_thigh',
+                        vial_id: 'test_vial_1',
+                        notes: 'First injection',
+                        medication_level_at_injection: 0
+                    },
+                    {
+                        id: 'inj_2',
+                        timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        dose_mg: 2.5,
+                        injection_site: 'right_thigh',
+                        vial_id: 'test_vial_1',
+                        notes: '',
+                        medication_level_at_injection: 1.5
+                    },
+                    {
+                        id: 'inj_3',
+                        timestamp: now.toISOString(),
+                        dose_mg: 3,
+                        injection_site: 'left_abdomen',
+                        vial_id: 'test_vial_1',
+                        notes: 'Latest injection',
+                        medication_level_at_injection: 2
+                    }
+                ],
+                weights: [
+                    {
+                        timestamp: new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000).toISOString(),
+                        weight_kg: 82,
+                        weight_lbs: 180.8,
+                        source: 'manual',
+                        bmi: 26.1,
+                        body_fat_percentage: null
+                    },
+                    {
+                        timestamp: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+                        weight_kg: 81.5,
+                        weight_lbs: 179.7,
+                        source: 'manual',
+                        bmi: 25.9,
+                        body_fat_percentage: null
+                    },
+                    {
+                        timestamp: now.toISOString(),
+                        weight_kg: 80.8,
+                        weight_lbs: 178.1,
+                        source: 'manual',
+                        bmi: 25.7,
+                        body_fat_percentage: null
+                    }
+                ],
+                settings: {}
+            };
+        }
+    </script>
+</body>
+</html>

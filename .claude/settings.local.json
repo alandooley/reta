@@ -26,7 +26,8 @@
       "Bash(mkdir:*)",
       "Bash(test:*)",
       "Bash(cat:*)",
-      "Bash(start swipe-to-delete-example.html)"
+      "Bash(start swipe-to-delete-example.html)",
+      "Bash(start delete-example-desktop.html)"
     ],
     "deny": [],
     "ask": []
