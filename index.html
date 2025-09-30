@@ -422,10 +422,19 @@
             border-radius: var(--border-radius);
             padding: var(--spacing-lg);
             transition: background-color 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing-md);
+            position: relative;
         }
 
         .shot-item:hover {
             background-color: #353535;
+        }
+
+        .shot-content {
+            flex: 1;
         }
 
         .shot-header {
@@ -499,6 +508,15 @@
             border: 1px solid var(--border-color);
             border-radius: var(--border-radius);
             padding: var(--spacing-lg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: var(--spacing-md);
+            position: relative;
+        }
+
+        .vial-content {
+            flex: 1;
         }
 
         .vial-header {
@@ -543,6 +561,40 @@
 
         .vial-item.dry_stock {
             border-left: 4px solid var(--warning-color);
+        }
+
+        /* Delete Button Styles */
+        .delete-btn {
+            background-color: transparent;
+            border: 2px solid var(--danger-color);
+            color: var(--danger-color);
+            border-radius: var(--border-radius-sm);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+        }
+
+        .delete-btn:hover {
+            background-color: var(--danger-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .delete-btn:active {
+            transform: scale(0.95);
+        }
+
+        .delete-btn svg {
+            width: 20px;
+            height: 20px;
         }
 
         .vial-info {
@@ -895,6 +947,154 @@
             animation: pulse 2s infinite;
         }
 
+        /* Notification System */
+        #notification-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+
+        .notification {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            animation: slideInRight 0.3s ease-out;
+            min-width: 300px;
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success-color);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--danger-color);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .notification.info {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .notification.saving {
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .notification-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-primary);
+        }
+
+        .notification-message {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .notification-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 20px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .notification-close:hover {
+            color: var(--text-primary);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.hiding {
+            animation: slideOutRight 0.3s ease-in forwards;
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+        }
+
+        /* Undo Button */
+        #undo-button {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            z-index: 9999;
+            display: none;
+        }
+
+        #undo-button:hover {
+            background-color: #0066CC;
+        }
+
+        #undo-button.show {
+            display: block;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
         /* Utility Classes */
         .text-center { text-align: center; }
         .text-left { text-align: left; }
@@ -911,6 +1111,12 @@
     </style>
 </head>
 <body>
+    <!-- Notification Container -->
+    <div id="notification-container"></div>
+
+    <!-- Undo Button -->
+    <button id="undo-button">↶ Undo Delete</button>
+
     <!-- Header -->
     <header id="app-header">
         <div class="header-content">
@@ -2092,15 +2298,25 @@
             createShotListItem(injection) {
                 const div = document.createElement('div');
                 div.className = 'shot-item';
+                div.setAttribute('data-item-id', injection.id);
+                div.setAttribute('data-timestamp', injection.timestamp);
                 div.innerHTML = `
-                    <div class="shot-header">
-                        <div class="shot-dose">${injection.dose_mg} mg</div>
-                        <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+                    <div class="shot-content">
+                        <div class="shot-header">
+                            <div class="shot-dose">${injection.dose_mg} mg</div>
+                            <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+                        </div>
+                        <div class="shot-details">
+                            <div>Site: ${injection.injection_site}</div>
+                            <div>Weight: ${injection.weight_kg ? injection.weight_kg + ' kg' : 'N/A'}</div>
+                        </div>
                     </div>
-                    <div class="shot-details">
-                        <div>Site: ${injection.injection_site}</div>
-                        <div>Weight: ${injection.weight_kg ? injection.weight_kg + ' kg' : 'N/A'}</div>
-                    </div>
+                    <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                            <path d="M10 11v6M14 11v6"/>
+                        </svg>
+                    </button>
                 `;
                 return div;
             }
@@ -2108,27 +2324,37 @@
             createVialListItem(vial) {
                 const div = document.createElement('div');
                 div.className = `vial-item ${vial.status}`;
+                div.setAttribute('data-item-id', vial.vial_id);
+                div.setAttribute('data-timestamp', vial.order_date);
 
                 if (vial.status === 'dry_stock') {
                     div.innerHTML = `
-                        <div class="vial-header">
-                            <div class="vial-info">
-                                <div class="vial-title">${vial.total_mg}mg Vial</div>
-                                <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
-                                <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
+                        <div class="vial-content">
+                            <div class="vial-header">
+                                <div class="vial-info">
+                                    <div class="vial-title">${vial.total_mg}mg Vial</div>
+                                    <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
+                                    <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
+                                </div>
+                                <div class="vial-status dry_stock">Dry Stock</div>
                             </div>
-                            <div class="vial-status dry_stock">Dry Stock</div>
+                            <div class="vial-details">
+                                <div class="vial-detail-row">
+                                    <span>Status:</span>
+                                    <span>Ready for activation with BAC water</span>
+                                </div>
+                                <div class="vial-detail-row">
+                                    <span>Powder Expires:</span>
+                                    <span>${this.formatDate(vial.expiration_date)}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="vial-details">
-                            <div class="vial-detail-row">
-                                <span>Status:</span>
-                                <span>Ready for activation with BAC water</span>
-                            </div>
-                            <div class="vial-detail-row">
-                                <span>Powder Expires:</span>
-                                <span>${this.formatDate(vial.expiration_date)}</span>
-                            </div>
-                        </div>
+                        <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                <path d="M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
                     `;
                     return div;
                 }
@@ -2159,45 +2385,53 @@
                 const remainingDoses = vial.concentration_mg_ml ? Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0) : 0;
 
                 div.innerHTML = `
-                    <div class="vial-header">
-                        <div class="vial-info">
-                            <div class="vial-title">${vial.total_mg}mg Vial</div>
-                            <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
-                            <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
+                    <div class="vial-content">
+                        <div class="vial-header">
+                            <div class="vial-info">
+                                <div class="vial-title">${vial.total_mg}mg Vial</div>
+                                <div class="vial-subtitle">${vial.supplier || 'Unknown Supplier'}</div>
+                                <div class="vial-subtitle">Ordered: ${this.formatDate(vial.order_date)}</div>
+                            </div>
+                            <div class="vial-status ${status}">${statusText}</div>
                         </div>
-                        <div class="vial-status ${status}">${statusText}</div>
+                        <div class="vial-details">
+                            ${vial.concentration_mg_ml ? `
+                            <div class="vial-detail-row">
+                                <span>Concentration:</span>
+                                <span>${vial.concentration_mg_ml.toFixed(1)} mg/ml</span>
+                            </div>
+                            <div class="vial-detail-row">
+                                <span>Remaining:</span>
+                                <span>${vial.remaining_ml.toFixed(2)} ml (${remainingDoses} doses)</span>
+                            </div>
+                            <div class="vial-detail-row">
+                                <span>Reconstituted:</span>
+                                <span>${this.formatDate(vial.reconstitution_date)}</span>
+                            </div>
+                            ` : `
+                            <div class="vial-detail-row">
+                                <span>Status:</span>
+                                <span>Ready for activation with BAC water</span>
+                            </div>
+                            `}
+                            <div class="vial-detail-row">
+                                <span>Expires:</span>
+                                <span>${this.formatDate(vial.expiration_date)}</span>
+                            </div>
+                            ${vial.concentration_mg_ml ? `
+                            <div class="vial-detail-row">
+                                <span>Doses Used:</span>
+                                <span>${vial.doses_used}</span>
+                            </div>
+                            ` : ''}
+                        </div>
                     </div>
-                    <div class="vial-details">
-                        ${vial.concentration_mg_ml ? `
-                        <div class="vial-detail-row">
-                            <span>Concentration:</span>
-                            <span>${vial.concentration_mg_ml.toFixed(1)} mg/ml</span>
-                        </div>
-                        <div class="vial-detail-row">
-                            <span>Remaining:</span>
-                            <span>${vial.remaining_ml.toFixed(2)} ml (${remainingDoses} doses)</span>
-                        </div>
-                        <div class="vial-detail-row">
-                            <span>Reconstituted:</span>
-                            <span>${this.formatDate(vial.reconstitution_date)}</span>
-                        </div>
-                        ` : `
-                        <div class="vial-detail-row">
-                            <span>Status:</span>
-                            <span>Ready for activation with BAC water</span>
-                        </div>
-                        `}
-                        <div class="vial-detail-row">
-                            <span>Expires:</span>
-                            <span>${this.formatDate(vial.expiration_date)}</span>
-                        </div>
-                        ${vial.concentration_mg_ml ? `
-                        <div class="vial-detail-row">
-                            <span>Doses Used:</span>
-                            <span>${vial.doses_used}</span>
-                        </div>
-                        ` : ''}
-                    </div>
+                    <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                            <path d="M10 11v6M14 11v6"/>
+                        </svg>
+                    </button>
                 `;
                 return div;
             }
@@ -3300,15 +3534,296 @@
         }
 
         // ====================================
+        // NOTIFICATION SYSTEM
+        // ====================================
+
+        class SimpleNotificationManager {
+            constructor() {
+                this.container = null;
+            }
+
+            initialize() {
+                this.container = document.getElementById('notification-container');
+            }
+
+            show(type, message) {
+                if (!this.container) this.initialize();
+
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+
+                const icons = {
+                    'success': '✓',
+                    'error': '✕',
+                    'warning': '⚠',
+                    'info': 'ℹ'
+                };
+
+                const titles = {
+                    'success': 'Success',
+                    'error': 'Error',
+                    'warning': 'Warning',
+                    'info': 'Info'
+                };
+
+                notification.innerHTML = `
+                    <div class="notification-icon">${icons[type] || 'ℹ'}</div>
+                    <div class="notification-content">
+                        <div class="notification-title">${titles[type] || 'Notification'}</div>
+                        <div class="notification-message">${message}</div>
+                    </div>
+                    <button class="notification-close" aria-label="Close">×</button>
+                `;
+
+                this.container.appendChild(notification);
+
+                const closeBtn = notification.querySelector('.notification-close');
+                closeBtn.onclick = () => this.hide(notification);
+
+                setTimeout(() => this.hide(notification), 3000);
+            }
+
+            hide(notification) {
+                notification.classList.add('hiding');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }
+
+            success(message) { this.show('success', message); }
+            error(message) { this.show('error', message); }
+            warning(message) { this.show('warning', message); }
+            info(message) { this.show('info', message); }
+        }
+
+        // ====================================
+        // DELETE MANAGER
+        // ====================================
+
+        class SimpleDeleteManager {
+            constructor() {
+                this.undoStack = [];
+                this.maxUndoStack = 20;
+                this.notificationManager = new SimpleNotificationManager();
+                this.undoButton = null;
+            }
+
+            initialize() {
+                this.notificationManager.initialize();
+                this.undoButton = document.getElementById('undo-button');
+
+                if (this.undoButton) {
+                    this.undoButton.onclick = () => this.undoLastDelete();
+                }
+            }
+
+            enableDeleteForShots() {
+                const setupDeleteButtons = () => {
+                    const shotItems = document.querySelectorAll('.shot-item');
+                    shotItems.forEach(item => {
+                        const deleteBtn = item.querySelector('.delete-btn');
+                        if (deleteBtn && !deleteBtn.dataset.initialized) {
+                            deleteBtn.dataset.initialized = 'true';
+                            deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteShot(item, itemId, timestamp);
+                            };
+                        }
+                    });
+                };
+
+                // Run immediately and after any UI update
+                setupDeleteButtons();
+                const observer = new MutationObserver(() => setupDeleteButtons());
+                observer.observe(document.getElementById('shots-list'), {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            enableDeleteForVials() {
+                const setupDeleteButtons = () => {
+                    const vialItems = document.querySelectorAll('.vial-item');
+                    vialItems.forEach(item => {
+                        const deleteBtn = item.querySelector('.delete-btn');
+                        if (deleteBtn && !deleteBtn.dataset.initialized) {
+                            deleteBtn.dataset.initialized = 'true';
+                            deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteVial(item, itemId, timestamp);
+                            };
+                        }
+                    });
+                };
+
+                setupDeleteButtons();
+                const observer = new MutationObserver(() => setupDeleteButtons());
+                observer.observe(document.getElementById('vials-list'), {
+                    childList: true,
+                    subtree: true
+                });
+            }
+
+            async handleDeleteShot(element, shotId, timestamp) {
+                if (!confirm('Delete this injection?')) {
+                    return;
+                }
+
+                // Find and delete the injection
+                const index = app.data.injections.findIndex(inj => inj.id === shotId);
+                if (index === -1) {
+                    this.notificationManager.error('Injection not found');
+                    return;
+                }
+
+                const deletedInjection = app.data.injections[index];
+
+                // Add to undo stack
+                this.undoStack.push({
+                    type: 'injection',
+                    data: deletedInjection,
+                    index: index,
+                    timestamp: Date.now()
+                });
+
+                if (this.undoStack.length > this.maxUndoStack) {
+                    this.undoStack.shift();
+                }
+
+                // Remove from app data
+                app.data.injections.splice(index, 1);
+
+                // Save and update UI
+                app.saveData();
+                app.updateUI();
+
+                // Animate out
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(100px)';
+                setTimeout(() => {
+                    if (element.parentNode) {
+                        element.remove();
+                    }
+                }, 300);
+
+                this.notificationManager.success('Injection deleted');
+                this.showUndoButton();
+            }
+
+            async handleDeleteVial(element, vialId, timestamp) {
+                // Check if vial has been used for any injections
+                const hasInjections = app.data.injections.some(inj => inj.vial_id === vialId);
+
+                if (hasInjections) {
+                    if (!confirm('This vial has been used for injections. Delete anyway? (Injections will remain)')) {
+                        return;
+                    }
+                }
+
+                if (!hasInjections && !confirm('Delete this vial?')) {
+                    return;
+                }
+
+                const index = app.data.vials.findIndex(v => v.vial_id === vialId);
+                if (index === -1) {
+                    this.notificationManager.error('Vial not found');
+                    return;
+                }
+
+                const deletedVial = app.data.vials[index];
+
+                // Add to undo stack
+                this.undoStack.push({
+                    type: 'vial',
+                    data: deletedVial,
+                    index: index,
+                    timestamp: Date.now()
+                });
+
+                if (this.undoStack.length > this.maxUndoStack) {
+                    this.undoStack.shift();
+                }
+
+                // Remove from app data
+                app.data.vials.splice(index, 1);
+
+                // Save and update UI
+                app.saveData();
+                app.updateUI();
+
+                // Animate out
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(100px)';
+                setTimeout(() => {
+                    if (element.parentNode) {
+                        element.remove();
+                    }
+                }, 300);
+
+                this.notificationManager.success('Vial deleted');
+                this.showUndoButton();
+            }
+
+            showUndoButton() {
+                if (this.undoButton) {
+                    this.undoButton.classList.add('show');
+                    setTimeout(() => {
+                        this.undoButton.classList.remove('show');
+                    }, 5000);
+                }
+            }
+
+            undoLastDelete() {
+                if (this.undoStack.length === 0) {
+                    this.notificationManager.warning('Nothing to undo');
+                    return;
+                }
+
+                const operation = this.undoStack.pop();
+
+                switch (operation.type) {
+                    case 'injection':
+                        app.data.injections.splice(operation.index, 0, operation.data);
+                        break;
+                    case 'vial':
+                        app.data.vials.splice(operation.index, 0, operation.data);
+                        break;
+                }
+
+                app.saveData();
+                app.updateUI();
+
+                this.notificationManager.success(`${operation.type === 'injection' ? 'Injection' : 'Vial'} restored`);
+
+                if (this.undoButton) {
+                    this.undoButton.classList.remove('show');
+                }
+            }
+        }
+
+        // ====================================
         // INITIALIZE APPLICATION
         // ====================================
 
         let app;
+        let deleteManager;
 
         document.addEventListener('DOMContentLoaded', function() {
             app = new InjectionTracker();
             app.registerServiceWorker();
             app.requestNotificationPermission();
+
+            // Initialize delete functionality
+            deleteManager = new SimpleDeleteManager();
+            deleteManager.initialize();
+            deleteManager.enableDeleteForShots();
+            deleteManager.enableDeleteForVials();
 
             // Handle URL parameters for PWA shortcuts
             const urlParams = new URLSearchParams(window.location.search);
