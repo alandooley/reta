@@ -20,7 +20,12 @@
       "Bash(findstr:*)",
       "Bash(taskkill:*)",
       "Bash(start index.html)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(timeout 60 bash -c \"while true; do echo ''Waiting for GitHub Pages deployment...''; sleep 10; done\")",
+      "Bash(dir)",
+      "Bash(mkdir:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)"
     ],
     "deny": [],
     "ask": []

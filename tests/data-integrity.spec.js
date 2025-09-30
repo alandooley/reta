@@ -17,7 +17,9 @@ test.describe('Data Integrity Verification', () => {
     await page.evaluate(() => localStorage.clear());
     await page.reload();
     await page.waitForLoadState('domcontentloaded');
-    await page.waitForTimeout(2000);
+    await page.waitForLoadState('networkidle');
+    // Wait for app to be ready
+    await page.waitForSelector('#app-header', { state: 'visible' });
   });
 
   test('verify home page values after importing data', async ({ page }) => {
@@ -50,7 +52,7 @@ test.describe('Data Integrity Verification', () => {
 
     // Import the data
     await page.click('[data-tab="settings"]');
-    await page.waitForSelector('#import-data-btn');
+    await page.waitForSelector('#import-data-btn', { state: 'visible' });
 
     // Set up dialog handler before clicking
     page.on('dialog', dialog => dialog.accept());
@@ -62,12 +64,15 @@ test.describe('Data Integrity Verification', () => {
     const fileInput = await page.locator('input[type="file"]');
     await fileInput.setInputFiles(path.join(__dirname, '..', 'retatrutide_import_data.json'));
 
-    // Wait for import to complete
-    await page.waitForTimeout(2000);
+    // Wait for import to complete - wait for localStorage to be updated
+    await page.waitForFunction(() => {
+      const data = localStorage.getItem('retatrutide_data');
+      return data && JSON.parse(data).injections.length > 0;
+    }, { timeout: 5000 });
 
     // Go back to summary tab
     await page.click('[data-tab="summary"]');
-    await page.waitForTimeout(1000);
+    await page.waitForSelector('#total-shots:not(:empty)', { state: 'visible' });
 
     console.log('=== CHECKING DISPLAYED VALUES ===');
 
@@ -105,19 +110,11 @@ test.describe('Data Integrity Verification', () => {
 
     console.log(`Days until next shot - Expected: ${daysDiff}, Displayed day: ${displayedNextShotDay}`);
 
-    // More lenient assertions - just log the differences for now
-    if (totalShots !== importData.injections.length.toString()) {
-      console.log(`❌ Total Shots mismatch: expected ${importData.injections.length}, got ${totalShots}`);
-    }
-    if (lastDose !== `${lastInjection.dose_mg} mg`) {
-      console.log(`❌ Last Dose mismatch: expected ${lastInjection.dose_mg} mg, got ${lastDose}`);
-    }
-    if (currentLevel !== `${lastInjection.medication_level_at_injection}.0 mg`) {
-      console.log(`❌ Level at Last Shot mismatch: expected ${lastInjection.medication_level_at_injection}.0 mg, got ${currentLevel}`);
-    }
-    if (totalSupply !== `${totalSupplyMg}.0 mg`) {
-      console.log(`❌ Total Supply mismatch: expected ${totalSupplyMg}.0 mg, got ${totalSupply}`);
-    }
+    // Actual assertions - tests will fail if data doesn't match
+    expect(totalShots, 'Total shots should match injection count').toBe(importData.injections.length.toString());
+    expect(lastDose, 'Last dose should match most recent injection').toBe(`${lastInjection.dose_mg} mg`);
+    expect(currentLevel, 'Current level should match medication level at last injection').toBe(`${lastInjection.medication_level_at_injection}.0 mg`);
+    expect(totalSupply, 'Total supply should match sum of vial remaining medication').toBe(`${totalSupplyMg}.0 mg`);
 
     // Log data integrity issues
     console.log('=== DATA INTEGRITY ANALYSIS ===');

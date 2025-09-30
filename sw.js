@@ -1,12 +1,16 @@
 // Service Worker for Injection Tracker PWA
-const CACHE_NAME = 'injection-tracker-v1';
-const urlsToCache = [
+const VERSION = '1.1.0';
+const CACHE_NAME = `injection-tracker-v${VERSION}`;
+const CACHE_ASSETS = [
   './',
   './index.html',
-  './manifest.json',
+  './manifest.json'
+];
+const CDN_ASSETS = [
   'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js',
   'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js'
 ];
+const urlsToCache = [...CACHE_ASSETS, ...CDN_ASSETS];
 
 // Install event - cache resources
 self.addEventListener('install', event => {
@@ -34,21 +38,62 @@ self.addEventListener('install', event => {
   );
 });
 
-// Fetch event - serve from cache when offline
+// Fetch event - serve from cache when offline with network-first strategy for API calls
 self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Network-first for API calls and dynamic content
+  if (url.pathname.includes('/api/') || request.method !== 'GET') {
+    event.respondWith(
+      fetch(request)
+        .then(response => {
+          // Clone and cache successful responses
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then(cache => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => caches.match(request))
+    );
+    return;
+  }
+
+  // Cache-first for static assets
   event.respondWith(
-    caches.match(event.request)
+    caches.match(request)
       .then(response => {
-        // Return cached version or fetch from network
         if (response) {
+          // Update cache in background
+          fetch(request).then(freshResponse => {
+            if (freshResponse.ok) {
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(request, freshResponse);
+              });
+            }
+          }).catch(() => {});
           return response;
         }
-        return fetch(event.request);
+
+        // Fetch from network
+        return fetch(request)
+          .then(response => {
+            if (response.ok) {
+              const responseClone = response.clone();
+              caches.open(CACHE_NAME).then(cache => {
+                cache.put(request, responseClone);
+              });
+            }
+            return response;
+          });
       })
       .catch(error => {
         console.error('Fetch failed:', error);
-        // Return a custom offline page or fallback
-        if (event.request.destination === 'document') {
+        // Return offline fallback for documents
+        if (request.destination === 'document') {
           return caches.match('/index.html');
         }
       })
@@ -57,17 +102,23 @@ self.addEventListener('fetch', event => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', event => {
+  console.log(`Service Worker ${VERSION} activated`);
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    Promise.all([
+      // Clean up old caches
+      caches.keys().then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      }),
+      // Take control of all clients immediately
+      self.clients.claim()
+    ])
   );
 });
 
