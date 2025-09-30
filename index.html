@@ -1095,6 +1095,29 @@
             }
         }
 
+        /* Save Indicator Animations */
+        @keyframes fadeInScale {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.8);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+        }
+
+        @keyframes fadeOutScale {
+            from {
+                opacity: 1;
+                transform: translateX(-50%) scale(1);
+            }
+            to {
+                opacity: 0;
+                transform: translateX(-50%) scale(0.8);
+            }
+        }
+
         /* Utility Classes */
         .text-center { text-align: center; }
         .text-left { text-align: left; }
@@ -1116,6 +1139,11 @@
 
     <!-- Undo Button -->
     <button id="undo-button">↶ Undo Delete</button>
+
+    <!-- Save Indicator -->
+    <div id="save-indicator" style="position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background-color: #34C759; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: none; z-index: 10001; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);">
+        ✓ Saved
+    </div>
 
     <!-- Header -->
     <header id="app-header">
@@ -1602,8 +1630,25 @@
             async saveData() {
                 try {
                     localStorage.setItem('injection_data', JSON.stringify(this.data));
+                    this.showSaveIndicator();
                 } catch (error) {
                     console.error('Error saving data:', error);
+                }
+            }
+
+            showSaveIndicator() {
+                const indicator = document.getElementById('save-indicator');
+                if (indicator) {
+                    indicator.style.display = 'block';
+                    indicator.style.animation = 'fadeInScale 0.2s ease-out';
+
+                    clearTimeout(this.saveIndicatorTimeout);
+                    this.saveIndicatorTimeout = setTimeout(() => {
+                        indicator.style.animation = 'fadeOutScale 0.2s ease-in';
+                        setTimeout(() => {
+                            indicator.style.display = 'none';
+                        }, 200);
+                    }, 1500);
                 }
             }
 
