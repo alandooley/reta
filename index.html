@@ -1350,6 +1350,32 @@
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
                     <button id="import-data-btn" class="btn-secondary">Import Data</button>
                 </div>
+                <div class="settings-section">
+                    <h3>Automatic Backups</h3>
+                    <div class="backup-info" style="margin-bottom: 16px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Total Backups:</span>
+                            <span id="backup-count">Loading...</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Auto Backups:</span>
+                            <span id="auto-backup-count">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Manual Backups:</span>
+                            <span id="manual-backup-count">-</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Last Backup:</span>
+                            <span id="last-backup">-</span>
+                        </div>
+                    </div>
+                    <button id="create-backup-btn" class="btn-primary" style="margin-bottom: 8px;">Create Manual Backup</button>
+                    <button id="restore-backup-btn" class="btn-secondary">Restore from Backup</button>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        ℹ️ Auto-backups run every 5 minutes. Last 10 are kept. Data is also stored in IndexedDB for extra protection.
+                    </p>
+                </div>
             </div>
         </div>
     </main>
@@ -1629,7 +1655,12 @@
 
             async saveData() {
                 try {
-                    localStorage.setItem('injection_data', JSON.stringify(this.data));
+                    if (window.backupManager) {
+                        await backupManager.saveData(this.data);
+                    } else {
+                        // Fallback to simple localStorage if backup manager not ready
+                        localStorage.setItem('injection_data', JSON.stringify(this.data));
+                    }
                     this.showSaveIndicator();
                 } catch (error) {
                     console.error('Error saving data:', error);
@@ -1893,6 +1924,17 @@
             updateSettingsTab() {
                 document.getElementById('injection-frequency').value = this.data.settings.injectionFrequency;
                 document.getElementById('enable-notifications').checked = this.data.settings.notifications;
+
+                // Update backup stats
+                if (window.backupManager) {
+                    const stats = backupManager.getBackupStats();
+                    document.getElementById('backup-count').textContent = stats.total;
+                    document.getElementById('auto-backup-count').textContent = stats.auto;
+                    document.getElementById('manual-backup-count').textContent = stats.manual;
+                    const lastBackup = stats.lastBackup !== 'Never' ?
+                        new Date(stats.lastBackup).toLocaleString() : 'Never';
+                    document.getElementById('last-backup').textContent = lastBackup;
+                }
             }
 
             calculateNextShotDays() {
@@ -2069,6 +2111,16 @@
                 document.getElementById('test-notification-btn').addEventListener('click', () => {
                     this.testNotification();
                 });
+
+                // Create manual backup
+                document.getElementById('create-backup-btn').addEventListener('click', () => {
+                    this.createManualBackup();
+                });
+
+                // Restore from backup
+                document.getElementById('restore-backup-btn').addEventListener('click', () => {
+                    this.restoreFromBackup();
+                });
             }
 
             // ====================================
@@ -2157,6 +2209,66 @@
                 };
 
                 input.click();
+            }
+
+            createManualBackup() {
+                try {
+                    const label = prompt('Enter a label for this backup (optional):', 'Manual backup ' + new Date().toLocaleString());
+                    if (label === null) return; // User cancelled
+
+                    backupManager.createManualBackup(this.data, label);
+                    this.updateSettingsTab();
+                    alert('Backup created successfully!\n\n' + label);
+                } catch (error) {
+                    console.error('Failed to create backup:', error);
+                    alert('Failed to create backup: ' + error.message);
+                }
+            }
+
+            restoreFromBackup() {
+                try {
+                    const backups = backupManager.listBackups();
+
+                    if (backups.length === 0) {
+                        alert('No backups available');
+                        return;
+                    }
+
+                    // Build selection list
+                    let message = 'Select a backup to restore:\n\n';
+                    backups.forEach((backup, index) => {
+                        const date = new Date(backup.date).toLocaleString();
+                        const type = backup.type === 'auto' ? '🤖 Auto' : '👤 Manual';
+                        message += `${index + 1}. ${type} - ${backup.label || date}\n`;
+                        message += `   ${backup.injections} injections, ${backup.vials} vials, ${backup.weights} weights\n\n`;
+                    });
+
+                    const selection = prompt(message + '\nEnter the number of the backup to restore:');
+
+                    if (!selection) return; // User cancelled
+
+                    const index = parseInt(selection) - 1;
+                    if (isNaN(index) || index < 0 || index >= backups.length) {
+                        alert('Invalid selection');
+                        return;
+                    }
+
+                    const backup = backups[index];
+
+                    if (!confirm(`Restore backup from ${new Date(backup.date).toLocaleString()}?\n\nThis will replace your current data.`)) {
+                        return;
+                    }
+
+                    const restoredData = backupManager.restoreBackup(backup.key);
+                    this.data = restoredData;
+                    this.saveData();
+                    this.updateUI();
+
+                    alert('Backup restored successfully!');
+                } catch (error) {
+                    console.error('Failed to restore backup:', error);
+                    alert('Failed to restore backup: ' + error.message);
+                }
             }
 
             openModal(modalId) {
@@ -3981,16 +4093,339 @@
         }
 
         // ====================================
+        // RESILIENT BACKUP SYSTEM
+        // ====================================
+
+        class ResilientBackupManager {
+            constructor() {
+                this.storageKey = 'injection_data';
+                this.backupPrefix = 'injection_backup_';
+                this.autoBackupPrefix = 'injection_auto_';
+                this.maxAutoBackups = 10;
+                this.autoBackupInterval = 5 * 60 * 1000; // 5 minutes
+                this.lastBackupTime = null;
+                this.dbName = 'RetatrutideDB';
+                this.dbVersion = 1;
+                this.storeName = 'appData';
+                this.db = null;
+            }
+
+            async initialize() {
+                // Initialize IndexedDB
+                await this.initIndexedDB();
+
+                // Start auto-backup timer
+                this.startAutoBackup();
+
+                // Cleanup old backups
+                this.cleanupOldBackups();
+
+                console.log('Resilient backup system initialized');
+            }
+
+            initIndexedDB() {
+                return new Promise((resolve) => {
+                    if (!window.indexedDB) {
+                        console.warn('IndexedDB not available');
+                        resolve(null);
+                        return;
+                    }
+
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+
+                    request.onerror = () => {
+                        console.error('IndexedDB open failed');
+                        resolve(null);
+                    };
+
+                    request.onsuccess = () => {
+                        this.db = request.result;
+                        console.log('IndexedDB initialized');
+                        resolve(this.db);
+                    };
+
+                    request.onupgradeneeded = (event) => {
+                        const db = event.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            const objectStore = db.createObjectStore(this.storeName, { keyPath: 'key' });
+                            objectStore.createIndex('timestamp', 'timestamp', { unique: false });
+                        }
+                    };
+                });
+            }
+
+            async saveData(data) {
+                // Create automatic backup before save
+                this.createAutoBackup(data);
+
+                // Save to localStorage
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(data));
+                } catch (error) {
+                    console.error('Failed to save to localStorage:', error);
+                }
+
+                // Save to IndexedDB as fallback
+                if (this.db) {
+                    await this.saveToIndexedDB(data);
+                }
+
+                return true;
+            }
+
+            async saveToIndexedDB(data) {
+                if (!this.db) return false;
+
+                return new Promise((resolve) => {
+                    try {
+                        const transaction = this.db.transaction([this.storeName], 'readwrite');
+                        const objectStore = transaction.objectStore(this.storeName);
+
+                        const record = {
+                            key: this.storageKey,
+                            data: data,
+                            timestamp: Date.now(),
+                            date: new Date().toISOString()
+                        };
+
+                        const request = objectStore.put(record);
+                        request.onsuccess = () => resolve(true);
+                        request.onerror = () => resolve(false);
+                    } catch (error) {
+                        console.error('IndexedDB save error:', error);
+                        resolve(false);
+                    }
+                });
+            }
+
+            async loadData() {
+                // Try localStorage first
+                try {
+                    const stored = localStorage.getItem(this.storageKey);
+                    if (stored) {
+                        return JSON.parse(stored);
+                    }
+                } catch (error) {
+                    console.error('Failed to load from localStorage:', error);
+                }
+
+                // Try IndexedDB as fallback
+                if (this.db) {
+                    return await this.loadFromIndexedDB();
+                }
+
+                return null;
+            }
+
+            async loadFromIndexedDB() {
+                if (!this.db) return null;
+
+                return new Promise((resolve) => {
+                    try {
+                        const transaction = this.db.transaction([this.storeName], 'readonly');
+                        const objectStore = transaction.objectStore(this.storeName);
+                        const request = objectStore.get(this.storageKey);
+
+                        request.onsuccess = () => {
+                            if (request.result) {
+                                resolve(request.result.data);
+                            } else {
+                                resolve(null);
+                            }
+                        };
+
+                        request.onerror = () => resolve(null);
+                    } catch (error) {
+                        console.error('IndexedDB load error:', error);
+                        resolve(null);
+                    }
+                });
+            }
+
+            createAutoBackup(data) {
+                try {
+                    // Check if enough time has passed since last backup
+                    const now = Date.now();
+                    if (this.lastBackupTime && (now - this.lastBackupTime) < this.autoBackupInterval) {
+                        return null;
+                    }
+
+                    const backupKey = `${this.autoBackupPrefix}${now}`;
+                    const backupData = {
+                        data: data,
+                        timestamp: now,
+                        date: new Date().toISOString(),
+                        type: 'auto'
+                    };
+
+                    localStorage.setItem(backupKey, JSON.stringify(backupData));
+                    this.lastBackupTime = now;
+
+                    // Cleanup old auto backups
+                    this.cleanupOldBackups('auto');
+
+                    return backupKey;
+                } catch (error) {
+                    console.error('Auto backup failed:', error);
+                    return null;
+                }
+            }
+
+            createManualBackup(data, label = '') {
+                try {
+                    const timestamp = Date.now();
+                    const backupKey = `${this.backupPrefix}manual_${timestamp}`;
+
+                    const backupData = {
+                        data: data,
+                        timestamp: timestamp,
+                        date: new Date().toISOString(),
+                        label: label || 'Manual backup',
+                        type: 'manual'
+                    };
+
+                    localStorage.setItem(backupKey, JSON.stringify(backupData));
+                    console.log('Manual backup created:', label);
+
+                    return backupKey;
+                } catch (error) {
+                    console.error('Failed to create manual backup:', error);
+                    throw error;
+                }
+            }
+
+            listBackups(type = null) {
+                const backups = [];
+
+                try {
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+
+                        const isManual = key.startsWith(this.backupPrefix);
+                        const isAuto = key.startsWith(this.autoBackupPrefix);
+
+                        if (!isManual && !isAuto) continue;
+                        if (type === 'manual' && !isManual) continue;
+                        if (type === 'auto' && !isAuto) continue;
+
+                        try {
+                            const stored = localStorage.getItem(key);
+                            const backup = JSON.parse(stored);
+
+                            backups.push({
+                                key: key,
+                                timestamp: backup.timestamp,
+                                date: backup.date,
+                                label: backup.label || (isAuto ? 'Auto backup' : 'Manual backup'),
+                                type: backup.type || (isAuto ? 'auto' : 'manual'),
+                                injections: backup.data?.injections?.length || 0,
+                                vials: backup.data?.vials?.length || 0,
+                                weights: backup.data?.weights?.length || 0
+                            });
+                        } catch (error) {
+                            // Skip corrupted backups
+                        }
+                    }
+
+                    // Sort by timestamp descending
+                    backups.sort((a, b) => b.timestamp - a.timestamp);
+                } catch (error) {
+                    console.error('Failed to list backups:', error);
+                }
+
+                return backups;
+            }
+
+            restoreBackup(backupKey) {
+                try {
+                    const stored = localStorage.getItem(backupKey);
+                    if (!stored) {
+                        throw new Error('Backup not found');
+                    }
+
+                    const backup = JSON.parse(stored);
+                    return backup.data;
+                } catch (error) {
+                    console.error('Failed to restore backup:', error);
+                    throw error;
+                }
+            }
+
+            deleteBackup(backupKey) {
+                try {
+                    localStorage.removeItem(backupKey);
+                    console.log('Backup deleted:', backupKey);
+                } catch (error) {
+                    console.error('Failed to delete backup:', error);
+                }
+            }
+
+            cleanupOldBackups(type = 'auto') {
+                try {
+                    const backups = this.listBackups(type);
+                    const maxBackups = type === 'auto' ? this.maxAutoBackups : 20;
+
+                    if (backups.length > maxBackups) {
+                        const toDelete = backups.slice(maxBackups);
+                        toDelete.forEach(backup => {
+                            localStorage.removeItem(backup.key);
+                        });
+                    }
+                } catch (error) {
+                    console.error('Failed to cleanup backups:', error);
+                }
+            }
+
+            startAutoBackup() {
+                if (this.autoBackupTimer) {
+                    clearInterval(this.autoBackupTimer);
+                }
+
+                this.autoBackupTimer = setInterval(() => {
+                    try {
+                        const stored = localStorage.getItem(this.storageKey);
+                        if (stored) {
+                            const data = JSON.parse(stored);
+                            this.createAutoBackup(data);
+                        }
+                    } catch (error) {
+                        console.error('Auto backup failed:', error);
+                    }
+                }, this.autoBackupInterval);
+
+                console.log('Auto backup started (every 5 minutes)');
+            }
+
+            getBackupStats() {
+                const backups = this.listBackups();
+                const autoBackups = backups.filter(b => b.type === 'auto');
+                const manualBackups = backups.filter(b => b.type === 'manual');
+
+                return {
+                    total: backups.length,
+                    auto: autoBackups.length,
+                    manual: manualBackups.length,
+                    lastBackup: backups[0]?.date || 'Never'
+                };
+            }
+        }
+
+        // ====================================
         // INITIALIZE APPLICATION
         // ====================================
 
         let app;
         let deleteManager;
+        let backupManager;
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
             app = new InjectionTracker();
             app.registerServiceWorker();
             app.requestNotificationPermission();
+
+            // Initialize backup system
+            backupManager = new ResilientBackupManager();
+            await backupManager.initialize();
 
             // Initialize delete functionality
             deleteManager = new SimpleDeleteManager();
