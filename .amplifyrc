@@ -1,0 +1,11 @@
+{
+  "providers": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-reta-prod-authRole",
+      "UnauthRoleName": "amplify-reta-prod-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::ACCOUNT_ID:role/amplify-reta-prod-authRole",
+      "UnauthRoleArn": "arn:aws:iam::ACCOUNT_ID:role/amplify-reta-prod-unauthRole",
+      "Region": "us-east-1"
+    }
+  }
+}

@@ -8,7 +8,13 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
-    "start": "node server.js"
+    "start": "node server.js",
+    "deploy:amplify": "amplify publish",
+    "deploy:s3": "./deploy-s3.sh",
+    "aws:init": "amplify init",
+    "aws:add-hosting": "amplify add hosting",
+    "aws:status": "amplify status",
+    "predeploy": "npm test"
   },
   "repository": {
     "type": "git",

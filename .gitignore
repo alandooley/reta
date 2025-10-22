@@ -53,3 +53,15 @@ credentials.json
 .cache/
 .parcel-cache/
 .eslintcache
+
+# AWS Amplify
+amplify/
+.amplifyrc.local
+amplify-backup/
+aws-exports.js
+
+# CloudFormation
+.aws-sam/
+
+# Temporary files
+/tmp/
