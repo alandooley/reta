@@ -772,6 +772,46 @@
             color: white;
         }
 
+        .setting-input-wrapper {
+            position: relative;
+        }
+
+        .save-indicator {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            pointer-events: none;
+        }
+
+        .save-indicator.show {
+            opacity: 1;
+        }
+
+        .notification-toggle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: var(--secondary-bg);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 8px;
+        }
+
+        .notification-toggle label {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .notification-toggle input[type="checkbox"] {
+            margin: 0;
+        }
+
         .sync-status {
             margin-top: var(--spacing-md);
             padding: var(--spacing-md);
@@ -1367,6 +1407,10 @@
                         <div class="result-value" id="current-weight">0 kg</div>
                         <div class="result-label">Current Weight</div>
                     </div>
+                    <div class="result-card">
+                        <div class="result-value" id="current-bmi">--</div>
+                        <div class="result-label">Current BMI</div>
+                    </div>
                 </div>
 
                 <h3 style="margin-top: 32px; margin-bottom: 16px;">Weight History</h3>
@@ -1447,26 +1491,58 @@
                     <h3>Injection Schedule</h3>
                     <label>
                         Injection Frequency:
-                        <select id="injection-frequency">
-                            <option value="7">Weekly</option>
-                            <option value="14">Bi-weekly</option>
-                            <option value="21">Every 3 weeks</option>
-                            <option value="28">Monthly</option>
-                        </select>
+                        <div class="setting-input-wrapper">
+                            <select id="injection-frequency">
+                                <option value="7">Weekly</option>
+                                <option value="14">Bi-weekly</option>
+                                <option value="21">Every 3 weeks</option>
+                                <option value="28">Monthly</option>
+                            </select>
+                            <span class="save-indicator">✓</span>
+                        </div>
                     </label>
                     <label>
                         Default Dose (mg):
-                        <input type="number" id="default-dose" step="0.1" min="0" max="50" value="2.0">
+                        <div class="setting-input-wrapper">
+                            <input type="number" id="default-dose" step="0.1" min="0" max="50" value="2.0">
+                            <span class="save-indicator">✓</span>
+                        </div>
                     </label>
                     <label>
                         Height (cm) for BMI:
-                        <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
+                        <div class="setting-input-wrapper">
+                            <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
+                            <span class="save-indicator">✓</span>
+                        </div>
                     </label>
-                    <label>
-                        Enable Notifications:
-                        <input type="checkbox" id="enable-notifications" checked>
-                    </label>
-                    <button type="button" id="test-notification-btn" class="btn-secondary">Test Notification</button>
+                </div>
+                <div class="settings-section">
+                    <h3>Notifications</h3>
+                    <div class="notification-toggle">
+                        <label>
+                            <input type="checkbox" id="notify-injection-due" checked>
+                            <span>Injection Due Reminder</span>
+                        </label>
+                    </div>
+                    <div class="notification-toggle">
+                        <label>
+                            <input type="checkbox" id="notify-vial-expiring" checked>
+                            <span>Vial Expiring Soon</span>
+                        </label>
+                    </div>
+                    <div class="notification-toggle">
+                        <label>
+                            <input type="checkbox" id="notify-low-stock" checked>
+                            <span>Low Stock Alert</span>
+                        </label>
+                    </div>
+                    <div class="notification-toggle">
+                        <label>
+                            <input type="checkbox" id="notify-weekly-summary" checked>
+                            <span>Weekly Progress Summary</span>
+                        </label>
+                    </div>
+                    <button type="button" id="test-notification-btn" class="btn-secondary" style="margin-top: 8px;">Test Notification</button>
                 </div>
                 <div class="settings-section">
                     <h3>Data Management</h3>
@@ -1701,9 +1777,15 @@
                     weights: [],
                     settings: {
                         injectionFrequency: 7,
+                        defaultDose: 2.0,
                         heightCm: null,
                         units: 'metric',
-                        notifications: true,
+                        notifications: {
+                            injectionDue: true,
+                            vialExpiring: true,
+                            lowStock: true,
+                            weeklySummary: true
+                        },
                         lastSync: null
                     }
                 };
@@ -1718,6 +1800,9 @@
                 this.updateUI();
                 this.startCountdownTimer();
                 this.setupInjectionReminders();
+                this.checkVialExpirations();
+                this.checkLowStock();
+                this.scheduleWeeklySummary();
                 this.validateDataIntegrity();
                 this.hideLoadingScreen();
             }
@@ -2230,16 +2315,47 @@
                     this.saveData();
                     this.updateUI();
                     this.setupInjectionReminders(); // Reschedule with new frequency
+                    this.showSaveIndicator(e.target);
                 });
 
-                // Notifications toggle
-                document.getElementById('enable-notifications').addEventListener('change', (e) => {
-                    this.data.settings.notifications = e.target.checked;
+                // Default dose handler
+                document.getElementById('default-dose').addEventListener('change', (e) => {
+                    this.data.settings.defaultDose = parseFloat(e.target.value);
+                    this.saveData();
+                    this.showSaveIndicator(e.target);
+                });
+
+                // Height handler
+                document.getElementById('user-height').addEventListener('change', (e) => {
+                    this.data.settings.heightCm = parseFloat(e.target.value);
+                    this.saveData();
+                    this.updateBMI();
+                    this.showSaveIndicator(e.target);
+                });
+
+                // Individual notification toggles
+                document.getElementById('notify-injection-due').addEventListener('change', (e) => {
+                    this.data.settings.notifications.injectionDue = e.target.checked;
+                    this.saveData();
+                    this.setupInjectionReminders();
+                });
+
+                document.getElementById('notify-vial-expiring').addEventListener('change', (e) => {
+                    this.data.settings.notifications.vialExpiring = e.target.checked;
+                    this.saveData();
+                    this.checkVialExpirations();
+                });
+
+                document.getElementById('notify-low-stock').addEventListener('change', (e) => {
+                    this.data.settings.notifications.lowStock = e.target.checked;
+                    this.saveData();
+                });
+
+                document.getElementById('notify-weekly-summary').addEventListener('change', (e) => {
+                    this.data.settings.notifications.weeklySummary = e.target.checked;
                     this.saveData();
                     if (e.target.checked) {
-                        this.setupInjectionReminders();
-                    } else {
-                        this.clearScheduledReminders();
+                        this.scheduleWeeklySummary();
                     }
                 });
 
@@ -3296,6 +3412,7 @@
                 if (this.data.weights.length < 2) {
                     document.getElementById('weight-change').textContent = '0 kg';
                     document.getElementById('current-weight').textContent = '0 kg';
+                    document.getElementById('current-bmi').textContent = '--';
                     return;
                 }
 
@@ -3306,7 +3423,7 @@
                 const firstWeight = sortedWeights[0];
                 const lastWeight = sortedWeights[sortedWeights.length - 1];
 
-                const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
+                const weightChangeKg = lastWeight.weightKg - firstWeight.weightKg;
 
                 const changeText = weightChangeKg >= 0 ?
                     `+${Math.abs(weightChangeKg).toFixed(1)} kg` :
@@ -3314,7 +3431,7 @@
 
                 document.getElementById('weight-change').textContent = changeText;
                 document.getElementById('current-weight').textContent =
-                    `${lastWeight.weight_kg.toFixed(1)} kg`;
+                    `${lastWeight.weightKg.toFixed(1)} kg`;
 
                 // Update color based on weight change
                 const weightChangeElement = document.getElementById('weight-change');
@@ -3325,6 +3442,56 @@
                 } else {
                     weightChangeElement.style.color = '#888888'; // Gray for no change
                 }
+
+                // Update BMI
+                this.updateBMI();
+            }
+
+            updateBMI() {
+                const bmiElement = document.getElementById('current-bmi');
+
+                if (this.data.weights.length === 0 || !this.data.settings.heightCm) {
+                    bmiElement.textContent = '--';
+                    bmiElement.style.color = 'var(--text-primary)';
+                    return;
+                }
+
+                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+                const lastWeight = sortedWeights[sortedWeights.length - 1];
+                const heightM = this.data.settings.heightCm / 100;
+                const bmi = lastWeight.weightKg / (heightM * heightM);
+
+                bmiElement.textContent = bmi.toFixed(1);
+
+                // Color code BMI
+                if (bmi < 18.5) {
+                    bmiElement.style.color = '#007AFF'; // Blue - underweight
+                } else if (bmi < 25) {
+                    bmiElement.style.color = '#34C759'; // Green - normal
+                } else if (bmi < 30) {
+                    bmiElement.style.color = '#FF9500'; // Orange - overweight
+                } else {
+                    bmiElement.style.color = '#FF3B30'; // Red - obese
+                }
+            }
+
+            showSaveIndicator(inputElement) {
+                const wrapper = inputElement.closest('.setting-input-wrapper');
+                if (!wrapper) return;
+
+                const indicator = wrapper.querySelector('.save-indicator');
+                if (!indicator) return;
+
+                // Show checkmark
+                indicator.classList.add('show');
+                indicator.style.color = '#34C759';
+
+                // Hide after 2 seconds
+                setTimeout(() => {
+                    indicator.classList.remove('show');
+                }, 2000);
             }
 
             updateWeightsList() {
@@ -3955,7 +4122,7 @@
             }
 
             setupInjectionReminders() {
-                if (!this.data.settings.notifications) return;
+                if (!this.data.settings.notifications.injectionDue) return;
 
                 // Clear any existing reminders
                 this.clearScheduledReminders();
@@ -4002,6 +4169,110 @@
                     );
                     console.log(`Overdue reminder scheduled for: ${new Date(now.getTime() + overdueTime).toLocaleString()}`);
                 }
+            }
+
+            checkVialExpirations() {
+                if (!this.data.settings.notifications.vialExpiring) return;
+
+                const now = new Date();
+                const activeVials = this.data.vials.filter(v => v.status === 'active');
+
+                activeVials.forEach(vial => {
+                    const reconDate = new Date(vial.startDate);
+                    const expiryDate = new Date(reconDate);
+                    expiryDate.setDate(expiryDate.getDate() + 28);
+                    const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
+
+                    // Notify 3 days before expiration
+                    if (daysUntilExpiry === 3) {
+                        this.scheduleNotification(
+                            'Vial Expiring Soon',
+                            `Your active vial will expire in ${daysUntilExpiry} days (${expiryDate.toLocaleDateString()})`,
+                            100
+                        );
+                    }
+
+                    // Notify on expiration day
+                    if (daysUntilExpiry === 0) {
+                        this.scheduleNotification(
+                            'Vial Expired Today',
+                            'Your active vial expires today. Please prepare a new vial.',
+                            100
+                        );
+                    }
+                });
+            }
+
+            checkLowStock() {
+                if (!this.data.settings.notifications.lowStock) return;
+
+                const activeVials = this.data.vials.filter(v => v.status === 'active');
+                const totalDoses = activeVials.reduce((sum, vial) => {
+                    const dosesRemaining = (vial.currentVolumeMl / vial.initialVolumeMl) *
+                                         (vial.initialVolumeMl * vial.concentrationMgPerMl / (this.data.settings.defaultDose || 2.0));
+                    return sum + dosesRemaining;
+                }, 0);
+
+                // Alert if less than 2 doses remaining
+                if (totalDoses < 2 && totalDoses > 0) {
+                    this.scheduleNotification(
+                        'Low Stock Alert',
+                        `Only ${Math.floor(totalDoses)} doses remaining. Consider ordering more vials.`,
+                        100
+                    );
+                }
+            }
+
+            scheduleWeeklySummary() {
+                if (!this.data.settings.notifications.weeklySummary) return;
+
+                // Calculate next Monday at 9 AM
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+                const nextMonday = new Date(now);
+                nextMonday.setDate(now.getDate() + daysUntilMonday);
+                nextMonday.setHours(9, 0, 0, 0);
+
+                const delay = nextMonday - now;
+
+                if (delay > 0) {
+                    setTimeout(() => {
+                        this.sendWeeklySummary();
+                        // Reschedule for next week
+                        this.scheduleWeeklySummary();
+                    }, delay);
+                }
+            }
+
+            sendWeeklySummary() {
+                const lastWeek = new Date();
+                lastWeek.setDate(lastWeek.getDate() - 7);
+
+                const recentInjections = this.data.injections.filter(inj =>
+                    new Date(inj.timestamp) > lastWeek
+                );
+
+                const recentWeights = this.data.weights.filter(w =>
+                    new Date(w.timestamp) > lastWeek
+                );
+
+                let summary = `Weekly Summary:\n`;
+                summary += `Injections: ${recentInjections.length}\n`;
+
+                if (recentWeights.length > 0) {
+                    const sortedWeights = [...recentWeights].sort((a, b) =>
+                        new Date(a.timestamp) - new Date(b.timestamp)
+                    );
+                    const weightChange = sortedWeights[sortedWeights.length - 1].weightKg - sortedWeights[0].weightKg;
+                    summary += `Weight change: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)} kg`;
+                }
+
+                this.scheduleNotification(
+                    'Weekly Progress Summary',
+                    summary,
+                    100
+                );
             }
 
             clearScheduledReminders() {
