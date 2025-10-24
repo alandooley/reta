@@ -3,6 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
+    <meta name="googlebot" content="noindex, nofollow">
     <title>Injection Tracker</title>
 
     <!-- PWA Meta Tags -->
@@ -22,6 +24,30 @@
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
+    <!-- Firebase Configuration -->
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDkdbPPZ2pySDOWBhAsSWzkfyYWvR0jlO8",
+            authDomain: "reta-tracker.firebaseapp.com",
+            projectId: "reta-tracker",
+            storageBucket: "reta-tracker.firebasestorage.app",
+            messagingSenderId: "273148192362",
+            appId: "1:273148192362:web:c3011ac8cf76a3611e0c13"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+
+    <!-- Cloud Integration Modules -->
+    <script src="js/auth-manager.js"></script>
+    <script src="js/api-client.js"></script>
+    <script src="js/cloud-storage.js"></script>
+    <script src="js/migration-wizard.js"></script>
 
     <style>
         /* Reset and Base Styles */
@@ -854,6 +880,70 @@
             overflow-y: auto;
         }
 
+        /* Migration Modal Styles */
+        #migration-modal .modal-content {
+            max-width: 500px;
+        }
+
+        .migration-summary {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-md);
+            margin: var(--spacing-lg) 0;
+        }
+
+        .migration-summary h3 {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .migration-summary ul {
+            list-style: none;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .migration-summary li {
+            padding: var(--spacing-xs) 0;
+        }
+
+        .migration-actions {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--card-bg);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success-color);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .migration-success,
+        .migration-error {
+            text-align: center;
+            padding: var(--spacing-lg);
+        }
+
+        .migration-stats {
+            background: var(--card-bg);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+        }
+
+        .migration-stats p {
+            padding: var(--spacing-xs) 0;
+        }
+
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -1134,19 +1224,39 @@
     </style>
 </head>
 <body>
-    <!-- Notification Container -->
-    <div id="notification-container"></div>
-
-    <!-- Undo Button -->
-    <button id="undo-button">↶ Undo Delete</button>
-
-    <!-- Save Indicator -->
-    <div id="save-indicator" style="position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background-color: #34C759; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: none; z-index: 10001; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);">
-        ✓ Saved
+    <!-- Authentication Gate -->
+    <div id="auth-gate" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); padding: 20px;">
+        <div style="text-align: center; max-width: 400px;">
+            <h1 style="font-size: 32px; margin-bottom: 16px; background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                Retatrutide Tracker
+            </h1>
+            <p style="color: #888888; margin-bottom: 32px; font-size: 16px;">
+                Please sign in to access your tracking data
+            </p>
+            <button id="auth-gate-button" style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px;">
+                Sign In with Google
+            </button>
+            <p style="color: #666666; margin-top: 32px; font-size: 12px;">
+                This is a private application. No data is shared publicly.
+            </p>
+        </div>
     </div>
 
-    <!-- Header -->
-    <header id="app-header">
+    <!-- Application Content (hidden until authenticated) -->
+    <div id="app-content" style="display: none;">
+        <!-- Notification Container -->
+        <div id="notification-container"></div>
+
+        <!-- Undo Button -->
+        <button id="undo-button">↶ Undo Delete</button>
+
+        <!-- Save Indicator -->
+        <div id="save-indicator" style="position: fixed; top: 70px; left: 50%; transform: translateX(-50%); background-color: #34C759; color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600; display: none; z-index: 10001; box-shadow: 0 4px 12px rgba(52, 199, 89, 0.3);">
+            ✓ Saved
+        </div>
+
+        <!-- Header -->
+        <header id="app-header">
         <div class="header-content">
             <button id="menu-btn" class="menu-btn">☰</button>
             <div class="date-display" id="current-date"></div>
@@ -1320,6 +1430,19 @@
         <div id="settings-tab" class="tab-content" style="display: none;">
             <div class="container">
                 <h2>Settings</h2>
+
+                <!-- Cloud Sync Section -->
+                <div class="settings-section" style="background: linear-gradient(135deg, var(--accent-color) 0%, #0051a8 100%); border-radius: var(--border-radius); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                    <h3 style="margin-bottom: var(--spacing-sm);">☁️ Cloud Sync</h3>
+                    <p id="user-info" style="display: none; margin-bottom: var(--spacing-md); opacity: 0.9;"></p>
+                    <button id="auth-button" class="btn-primary" style="width: 100%; background: white; color: var(--accent-color); font-weight: 600;">
+                        Sign In with Google
+                    </button>
+                    <p style="margin-top: var(--spacing-sm); font-size: 0.85em; opacity: 0.8;">
+                        Sign in to sync your data across devices and enable automatic backups
+                    </p>
+                </div>
+
                 <div class="settings-section">
                     <h3>Injection Schedule</h3>
                     <label>
@@ -1374,6 +1497,28 @@
                     <button id="restore-backup-btn" class="btn-secondary">Restore from Backup</button>
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
                         ℹ️ Auto-backups run every 5 minutes. Last 10 are kept. Data is also stored in IndexedDB for extra protection.
+                    </p>
+                </div>
+                <div class="settings-section">
+                    <h3>☁️ Cloud Backup</h3>
+                    <div id="cloud-backup-info" style="margin-bottom: 16px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm);">
+                        <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">
+                            Store a secure backup of all your data in the cloud (AWS S3).
+                        </p>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>Status:</span>
+                            <span id="cloud-backup-status">Not authenticated</span>
+                        </div>
+                        <div id="cloud-backup-last" style="display: none; justify-content: space-between;">
+                            <span>Last Cloud Backup:</span>
+                            <span id="cloud-backup-timestamp">Never</span>
+                        </div>
+                    </div>
+                    <button id="create-cloud-backup-btn" class="btn-primary" style="margin-bottom: 8px;" disabled>
+                        Backup to Cloud
+                    </button>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        ℹ️ Cloud backups are stored securely in AWS S3 and automatically deleted after 7 days. Sign in required.
                     </p>
                 </div>
             </div>
@@ -2127,6 +2272,11 @@
                 document.getElementById('restore-backup-btn').addEventListener('click', () => {
                     this.restoreFromBackup();
                 });
+
+                // Cloud backup
+                document.getElementById('create-cloud-backup-btn').addEventListener('click', () => {
+                    this.createCloudBackup();
+                });
             }
 
             // ====================================
@@ -2274,6 +2424,89 @@
                 } catch (error) {
                     console.error('Failed to restore backup:', error);
                     alert('Failed to restore backup: ' + error.message);
+                }
+            }
+
+            async createCloudBackup() {
+                try {
+                    // Check if authenticated
+                    if (!authManager.isAuthenticated()) {
+                        alert('Please sign in to use cloud backup.\n\nGo to Settings → Cloud Sync section.');
+                        return;
+                    }
+
+                    // Show loading state
+                    const button = document.getElementById('create-cloud-backup-btn');
+                    const originalText = button.textContent;
+                    button.textContent = 'Creating backup...';
+                    button.disabled = true;
+
+                    // Call API to create backup
+                    const result = await apiClient.createBackup();
+
+                    // Update UI with success
+                    const timestamp = new Date(result.timestamp).toLocaleString();
+                    const counts = result.counts;
+
+                    alert(
+                        `✅ Cloud Backup Created Successfully!\n\n` +
+                        `Timestamp: ${timestamp}\n` +
+                        `Injections: ${counts.injections}\n` +
+                        `Vials: ${counts.vials}\n` +
+                        `Weights: ${counts.weights}\n\n` +
+                        `Your data is now safely stored in AWS S3.\n` +
+                        `Backup will be kept for 7 days.`
+                    );
+
+                    // Store last backup info in localStorage
+                    localStorage.setItem('lastCloudBackup', JSON.stringify({
+                        timestamp: result.timestamp,
+                        key: result.key
+                    }));
+
+                    // Update cloud backup status
+                    this.updateCloudBackupStatus();
+
+                    // Reset button
+                    button.textContent = originalText;
+                    button.disabled = false;
+
+                } catch (error) {
+                    console.error('Failed to create cloud backup:', error);
+
+                    // Reset button
+                    const button = document.getElementById('create-cloud-backup-btn');
+                    button.textContent = 'Backup to Cloud';
+                    button.disabled = false;
+
+                    alert(
+                        '❌ Cloud Backup Failed\n\n' +
+                        error.message + '\n\n' +
+                        'Please check your internet connection and try again.'
+                    );
+                }
+            }
+
+            updateCloudBackupStatus() {
+                const statusEl = document.getElementById('cloud-backup-status');
+                const timestampEl = document.getElementById('cloud-backup-timestamp');
+                const lastDiv = document.getElementById('cloud-backup-last');
+
+                if (authManager.isAuthenticated()) {
+                    statusEl.textContent = '✅ Ready';
+                    statusEl.style.color = 'var(--success-color)';
+
+                    // Check for last backup
+                    const lastBackup = localStorage.getItem('lastCloudBackup');
+                    if (lastBackup) {
+                        const backup = JSON.parse(lastBackup);
+                        timestampEl.textContent = new Date(backup.timestamp).toLocaleString();
+                        lastDiv.style.display = 'flex';
+                    }
+                } else {
+                    statusEl.textContent = 'Not authenticated';
+                    statusEl.style.color = 'var(--text-muted)';
+                    lastDiv.style.display = 'none';
                 }
             }
 
@@ -2857,7 +3090,7 @@
                             label: 'Weight (kg)',
                             data: sortedWeights.map(w => ({
                                 x: w.timestamp,
-                                y: w.weight_kg
+                                y: w.weightKg
                             })),
                             borderColor: '#34C759',
                             backgroundColor: 'rgba(52, 199, 89, 0.1)',
@@ -2872,12 +3105,14 @@
                             label: 'Dose (mg)',
                             data: sortedInjections.map(i => ({
                                 x: i.timestamp,
-                                y: i.dose_mg
+                                y: i.doseMg
                             })),
-                            type: 'scatter',
-                            backgroundColor: '#007AFF',
+                            type: 'bar',
+                            backgroundColor: 'rgba(0, 122, 255, 0.6)',
                             borderColor: '#007AFF',
-                            pointRadius: 6,
+                            borderWidth: 2,
+                            barPercentage: 0.5,
+                            categoryPercentage: 0.8,
                             yAxisID: 'y1'
                         }]
                     },
@@ -4459,6 +4694,11 @@
             deleteManager.enableDeleteForVials();
             deleteManager.enableDeleteForWeights();
 
+            // Initialize cloud integration
+            apiClient.initialize(authManager);
+            await cloudStorage.initialize(authManager, apiClient, app.storage);
+            migrationWizard.initialize(authManager, apiClient);
+
             // Handle URL parameters for PWA shortcuts
             const urlParams = new URLSearchParams(window.location.search);
             if (urlParams.get('action') === 'add_shot') {
@@ -4470,6 +4710,96 @@
                 }, 500);
             }
         });
+
+        // Update UI based on auth state
+        function updateAuthUI(user) {
+            const authButton = document.getElementById('auth-button');
+            const userInfo = document.getElementById('user-info');
+
+            if (user) {
+                // User is signed in
+                if (authButton) {
+                    authButton.textContent = 'Sign Out';
+                    authButton.onclick = () => authManager.signOut();
+                }
+                if (userInfo) {
+                    userInfo.textContent = `Signed in as ${user.displayName || user.email}`;
+                    userInfo.style.display = 'block';
+                }
+            } else {
+                // User is signed out
+                if (authButton) {
+                    authButton.textContent = 'Sign In with Google';
+                    authButton.onclick = () => authManager.signInWithGoogle();
+                }
+                if (userInfo) {
+                    userInfo.style.display = 'none';
+                }
+            }
+        }
+
+        // Auth gate handling
+        const authGate = document.getElementById('auth-gate');
+        const authGateButton = document.getElementById('auth-gate-button');
+        const appContent = document.getElementById('app-content');
+
+        // Sign in handler for auth gate
+        if (authGateButton) {
+            authGateButton.addEventListener('click', async () => {
+                authGateButton.textContent = 'Signing in...';
+                authGateButton.disabled = true;
+                try {
+                    await authManager.signInWithGoogle();
+                } catch (error) {
+                    console.error('Sign in error:', error);
+                    authGateButton.textContent = 'Sign In with Google';
+                    authGateButton.disabled = false;
+                    alert('Failed to sign in. Please try again.');
+                }
+            });
+        }
+
+        // Show/hide content based on auth state
+        authManager.onAuthStateChange((user) => {
+            if (user) {
+                // User signed in - show app, hide gate
+                authGate.style.display = 'none';
+                appContent.style.display = 'block';
+                updateAuthUI(user);
+
+                // Enable cloud backup button
+                const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
+                if (cloudBackupBtn) {
+                    cloudBackupBtn.disabled = false;
+                }
+
+                // Update cloud backup status
+                if (app) {
+                    app.updateCloudBackupStatus();
+                }
+
+                // Trigger migration wizard
+                setTimeout(() => {
+                    migrationWizard.autoStart();
+                }, 1000);
+            } else {
+                // User signed out - show gate, hide app
+                authGate.style.display = 'flex';
+                appContent.style.display = 'none';
+
+                // Disable cloud backup button
+                const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
+                if (cloudBackupBtn) {
+                    cloudBackupBtn.disabled = true;
+                }
+
+                // Update cloud backup status
+                if (app) {
+                    app.updateCloudBackupStatus();
+                }
+            }
+        });
     </script>
+    </div> <!-- Close app-content -->
 </body>
 </html>
