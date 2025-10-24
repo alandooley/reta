@@ -241,6 +241,7 @@
             padding: var(--spacing-lg);
             text-align: center;
             transition: background-color 0.2s;
+            min-width: 0; /* Allow cards to shrink */
         }
 
         .stat-card:hover {
@@ -248,7 +249,7 @@
         }
 
         .stat-value {
-            font-size: 24px;
+            font-size: clamp(20px, 4vw, 24px); /* Fluid typography */
             font-weight: 700;
             color: var(--text-primary);
             margin-bottom: var(--spacing-xs);
@@ -780,15 +781,28 @@
             position: absolute;
             right: 12px;
             top: 50%;
-            transform: translateY(-50%);
-            font-size: 20px;
+            transform: translateY(-50%) scale(0.8);
+            font-size: 13px;
+            font-weight: 600;
+            color: #34C759;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
             pointer-events: none;
+            white-space: nowrap;
         }
 
         .save-indicator.show {
             opacity: 1;
+            transform: translateY(-50%) scale(1);
+        }
+
+        @keyframes saveTextPulse {
+            0%, 100% { opacity: 1; transform: translateY(-50%) scale(1); }
+            50% { opacity: 0.7; transform: translateY(-50%) scale(0.95); }
+        }
+
+        .save-indicator.show {
+            animation: saveTextPulse 0.6s ease-in-out;
         }
 
         .notification-toggle {
@@ -1042,8 +1056,21 @@
             min-height: 80px;
         }
 
-        /* Responsive Design */
+        /* Enhanced Responsive Design */
+
+        /* Mobile First - Small phones (320px - 480px) */
         @media (max-width: 480px) {
+            :root {
+                --spacing-sm: 8px;
+                --spacing-md: 12px;
+                --spacing-lg: 16px;
+                --spacing-xl: 20px;
+            }
+
+            body {
+                font-size: 14px;
+            }
+
             .container {
                 padding: var(--spacing-md) var(--spacing-sm);
             }
@@ -1055,6 +1082,29 @@
 
             .header-content {
                 padding: 0 var(--spacing-sm);
+                flex-wrap: wrap;
+                gap: var(--spacing-sm);
+            }
+
+            header h1 {
+                font-size: 20px;
+            }
+
+            .tab-nav {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+
+            .tab-nav::-webkit-scrollbar {
+                display: none;
+            }
+
+            .tab-button {
+                min-width: 80px;
+                padding: 10px 12px;
+                font-size: 13px;
+                white-space: nowrap;
             }
 
             .shot-details {
@@ -1064,6 +1114,144 @@
             .results-stats,
             .inventory-stats {
                 grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                margin: var(--spacing-sm);
+                max-width: calc(100% - 32px);
+                padding: var(--spacing-lg);
+            }
+
+            .btn-primary,
+            .btn-secondary {
+                padding: 12px 16px;
+                font-size: 14px;
+                min-height: 44px; /* Touch-friendly */
+            }
+
+            input,
+            select,
+            textarea {
+                min-height: 44px; /* Touch-friendly */
+                font-size: 16px; /* Prevent iOS zoom */
+            }
+
+            .notification-container {
+                right: 10px;
+                left: 10px;
+                max-width: calc(100% - 20px);
+            }
+
+            .notification {
+                min-width: unset;
+                width: 100%;
+            }
+
+            .chart-container canvas {
+                max-height: 300px !important;
+            }
+
+            .chart-container,
+            .supply-forecast-container {
+                padding: var(--spacing-md);
+            }
+
+            .stat-label {
+                font-size: 12px;
+            }
+
+            .card,
+            .vial-card,
+            .result-card {
+                padding: var(--spacing-md);
+            }
+        }
+
+        /* Tablets and small laptops (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .container {
+                padding: var(--spacing-lg) var(--spacing-md);
+                max-width: 95%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .shot-details {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .results-stats,
+            .inventory-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .modal-content {
+                max-width: 90%;
+            }
+
+            .tab-button {
+                min-width: 90px;
+            }
+        }
+
+        /* Medium devices (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .container {
+                max-width: 90%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .tab-button {
+                min-width: 100px;
+            }
+        }
+
+        /* Touch device optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            .btn-primary,
+            .btn-secondary,
+            .tab-button,
+            button {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            .modal-close {
+                min-width: 44px;
+                min-height: 44px;
+                font-size: 24px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .modal-content {
+                max-height: 90vh;
+                overflow-y: auto;
+            }
+
+            header {
+                padding: var(--spacing-sm) 0;
+            }
+        }
+
+        /* Print styles */
+        @media print {
+            header,
+            .tab-nav,
+            .modal,
+            .notification-container,
+            #undo-button {
+                display: none !important;
+            }
+
+            .tab-content {
+                display: block !important;
             }
         }
 
@@ -1498,21 +1686,21 @@
                                 <option value="21">Every 3 weeks</option>
                                 <option value="28">Monthly</option>
                             </select>
-                            <span class="save-indicator">✓</span>
+                            <span class="save-indicator">Saved</span>
                         </div>
                     </label>
                     <label>
                         Default Dose (mg):
                         <div class="setting-input-wrapper">
                             <input type="number" id="default-dose" step="0.1" min="0" max="50" value="2.0">
-                            <span class="save-indicator">✓</span>
+                            <span class="save-indicator">Saved</span>
                         </div>
                     </label>
                     <label>
-                        Height (cm) for BMI:
+                        Height (cm):
                         <div class="setting-input-wrapper">
                             <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
-                            <span class="save-indicator">✓</span>
+                            <span class="save-indicator">Saved</span>
                         </div>
                     </label>
                 </div>
@@ -1547,7 +1735,7 @@
                 <div class="settings-section">
                     <h3>Data Management</h3>
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
-                    <button id="import-data-btn" class="btn-secondary">Import Data</button>
+                    <button id="import-data-btn" class="btn-secondary">Import Data from File</button>
                 </div>
                 <div class="settings-section">
                     <h3>Automatic Backups</h3>
@@ -1795,16 +1983,22 @@
 
             // Initialize the application
             async init() {
-                await this.loadData();
-                this.setupEventListeners();
-                this.updateUI();
-                this.startCountdownTimer();
-                this.setupInjectionReminders();
-                this.checkVialExpirations();
-                this.checkLowStock();
-                this.scheduleWeeklySummary();
-                this.validateDataIntegrity();
-                this.hideLoadingScreen();
+                try {
+                    await this.loadData();
+                    this.setupEventListeners();
+                    this.updateUI();
+                    this.startCountdownTimer();
+                    this.setupInjectionReminders();
+                    this.checkVialExpirations();
+                    this.checkLowStock();
+                    this.scheduleWeeklySummary();
+                    this.validateDataIntegrity();
+                } catch (error) {
+                    console.error('Error during initialization:', error);
+                } finally {
+                    // Always hide loading screen, even if there's an error
+                    this.hideLoadingScreen();
+                }
             }
 
             // ====================================
@@ -1817,6 +2011,16 @@
                     if (stored) {
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
+
+                        // Fix notification settings if they're in old format (boolean instead of object)
+                        if (typeof this.data.settings.notifications === 'boolean') {
+                            this.data.settings.notifications = {
+                                injectionDue: this.data.settings.notifications,
+                                vialExpiring: this.data.settings.notifications,
+                                lowStock: this.data.settings.notifications,
+                                weeklySummary: this.data.settings.notifications
+                            };
+                        }
                     } else {
                         // Check if we should load sample data (not in test mode)
                         const urlParams = new URLSearchParams(window.location.search);
@@ -1832,6 +2036,62 @@
                     if (!urlParams.get('test')) {
                         this.loadSampleData();
                     }
+                }
+            }
+
+            async syncFromCloud() {
+                try {
+                    console.log('Syncing data from cloud...');
+
+                    // Fetch all data from API
+                    const [injectionsAPI, weightsAPI, vialsAPI] = await Promise.all([
+                        apiClient.getInjections(),
+                        apiClient.getWeights(),
+                        apiClient.getVials()
+                    ]);
+
+                    console.log(`Fetched from cloud: ${injectionsAPI.length} injections, ${weightsAPI.length} weights, ${vialsAPI.length} vials`);
+
+                    // Map API format (camelCase) to app format (snake_case)
+                    this.data.injections = injectionsAPI.map(inj => ({
+                        id: inj.id,
+                        timestamp: inj.timestamp,
+                        dose_mg: inj.doseMg,
+                        injection_site: inj.site,
+                        vial_id: inj.vialId,
+                        notes: inj.notes || ''
+                    }));
+
+                    this.data.weights = weightsAPI.map(wt => ({
+                        id: wt.id,
+                        timestamp: wt.timestamp,
+                        weight_kg: wt.weightKg,
+                        notes: wt.notes || ''
+                    }));
+
+                    this.data.vials = vialsAPI.map(vial => ({
+                        vial_id: vial.id,
+                        order_date: vial.startDate,
+                        total_mg: vial.initialVolumeMl * vial.concentrationMgPerMl,
+                        bac_water_ml: vial.initialVolumeMl,
+                        concentration_mg_per_ml: vial.concentrationMgPerMl,
+                        current_volume_ml: vial.currentVolumeMl,
+                        used_volume_ml: vial.usedVolumeMl,
+                        status: vial.status,
+                        supplier: vial.source || '',
+                        notes: vial.notes || '',
+                        reconstitution_date: vial.startDate
+                    }));
+
+                    // Save to localStorage (without showing indicator - this is a sync, not a user save)
+                    this.saveData(false);
+
+                    // Update UI
+                    this.updateUI();
+
+                    console.log('Cloud sync complete');
+                } catch (error) {
+                    console.error('Error syncing from cloud:', error);
                 }
             }
 
@@ -1887,7 +2147,7 @@
                 this.saveData();
             }
 
-            async saveData() {
+            async saveData(showIndicator = true) {
                 try {
                     if (window.backupManager) {
                         await backupManager.saveData(this.data);
@@ -1895,7 +2155,9 @@
                         // Fallback to simple localStorage if backup manager not ready
                         localStorage.setItem('injection_data', JSON.stringify(this.data));
                     }
-                    this.showSaveIndicator();
+                    if (showIndicator) {
+                        this.showSaveIndicator();
+                    }
                 } catch (error) {
                     console.error('Error saving data:', error);
                 }
@@ -2156,25 +2418,57 @@
             }
 
             updateSettingsTab() {
+                // Update injection frequency
                 document.getElementById('injection-frequency').value = this.data.settings.injectionFrequency;
-                document.getElementById('enable-notifications').checked = this.data.settings.notifications;
 
-                // Update backup stats
-                if (window.backupManager) {
-                    const stats = backupManager.getBackupStats();
-                    document.getElementById('backup-count').textContent = stats.total;
-                    document.getElementById('auto-backup-count').textContent = stats.auto;
-                    document.getElementById('manual-backup-count').textContent = stats.manual;
-                    const lastBackup = stats.lastBackup !== 'Never' ?
-                        new Date(stats.lastBackup).toLocaleString() : 'Never';
-                    document.getElementById('last-backup').textContent = lastBackup;
-                } else {
-                    // Backup manager not ready yet
-                    document.getElementById('backup-count').textContent = '0';
-                    document.getElementById('auto-backup-count').textContent = '0';
-                    document.getElementById('manual-backup-count').textContent = '0';
-                    document.getElementById('last-backup').textContent = 'Initializing...';
+                // Update default dose
+                if (this.data.settings.defaultDose) {
+                    document.getElementById('default-dose').value = this.data.settings.defaultDose;
                 }
+
+                // Update user height
+                if (this.data.settings.heightCm) {
+                    document.getElementById('user-height').value = this.data.settings.heightCm;
+                }
+
+                // Update granular notification settings
+                if (this.data.settings.notifications) {
+                    document.getElementById('notify-injection-due').checked = this.data.settings.notifications.injectionDue;
+                    document.getElementById('notify-vial-expiring').checked = this.data.settings.notifications.vialExpiring;
+                    document.getElementById('notify-low-stock').checked = this.data.settings.notifications.lowStock;
+                    document.getElementById('notify-weekly-summary').checked = this.data.settings.notifications.weeklySummary;
+                }
+
+                // Update backup stats (with retry)
+                this.updateBackupStats();
+            }
+
+            updateBackupStats() {
+                if (window.backupManager) {
+                    try {
+                        const stats = backupManager.getBackupStats();
+                        document.getElementById('backup-count').textContent = stats.total;
+                        document.getElementById('auto-backup-count').textContent = stats.auto;
+                        document.getElementById('manual-backup-count').textContent = stats.manual;
+                        const lastBackup = stats.lastBackup !== 'Never' ?
+                            new Date(stats.lastBackup).toLocaleString() : 'Never';
+                        document.getElementById('last-backup').textContent = lastBackup;
+                    } catch (error) {
+                        console.error('Error getting backup stats:', error);
+                        this.showFallbackBackupStats();
+                    }
+                } else {
+                    // Backup manager not ready yet - retry in 1 second
+                    setTimeout(() => this.updateBackupStats(), 1000);
+                    this.showFallbackBackupStats();
+                }
+            }
+
+            showFallbackBackupStats() {
+                document.getElementById('backup-count').textContent = '0';
+                document.getElementById('auto-backup-count').textContent = '0';
+                document.getElementById('manual-backup-count').textContent = '0';
+                document.getElementById('last-backup').textContent = 'Loading...';
             }
 
             calculateNextShotDays() {
@@ -2315,14 +2609,14 @@
                     this.saveData();
                     this.updateUI();
                     this.setupInjectionReminders(); // Reschedule with new frequency
-                    this.showSaveIndicator(e.target);
+                    this.showSettingSaveIndicator(e.target);
                 });
 
                 // Default dose handler
                 document.getElementById('default-dose').addEventListener('change', (e) => {
                     this.data.settings.defaultDose = parseFloat(e.target.value);
                     this.saveData();
-                    this.showSaveIndicator(e.target);
+                    this.showSettingSaveIndicator(e.target);
                 });
 
                 // Height handler
@@ -2330,7 +2624,7 @@
                     this.data.settings.heightCm = parseFloat(e.target.value);
                     this.saveData();
                     this.updateBMI();
-                    this.showSaveIndicator(e.target);
+                    this.showSettingSaveIndicator(e.target);
                 });
 
                 // Individual notification toggles
@@ -2338,17 +2632,20 @@
                     this.data.settings.notifications.injectionDue = e.target.checked;
                     this.saveData();
                     this.setupInjectionReminders();
+                    this.showSettingsSavedNotification();
                 });
 
                 document.getElementById('notify-vial-expiring').addEventListener('change', (e) => {
                     this.data.settings.notifications.vialExpiring = e.target.checked;
                     this.saveData();
                     this.checkVialExpirations();
+                    this.showSettingsSavedNotification();
                 });
 
                 document.getElementById('notify-low-stock').addEventListener('change', (e) => {
                     this.data.settings.notifications.lowStock = e.target.checked;
                     this.saveData();
+                    this.showSettingsSavedNotification();
                 });
 
                 document.getElementById('notify-weekly-summary').addEventListener('change', (e) => {
@@ -2357,6 +2654,7 @@
                     if (e.target.checked) {
                         this.scheduleWeeklySummary();
                     }
+                    this.showSettingsSavedNotification();
                 });
 
 
@@ -2485,6 +2783,102 @@
                 };
 
                 input.click();
+            }
+
+            async importHistoricalData() {
+                // Check Firebase auth directly
+                const currentUser = firebase.auth().currentUser;
+                if (!currentUser) {
+                    throw new Error('Please sign in first');
+                }
+
+                const token = await currentUser.getIdToken();
+                const API_BASE = 'https://5is9pmy9be.execute-api.eu-west-1.amazonaws.com/v1';
+
+                const injections = [
+                    { timestamp: '2025-08-06T09:00:00.000Z', doseMg: 0.25, site: 'abdomen', notes: 'Right abdomen. First micro-dose (2.5 units) to start titration.', vialId: null },
+                    { timestamp: '2025-08-12T09:00:00.000Z', doseMg: 0.5, site: 'abdomen', notes: 'Right abdomen. Second dose (5 units). No major side effects.', vialId: null },
+                    { timestamp: '2025-08-19T09:00:00.000Z', doseMg: 1, site: 'abdomen', notes: 'Right abdomen. First 1.0 mg (10 units). Mild nausea only.', vialId: null },
+                    { timestamp: '2025-08-30T10:12:00.000Z', doseMg: 2, site: 'abdomen', notes: 'Right abdomen. First 2.0 mg dose (20 units). Mild appetite suppression.', vialId: null },
+                    { timestamp: '2025-09-06T09:00:00.000Z', doseMg: 3, site: 'abdomen', notes: 'Right abdomen. 3.0 mg (30 units). Tolerated well, little nausea.', vialId: null },
+                    { timestamp: '2025-09-13T09:00:00.000Z', doseMg: 4, site: 'abdomen', notes: 'Right abdomen. New vial reconstituted (10 mg + 1 mL BAC). First 4.0 mg dose (40 units).', vialId: 'vial-1' },
+                    { timestamp: '2025-09-20T09:00:00.000Z', doseMg: 4, site: 'abdomen', notes: 'Right abdomen. Second 4.0 mg dose. Mild suppression noticed.', vialId: 'vial-1' },
+                    { timestamp: '2025-09-27T10:51:00.000Z', doseMg: 4.2, site: 'abdomen', notes: 'Right abdomen. Only 42 units left in vial. Finished it. Suppression moderate.', vialId: 'vial-1' }
+                ];
+
+                const weights = [
+                    { timestamp: '2025-08-06T09:00:00.000Z', weightKg: 95, notes: '' },
+                    { timestamp: '2025-08-19T09:00:00.000Z', weightKg: 96, notes: '' },
+                    { timestamp: '2025-08-30T10:12:00.000Z', weightKg: 93.6, notes: '' },
+                    { timestamp: '2025-09-06T09:00:00.000Z', weightKg: 93, notes: '' },
+                    { timestamp: '2025-09-20T09:00:00.000Z', weightKg: 90.9, notes: '' },
+                    { timestamp: '2025-09-27T10:51:00.000Z', weightKg: 89.7, notes: '' }
+                ];
+
+                const vialData = {
+                    startDate: '2025-09-13',
+                    initialVolumeMl: 1,
+                    concentrationMgPerMl: 10,
+                    currentVolumeMl: 0,
+                    usedVolumeMl: 1,
+                    status: 'finished',
+                    source: '',
+                    notes: 'Reconstituted 10mg with 1mL BAC water'
+                };
+
+                // Import vial first (so injections can reference it)
+                const vialRes = await fetch(`${API_BASE}/vials`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(vialData)
+                });
+                if (!vialRes.ok) {
+                    const errorText = await vialRes.text();
+                    throw new Error(`Failed to import vial: ${vialRes.status} - ${errorText}`);
+                }
+                const vialResult = await vialRes.json();
+                const vialId = vialResult.data.id;
+
+                // Update injection vialIds with the actual created vial ID
+                const updatedInjections = injections.map(inj => ({
+                    ...inj,
+                    vialId: inj.vialId === 'vial-1' ? vialId : null
+                }));
+
+                // Import injections
+                for (const inj of updatedInjections) {
+                    const res = await fetch(`${API_BASE}/injections`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(inj)
+                    });
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Failed to import injection: ${res.status} - ${errorText}`);
+                    }
+                }
+
+                // Import weights
+                for (const wt of weights) {
+                    const res = await fetch(`${API_BASE}/weights`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(wt)
+                    });
+                    if (!res.ok) {
+                        const errorText = await res.text();
+                        throw new Error(`Failed to import weight: ${res.status} - ${errorText}`);
+                    }
+                }
             }
 
             createManualBackup() {
@@ -3299,7 +3693,7 @@
                             label: 'Weight (kg)',
                             data: sortedWeights.map(w => ({
                                 x: w.timestamp,
-                                y: w.weightKg
+                                y: w.weight_kg
                             })),
                             borderColor: '#34C759',
                             backgroundColor: 'rgba(52, 199, 89, 0.1)',
@@ -3314,14 +3708,14 @@
                             label: 'Dose (mg)',
                             data: sortedInjections.map(i => ({
                                 x: i.timestamp,
-                                y: i.doseMg
+                                y: i.dose_mg
                             })),
-                            type: 'bar',
-                            backgroundColor: 'rgba(0, 122, 255, 0.6)',
+                            type: 'scatter',
+                            backgroundColor: '#007AFF',
                             borderColor: '#007AFF',
                             borderWidth: 2,
-                            barPercentage: 0.5,
-                            categoryPercentage: 0.8,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
                             yAxisID: 'y1'
                         }]
                     },
@@ -3354,6 +3748,7 @@
                                         day: 'MMM d'
                                     }
                                 },
+                                max: new Date().toISOString(), // Extend to today
                                 grid: {
                                     color: '#333333'
                                 },
@@ -3423,7 +3818,7 @@
                 const firstWeight = sortedWeights[0];
                 const lastWeight = sortedWeights[sortedWeights.length - 1];
 
-                const weightChangeKg = lastWeight.weightKg - firstWeight.weightKg;
+                const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
 
                 const changeText = weightChangeKg >= 0 ?
                     `+${Math.abs(weightChangeKg).toFixed(1)} kg` :
@@ -3431,7 +3826,7 @@
 
                 document.getElementById('weight-change').textContent = changeText;
                 document.getElementById('current-weight').textContent =
-                    `${lastWeight.weightKg.toFixed(1)} kg`;
+                    `${lastWeight.weight_kg.toFixed(1)} kg`;
 
                 // Update color based on weight change
                 const weightChangeElement = document.getElementById('weight-change');
@@ -3461,7 +3856,7 @@
                 );
                 const lastWeight = sortedWeights[sortedWeights.length - 1];
                 const heightM = this.data.settings.heightCm / 100;
-                const bmi = lastWeight.weightKg / (heightM * heightM);
+                const bmi = lastWeight.weight_kg / (heightM * heightM);
 
                 bmiElement.textContent = bmi.toFixed(1);
 
@@ -3477,7 +3872,8 @@
                 }
             }
 
-            showSaveIndicator(inputElement) {
+            showSettingSaveIndicator(inputElement) {
+                if (!inputElement) return;
                 const wrapper = inputElement.closest('.setting-input-wrapper');
                 if (!wrapper) return;
 
@@ -3492,6 +3888,20 @@
                 setTimeout(() => {
                     indicator.classList.remove('show');
                 }, 2000);
+            }
+
+            showSettingsSavedNotification() {
+                // Debounce: Clear existing timeout
+                if (this.settingsSaveTimeout) {
+                    clearTimeout(this.settingsSaveTimeout);
+                }
+
+                // Set new timeout to show notification after 1 second
+                this.settingsSaveTimeout = setTimeout(() => {
+                    if (window.deleteManager && window.deleteManager.notificationManager) {
+                        window.deleteManager.notificationManager.show('Settings saved successfully', 'success');
+                    }
+                }, 1000);
             }
 
             updateWeightsList() {
@@ -4073,7 +4483,7 @@
 
             registerServiceWorker() {
                 if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.register('/reta/sw.js')
+                    navigator.serviceWorker.register('/sw.js')
                         .then(registration => {
                             console.log('Service Worker registered successfully:', registration.scope);
                         })
@@ -4349,9 +4759,12 @@
 
                 // Check injection integrity
                 this.data.injections.forEach(injection => {
-                    const vial = this.data.vials.find(v => v.vial_id === injection.vial_id);
-                    if (!vial) {
-                        issues.push(`Injection ${injection.id}: References non-existent vial ${injection.vial_id}`);
+                    // Only validate vial reference if injection has a vial_id (null is valid)
+                    if (injection.vial_id && injection.vial_id !== 'null') {
+                        const vial = this.data.vials.find(v => v.vial_id === injection.vial_id);
+                        if (!vial) {
+                            issues.push(`Injection ${injection.id}: References non-existent vial ${injection.vial_id}`);
+                        }
                     }
                 });
 
@@ -5064,8 +5477,12 @@
 
             // Initialize cloud integration
             apiClient.initialize(authManager);
-            await cloudStorage.initialize(authManager, apiClient, app.storage);
+            // Legacy cloud storage disabled - using direct API sync instead
+            // await cloudStorage.initialize(authManager, apiClient, app.storage);
             migrationWizard.initialize(authManager, apiClient);
+
+            // Set up auth state change listener (after all initializations)
+            setupAuthStateListener();
 
             // Handle URL parameters for PWA shortcuts
             const urlParams = new URLSearchParams(window.location.search);
@@ -5106,29 +5523,30 @@
             }
         }
 
-        // Auth gate handling
-        const authGate = document.getElementById('auth-gate');
-        const authGateButton = document.getElementById('auth-gate-button');
-        const appContent = document.getElementById('app-content');
+        // Auth state listener setup function
+        function setupAuthStateListener() {
+            const authGate = document.getElementById('auth-gate');
+            const authGateButton = document.getElementById('auth-gate-button');
+            const appContent = document.getElementById('app-content');
 
-        // Sign in handler for auth gate
-        if (authGateButton) {
-            authGateButton.addEventListener('click', async () => {
-                authGateButton.textContent = 'Signing in...';
-                authGateButton.disabled = true;
-                try {
-                    await authManager.signInWithGoogle();
-                } catch (error) {
-                    console.error('Sign in error:', error);
-                    authGateButton.textContent = 'Sign In with Google';
-                    authGateButton.disabled = false;
-                    alert('Failed to sign in. Please try again.');
-                }
-            });
-        }
+            // Sign in handler for auth gate
+            if (authGateButton) {
+                authGateButton.addEventListener('click', async () => {
+                    authGateButton.textContent = 'Signing in...';
+                    authGateButton.disabled = true;
+                    try {
+                        await authManager.signInWithGoogle();
+                    } catch (error) {
+                        console.error('Sign in error:', error);
+                        authGateButton.textContent = 'Sign In with Google';
+                        authGateButton.disabled = false;
+                        alert('Failed to sign in. Please try again.');
+                    }
+                });
+            }
 
-        // Show/hide content based on auth state
-        authManager.onAuthStateChange((user) => {
+            // Show/hide content based on auth state
+            authManager.onAuthStateChange((user) => {
             if (user) {
                 // User signed in - show app, hide gate
                 authGate.style.display = 'none';
@@ -5147,6 +5565,9 @@
 
                     // Check if auto-backup is needed
                     app.checkAutoBackup();
+
+                    // Sync data from cloud
+                    app.syncFromCloud();
                 }
 
                 // Trigger migration wizard
@@ -5169,7 +5590,8 @@
                     app.updateCloudBackupStatus();
                 }
             }
-        });
+            });
+        }
     </script>
     </div> <!-- Close app-content -->
 </body>

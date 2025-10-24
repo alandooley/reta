@@ -7,6 +7,7 @@ let firebaseApp = null;
 /**
  * Lambda Authorizer for Firebase Authentication
  * Validates Firebase ID tokens and returns authorization decision
+ * Using SIMPLE response format for HTTP API v2
  */
 exports.handler = async (event) => {
   console.log('Authorizer invoked:', JSON.stringify(event, null, 2));
@@ -16,7 +17,7 @@ exports.handler = async (event) => {
     const token = extractToken(event);
     if (!token) {
       console.error('No token provided');
-      return generatePolicy(null, 'Deny', event.routeArn);
+      return { isAuthorized: false };
     }
 
     // Initialize Firebase Admin SDK (cached after first invocation)
@@ -28,18 +29,24 @@ exports.handler = async (event) => {
     const decodedToken = await admin.auth().verifyIdToken(token);
     console.log('Token verified successfully for user:', decodedToken.uid);
 
-    // Return Allow policy with user context
-    return generatePolicy(decodedToken.uid, 'Allow', event.routeArn, {
-      userId: decodedToken.uid,
-      email: decodedToken.email || '',
-      emailVerified: decodedToken.email_verified ? 'true' : 'false',
-    });
+    // Return SIMPLE response format for HTTP API v2
+    const response = {
+      isAuthorized: true,
+      context: {
+        userId: decodedToken.uid,
+        email: decodedToken.email || '',
+        emailVerified: decodedToken.email_verified ? 'true' : 'false',
+      },
+    };
+
+    console.log('Generated authorization response:', JSON.stringify(response, null, 2));
+    return response;
 
   } catch (error) {
     console.error('Authorization error:', error);
 
-    // Return Deny policy on any error
-    return generatePolicy(null, 'Deny', event.routeArn);
+    // Return Deny response on any error
+    return { isAuthorized: false };
   }
 };
 
@@ -91,34 +98,4 @@ async function initializeFirebase() {
   });
 
   console.log('Firebase Admin SDK initialized successfully');
-}
-
-/**
- * Generate IAM policy for API Gateway
- */
-function generatePolicy(principalId, effect, resource, context = {}) {
-  const authResponse = {
-    principalId: principalId || 'unknown',
-  };
-
-  if (effect && resource) {
-    authResponse.policyDocument = {
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Action: 'execute-api:Invoke',
-          Effect: effect,
-          Resource: resource,
-        },
-      ],
-    };
-  }
-
-  // Add user context to be passed to backend Lambda functions
-  if (Object.keys(context).length > 0) {
-    authResponse.context = context;
-  }
-
-  console.log('Generated policy:', JSON.stringify(authResponse, null, 2));
-  return authResponse;
 }

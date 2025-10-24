@@ -48,8 +48,8 @@ self.addEventListener('fetch', event => {
     event.respondWith(
       fetch(request)
         .then(response => {
-          // Clone and cache successful responses
-          if (response.ok) {
+          // Only cache GET requests (Cache API doesn't support POST/PUT/DELETE)
+          if (response.ok && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then(cache => {
               cache.put(request, responseClone);
@@ -57,7 +57,14 @@ self.addEventListener('fetch', event => {
           }
           return response;
         })
-        .catch(() => caches.match(request))
+        .catch(() => {
+          // Only try to return cached version for GET requests
+          if (request.method === 'GET') {
+            return caches.match(request);
+          }
+          // For non-GET requests, return a network error
+          return new Response('Network error', { status: 503 });
+        })
     );
     return;
   }

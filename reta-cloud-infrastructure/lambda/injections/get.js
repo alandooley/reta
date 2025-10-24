@@ -12,7 +12,7 @@ exports.handler = async (event) => {
   console.log('GET /v1/injections called:', JSON.stringify(event, null, 2));
 
   try {
-    // Extract user ID from authorizer context
+    // Extract user ID from authorizer context (HTTP API v2 SIMPLE format)
     const userId = event.requestContext?.authorizer?.lambda?.userId;
 
     if (!userId) {

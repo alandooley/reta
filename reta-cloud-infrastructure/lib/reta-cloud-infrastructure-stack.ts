@@ -259,7 +259,7 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
     // Lambda Authorizer for Firebase Authentication
     const authorizer = new HttpLambdaAuthorizer('FirebaseAuthorizer', authorizerFn, {
       authorizerName: 'FirebaseAuthorizer',
-      responseTypes: [HttpLambdaResponseType.IAM],
+      responseTypes: [HttpLambdaResponseType.SIMPLE], // Use SIMPLE for HTTP API v2 context passing
       resultsCacheTtl: cdk.Duration.minutes(5), // Cache authorization results for 5 minutes
       identitySource: ['$request.header.Authorization'],
     });
