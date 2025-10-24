@@ -1509,16 +1509,20 @@
                             <span>Status:</span>
                             <span id="cloud-backup-status">Not authenticated</span>
                         </div>
-                        <div id="cloud-backup-last" style="display: none; justify-content: space-between;">
+                        <div id="cloud-backup-last" style="display: none; justify-content: space-between; margin-bottom: 8px;">
                             <span>Last Cloud Backup:</span>
                             <span id="cloud-backup-timestamp">Never</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted);">
+                            <span>Next Auto-Backup:</span>
+                            <span id="next-backup-date">-</span>
                         </div>
                     </div>
                     <button id="create-cloud-backup-btn" class="btn-primary" style="margin-bottom: 8px;" disabled>
                         Backup to Cloud
                     </button>
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-                        ℹ️ Cloud backups are stored securely in AWS S3 and automatically deleted after 7 days. Sign in required.
+                        ℹ️ Cloud backups: Auto-backup every Monday at 9 AM. Keeps only 4 most recent backups. Sign in required.
                     </p>
                 </div>
             </div>
@@ -2455,7 +2459,7 @@
                         `Vials: ${counts.vials}\n` +
                         `Weights: ${counts.weights}\n\n` +
                         `Your data is now safely stored in AWS S3.\n` +
-                        `Backup will be kept for 7 days.`
+                        `Only the 4 most recent backups are kept.`
                     );
 
                     // Store last backup info in localStorage
@@ -2491,6 +2495,7 @@
                 const statusEl = document.getElementById('cloud-backup-status');
                 const timestampEl = document.getElementById('cloud-backup-timestamp');
                 const lastDiv = document.getElementById('cloud-backup-last');
+                const nextBackupEl = document.getElementById('next-backup-date');
 
                 if (authManager.isAuthenticated()) {
                     statusEl.textContent = '✅ Ready';
@@ -2503,10 +2508,98 @@
                         timestampEl.textContent = new Date(backup.timestamp).toLocaleString();
                         lastDiv.style.display = 'flex';
                     }
+
+                    // Calculate next scheduled backup (next Monday at 9 AM)
+                    const nextMonday = this.getNextMonday();
+                    if (nextBackupEl) {
+                        nextBackupEl.textContent = nextMonday.toLocaleString('en-US', {
+                            weekday: 'long',
+                            month: 'short',
+                            day: 'numeric',
+                            hour: 'numeric',
+                            minute: '2-digit'
+                        });
+                    }
                 } else {
                     statusEl.textContent = 'Not authenticated';
                     statusEl.style.color = 'var(--text-muted)';
                     lastDiv.style.display = 'none';
+                }
+            }
+
+            getNextMonday() {
+                const now = new Date();
+                const dayOfWeek = now.getDay();
+                const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
+
+                const nextMonday = new Date(now);
+                nextMonday.setDate(now.getDate() + daysUntilMonday);
+                nextMonday.setHours(9, 0, 0, 0);
+
+                return nextMonday;
+            }
+
+            async checkAutoBackup() {
+                // Only run if authenticated
+                if (!authManager.isAuthenticated()) {
+                    return;
+                }
+
+                const lastBackup = localStorage.getItem('lastCloudBackup');
+                const now = new Date();
+
+                // Check if it's Monday and between 9 AM and 10 AM
+                const dayOfWeek = now.getDay();
+                const hour = now.getHours();
+
+                if (dayOfWeek !== 1 || hour !== 9) {
+                    // Not Monday morning, skip
+                    return;
+                }
+
+                // If we have a last backup, check if it was within the last 7 days
+                if (lastBackup) {
+                    const backup = JSON.parse(lastBackup);
+                    const lastBackupDate = new Date(backup.timestamp);
+                    const daysSinceLastBackup = (now - lastBackupDate) / (1000 * 60 * 60 * 24);
+
+                    if (daysSinceLastBackup < 7) {
+                        console.log('Auto-backup skipped: Recent backup exists');
+                        return;
+                    }
+                }
+
+                // Check if we already did an auto-backup today
+                const lastAutoBackup = localStorage.getItem('lastAutoBackupDate');
+                if (lastAutoBackup) {
+                    const lastAutoDate = new Date(lastAutoBackup);
+                    if (lastAutoDate.toDateString() === now.toDateString()) {
+                        console.log('Auto-backup already done today');
+                        return;
+                    }
+                }
+
+                console.log('Performing automatic weekly backup...');
+
+                // Create backup silently
+                try {
+                    const result = await apiClient.createBackup();
+
+                    // Store last backup info
+                    localStorage.setItem('lastCloudBackup', JSON.stringify({
+                        timestamp: result.timestamp,
+                        key: result.key
+                    }));
+
+                    // Mark that we did an auto-backup today
+                    localStorage.setItem('lastAutoBackupDate', now.toISOString());
+
+                    // Update UI
+                    this.updateCloudBackupStatus();
+
+                    console.log('Auto-backup completed successfully');
+                } catch (error) {
+                    console.error('Auto-backup failed:', error);
                 }
             }
 
@@ -4776,6 +4869,9 @@
                 // Update cloud backup status
                 if (app) {
                     app.updateCloudBackupStatus();
+
+                    // Check if auto-backup is needed
+                    app.checkAutoBackup();
                 }
 
                 // Trigger migration wizard

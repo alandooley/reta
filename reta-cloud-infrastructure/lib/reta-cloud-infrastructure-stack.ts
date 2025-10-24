@@ -51,18 +51,18 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       autoDeleteObjects: false,
     });
 
-    // S3 Bucket for Backups (Budget: 7-day retention)
+    // S3 Bucket for Backups (Budget: Keep only 4 most recent, managed by Lambda)
     const backupBucket = new s3.Bucket(this, 'BackupBucket', {
       bucketName: `retatrutide-backups-${this.account}`,
-      versioned: true, // Keep version history
+      versioned: false,
       encryption: s3.BucketEncryption.S3_MANAGED,
       removalPolicy: cdk.RemovalPolicy.RETAIN,
       autoDeleteObjects: false,
       lifecycleRules: [
         {
-          id: 'DeleteOldBackups',
+          id: 'FallbackCleanup',
           enabled: true,
-          expiration: cdk.Duration.days(7), // 💰 7 days instead of 90
+          expiration: cdk.Duration.days(60), // Fallback: delete after 60 days if Lambda cleanup fails
         },
       ],
     });

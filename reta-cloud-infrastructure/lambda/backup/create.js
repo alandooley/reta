@@ -1,6 +1,6 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
+const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -104,6 +104,33 @@ exports.handler = async (event) => {
     }));
 
     console.log(`Created backup ${backupKey} for user ${userId}`);
+
+    // Clean up old backups - keep only 4 most recent
+    const listParams = {
+      Bucket: process.env.BACKUP_BUCKET,
+      Prefix: `${userId}/`,
+    };
+
+    const listResult = await s3Client.send(new ListObjectsV2Command(listParams));
+
+    if (listResult.Contents && listResult.Contents.length > 4) {
+      // Sort by LastModified (oldest first)
+      const sortedBackups = listResult.Contents
+        .sort((a, b) => a.LastModified - b.LastModified);
+
+      // Delete all but the 4 most recent
+      const backupsToDelete = sortedBackups.slice(0, sortedBackups.length - 4);
+
+      for (const backup of backupsToDelete) {
+        await s3Client.send(new DeleteObjectCommand({
+          Bucket: process.env.BACKUP_BUCKET,
+          Key: backup.Key,
+        }));
+        console.log(`Deleted old backup: ${backup.Key}`);
+      }
+
+      console.log(`Cleaned up ${backupsToDelete.length} old backups, kept 4 most recent`);
+    }
 
     return {
       statusCode: 201,
