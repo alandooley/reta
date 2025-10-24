@@ -258,6 +258,12 @@ class MigrationWizard {
             return;
         }
 
+        // Check if authManager is initialized
+        if (!this.authManager) {
+            console.log('AuthManager not initialized, skipping migration prompt');
+            return;
+        }
+
         // Check if user is authenticated
         if (!this.authManager.isAuthenticated()) {
             console.log('Not authenticated, skipping migration prompt');
