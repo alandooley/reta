@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet">
     <meta name="googlebot" content="noindex, nofollow">
     <title>Injection Tracker</title>
@@ -1148,12 +1148,15 @@
             }
 
             .chart-container canvas {
-                max-height: 300px !important;
+                max-height: 400px !important;
+                min-height: 350px !important;
             }
 
             .chart-container,
             .supply-forecast-container {
-                padding: var(--spacing-md);
+                padding: var(--spacing-md) 8px;
+                margin-left: -4px;
+                margin-right: -4px;
             }
 
             .stat-label {
@@ -3686,6 +3689,25 @@
                     new Date(a.timestamp) - new Date(b.timestamp)
                 );
 
+                // Detect mobile screen for responsive chart configuration
+                const isMobile = window.innerWidth <= 480;
+                const isTablet = window.innerWidth > 480 && window.innerWidth <= 768;
+
+                // Dynamic font sizing based on screen size
+                const fontSize = isMobile ? {
+                    legend: 11,
+                    tick: 10,
+                    title: 11
+                } : isTablet ? {
+                    legend: 11,
+                    tick: 10,
+                    title: 12
+                } : {
+                    legend: 12,
+                    tick: 11,
+                    title: 12
+                };
+
                 this.charts.weightChart = new Chart(ctx, {
                     type: 'line',
                     data: {
@@ -3700,6 +3722,9 @@
                             fill: true,
                             tension: 0.4,
                             yAxisID: 'y',
+                            pointRadius: isMobile ? 5 : 4,
+                            pointHoverRadius: isMobile ? 7 : 6,
+                            pointHitRadius: isMobile ? 12 : 8,
                             pointBackgroundColor: function(context) {
                                 const weight = sortedWeights[context.dataIndex];
                                 return weight.source === 'withings' ? '#FF9500' : '#34C759';
@@ -3714,29 +3739,43 @@
                             backgroundColor: '#007AFF',
                             borderColor: '#007AFF',
                             borderWidth: 2,
-                            pointRadius: 6,
-                            pointHoverRadius: 8,
+                            pointRadius: isMobile ? 7 : 6,
+                            pointHoverRadius: isMobile ? 9 : 8,
+                            pointHitRadius: isMobile ? 14 : 10,
                             yAxisID: 'y1'
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: false
+                        },
                         plugins: {
                             legend: {
                                 labels: {
                                     color: '#ffffff',
                                     font: {
-                                        size: 12
-                                    }
+                                        size: fontSize.legend
+                                    },
+                                    padding: isMobile ? 8 : 12,
+                                    boxWidth: isMobile ? 30 : 40
                                 }
                             },
                             tooltip: {
-                                backgroundColor: 'rgba(42, 42, 42, 0.9)',
+                                backgroundColor: 'rgba(42, 42, 42, 0.95)',
                                 titleColor: '#ffffff',
                                 bodyColor: '#ffffff',
                                 borderColor: '#333333',
-                                borderWidth: 1
+                                borderWidth: 1,
+                                padding: isMobile ? 10 : 12,
+                                titleFont: {
+                                    size: isMobile ? 12 : 13
+                                },
+                                bodyFont: {
+                                    size: isMobile ? 12 : 13
+                                }
                             }
                         },
                         scales: {
@@ -3745,15 +3784,21 @@
                                 time: {
                                     unit: 'day',
                                     displayFormats: {
-                                        day: 'MMM d'
+                                        day: isMobile ? 'M/d' : 'MMM d'
                                     }
                                 },
-                                max: new Date().toISOString(), // Extend to today
+                                max: new Date().toISOString(),
                                 grid: {
                                     color: '#333333'
                                 },
                                 ticks: {
-                                    color: '#cccccc'
+                                    color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : isTablet ? 8 : 10,
+                                    maxRotation: isMobile ? 45 : 0,
+                                    minRotation: isMobile ? 45 : 0
                                 }
                             },
                             y: {
@@ -3765,6 +3810,10 @@
                                 },
                                 ticks: {
                                     color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : 8,
                                     callback: function(value) {
                                         return value.toFixed(1) + ' kg';
                                     }
@@ -3772,7 +3821,10 @@
                                 title: {
                                     display: true,
                                     text: 'Weight (kg)',
-                                    color: '#34C759'
+                                    color: '#34C759',
+                                    font: {
+                                        size: fontSize.title
+                                    }
                                 },
                                 beginAtZero: false,
                                 grace: '5%'
@@ -3786,6 +3838,10 @@
                                 },
                                 ticks: {
                                     color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : 8,
                                     callback: function(value) {
                                         return value.toFixed(1) + ' mg';
                                     }
@@ -3793,7 +3849,10 @@
                                 title: {
                                     display: true,
                                     text: 'Dose (mg)',
-                                    color: '#007AFF'
+                                    color: '#007AFF',
+                                    font: {
+                                        size: fontSize.title
+                                    }
                                 },
                                 beginAtZero: true,
                                 grace: '10%'
