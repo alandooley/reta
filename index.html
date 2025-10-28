@@ -2765,6 +2765,35 @@
                 }
             }
 
+            // ====================================
+            // DATA MERGE HELPER
+            // ====================================
+
+            mergeArrays(localData, cloudData, keyField) {
+                // Intelligent merge: prefer local data for items not yet in cloud
+                const merged = new Map();
+
+                // First, add all cloud items (source of truth for synced data)
+                cloudData.forEach(item => {
+                    merged.set(item[keyField], item);
+                });
+
+                // Then add local items that aren't in cloud yet
+                // These are likely pending sync or were just added
+                localData.forEach(item => {
+                    const cloudItem = merged.get(item[keyField]);
+                    if (!cloudItem) {
+                        // Item exists locally but not in cloud - keep it (pending sync)
+                        merged.set(item[keyField], item);
+                    }
+                    // If item exists in cloud, cloud version is source of truth
+                });
+
+                return Array.from(merged.values()).sort(
+                    (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+                );
+            }
+
             async syncFromCloud() {
                 try {
                     console.log('Syncing data from cloud...');
@@ -2779,7 +2808,7 @@
                     console.log(`Fetched from cloud: ${injectionsAPI.length} injections, ${weightsAPI.length} weights, ${vialsAPI.length} vials`);
 
                     // Map API format (camelCase) to app format (snake_case)
-                    this.data.injections = injectionsAPI.map(inj => ({
+                    const cloudInjections = injectionsAPI.map(inj => ({
                         id: inj.id,
                         timestamp: inj.timestamp,
                         dose_mg: inj.doseMg,
@@ -2788,14 +2817,14 @@
                         notes: inj.notes || ''
                     }));
 
-                    this.data.weights = weightsAPI.map(wt => ({
+                    const cloudWeights = weightsAPI.map(wt => ({
                         id: wt.id,
                         timestamp: wt.timestamp,
                         weight_kg: wt.weightKg,
                         notes: wt.notes || ''
                     }));
 
-                    this.data.vials = vialsAPI.map(vial => ({
+                    const cloudVials = vialsAPI.map(vial => ({
                         vial_id: vial.id,
                         order_date: vial.startDate,
                         total_mg: vial.initialVolumeMl * vial.concentrationMgPerMl,
@@ -2808,6 +2837,11 @@
                         notes: vial.notes || '',
                         reconstitution_date: vial.startDate
                     }));
+
+                    // MERGE cloud data with local data (prevents losing pending items)
+                    this.data.injections = this.mergeArrays(this.data.injections, cloudInjections, 'id');
+                    this.data.weights = this.mergeArrays(this.data.weights, cloudWeights, 'id');
+                    this.data.vials = this.mergeArrays(this.data.vials, cloudVials, 'vial_id');
 
                     // Save to localStorage (without showing indicator - this is a sync, not a user save)
                     this.saveData(false);
