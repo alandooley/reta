@@ -2186,7 +2186,7 @@
             // INJECTION MANAGEMENT
             // ====================================
 
-            addInjection(injection) {
+            async addInjection(injection) {
                 const newInjection = {
                     id: this.generateId(),
                     timestamp: injection.timestamp || new Date().toISOString(),
@@ -2205,6 +2205,24 @@
                 this.saveData();
                 this.updateUI();
                 this.setupInjectionReminders();
+
+                // Push to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createInjection({
+                            id: newInjection.id,
+                            timestamp: newInjection.timestamp,
+                            doseMg: newInjection.dose_mg,
+                            site: newInjection.injection_site,
+                            vialId: newInjection.vial_id,
+                            notes: newInjection.notes
+                        });
+                        console.log('Injection synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync injection to cloud:', error);
+                        // Still saved locally, so don't block the user
+                    }
+                }
             }
 
             updateVialUsage(vialId, doseMg) {
@@ -2287,7 +2305,7 @@
             // WEIGHT MANAGEMENT
             // ====================================
 
-            addWeight(weight) {
+            async addWeight(weight) {
                 const newWeight = {
                     timestamp: weight.timestamp || new Date().toISOString(),
                     weight_kg: parseFloat(weight.weight_kg),
@@ -2301,6 +2319,23 @@
                 this.data.weights.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 this.saveData();
                 this.updateUI();
+
+                // Push to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createWeight({
+                            timestamp: newWeight.timestamp,
+                            weightKg: newWeight.weight_kg,
+                            source: newWeight.source,
+                            bmi: newWeight.bmi,
+                            bodyFatPercentage: newWeight.body_fat_percentage
+                        });
+                        console.log('Weight synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync weight to cloud:', error);
+                        // Still saved locally, so don't block the user
+                    }
+                }
             }
 
             // ====================================
@@ -3192,7 +3227,7 @@
                 }
             }
 
-            handleAddShot() {
+            async handleAddShot() {
                 const form = document.getElementById('add-shot-form');
                 const formData = new FormData(form);
 
@@ -3208,14 +3243,14 @@
 
                 // Add weight entry if provided
                 if (injection.weight_kg) {
-                    this.addWeight({
+                    await this.addWeight({
                         timestamp: injection.timestamp,
                         weight_kg: injection.weight_kg,
                         source: 'manual'
                     });
                 }
 
-                this.addInjection(injection);
+                await this.addInjection(injection);
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
@@ -3300,7 +3335,7 @@
                 }, 300);
             }
 
-            handleAddWeight() {
+            async handleAddWeight() {
                 const weight = {
                     timestamp: document.getElementById('weight-date').value,
                     weight_kg: parseFloat(document.getElementById('weight-kg').value),
@@ -3309,7 +3344,7 @@
                     source: 'manual'
                 };
 
-                this.addWeight(weight);
+                await this.addWeight(weight);
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
