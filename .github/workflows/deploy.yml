@@ -1,0 +1,63 @@
+name: Deploy to AWS
+
+on:
+  push:
+    branches:
+      - main
+      - claude/mobile-graph-ux-review-*
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    name: Deploy Frontend to S3 + CloudFront
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+          
+      - name: Upload to S3
+        run: |
+          echo "📤 Uploading index.html to S3..."
+          aws s3 cp index.html s3://retatrutide-frontend-372208783486/ \
+            --region eu-west-1
+          echo "✅ Upload complete"
+          
+      - name: Invalidate CloudFront cache
+        run: |
+          echo "🔄 Invalidating CloudFront cache..."
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id E2ZD0ACBBK8F5K \
+            --paths "/*" \
+            --query 'Invalidation.Id' \
+            --output text)
+          echo "✅ Invalidation started: $INVALIDATION_ID"
+          echo "invalidation_id=$INVALIDATION_ID" >> $GITHUB_OUTPUT
+        id: invalidate
+        
+      - name: Wait for cache invalidation
+        run: |
+          echo "⏳ Waiting for cache invalidation to complete..."
+          echo "This usually takes 2-5 minutes"
+          aws cloudfront wait invalidation-completed \
+            --distribution-id E2ZD0ACBBK8F5K \
+            --id ${{ steps.invalidate.outputs.invalidation_id }}
+          echo "✅ Cache invalidation complete"
+          
+      - name: Deployment summary
+        run: |
+          echo "🎉 Deployment successful!"
+          echo ""
+          echo "Your app is now live at:"
+          echo "https://d13m7vzwjqe4pp.cloudfront.net"
+          echo ""
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
