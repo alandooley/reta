@@ -2016,6 +2016,39 @@
                     </div>
                 </div>
 
+                <!-- Goal Progress Card -->
+                <div id="goal-progress-card" style="display: none; margin-top: 24px; background: linear-gradient(135deg, var(--card-bg) 0%, #2d2d2d 100%); border: 1px solid var(--border-color); border-radius: var(--border-radius); padding: var(--spacing-lg);">
+                    <h3 style="margin-bottom: var(--spacing-md); color: var(--text-primary);">Goal Progress</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-sm);">
+                        <span style="color: var(--text-secondary); font-size: 14px;">
+                            <span id="goal-start-weight">--</span> kg → <span id="goal-target-weight">--</span> kg
+                        </span>
+                        <span style="color: var(--text-primary); font-weight: 600; font-size: 16px;">
+                            <span id="goal-progress-percent">0</span>%
+                        </span>
+                    </div>
+                    <div style="width: 100%; height: 8px; background: var(--border-color); border-radius: 4px; overflow: hidden; margin-bottom: var(--spacing-md);">
+                        <div id="goal-progress-bar" style="height: 100%; background: linear-gradient(90deg, var(--accent-color), #34C759); width: 0%; transition: width 0.5s ease;"></div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-md);">
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Remaining</div>
+                            <div style="color: var(--text-primary); font-weight: 600; font-size: 16px;" id="goal-remaining">-- kg</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Weekly Avg</div>
+                            <div style="color: var(--text-primary); font-weight: 600; font-size: 16px;" id="goal-weekly-rate">-- kg</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--text-secondary); font-size: 12px; margin-bottom: 4px;">Est. Date</div>
+                            <div style="color: var(--text-primary); font-weight: 600; font-size: 16px;" id="goal-eta-date">--</div>
+                        </div>
+                    </div>
+                    <p id="goal-message" style="margin-top: var(--spacing-md); padding: var(--spacing-sm); background: rgba(52, 199, 89, 0.1); border-radius: 6px; color: var(--success-color); font-size: 14px; text-align: center;">
+                        Keep up the great work!
+                    </p>
+                </div>
+
                 <h3 style="margin-top: 32px; margin-bottom: 16px;">Weight History</h3>
                 <div id="weights-list" class="weights-list"></div>
             </div>
@@ -2115,6 +2148,13 @@
                         Height (cm):
                         <div class="setting-input-wrapper">
                             <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
+                    <label>
+                        Goal Weight (kg):
+                        <div class="setting-input-wrapper">
+                            <input type="number" id="goal-weight" step="0.1" min="0" max="300" placeholder="Enter goal weight">
                             <span class="save-indicator">Saved</span>
                         </div>
                     </label>
@@ -2399,6 +2439,7 @@
                         injectionFrequency: 7,
                         defaultDose: 2.0,
                         heightCm: null,
+                        goalWeightKg: null,
                         units: 'metric',
                         notifications: {
                             injectionDue: true,
@@ -3302,6 +3343,7 @@
             updateResultsTab() {
                 this.updateWeightChart();
                 this.updateWeightStats();
+                this.updateGoalProgress();
                 this.updateWeightsList();
             }
 
@@ -3329,6 +3371,11 @@
                 // Update user height
                 if (this.data.settings.heightCm) {
                     document.getElementById('user-height').value = this.data.settings.heightCm;
+                }
+
+                // Update goal weight
+                if (this.data.settings.goalWeightKg) {
+                    document.getElementById('goal-weight').value = this.data.settings.goalWeightKg;
                 }
 
                 // Update granular notification settings
@@ -3524,6 +3571,14 @@
                     this.data.settings.heightCm = parseFloat(e.target.value);
                     this.saveData();
                     this.updateBMI();
+                    this.showSettingSaveIndicator(e.target);
+                });
+
+                // Goal weight handler
+                document.getElementById('goal-weight').addEventListener('change', (e) => {
+                    this.data.settings.goalWeightKg = parseFloat(e.target.value);
+                    this.saveData();
+                    this.updateGoalProgress();
                     this.showSettingSaveIndicator(e.target);
                 });
 
@@ -4949,6 +5004,113 @@
                     bmiElement.style.color = '#FF9500'; // Orange - overweight
                 } else {
                     bmiElement.style.color = '#FF3B30'; // Red - obese
+                }
+            }
+
+            updateGoalProgress() {
+                const goalCard = document.getElementById('goal-progress-card');
+
+                // Hide card if no goal weight or insufficient weight data
+                if (!this.data.settings.goalWeightKg || this.data.weights.length < 2) {
+                    goalCard.style.display = 'none';
+                    return;
+                }
+
+                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+
+                const startWeight = sortedWeights[0].weight_kg;
+                const currentWeight = sortedWeights[sortedWeights.length - 1].weight_kg;
+                const goalWeight = this.data.settings.goalWeightKg;
+
+                // Check if goal is already reached
+                if (currentWeight <= goalWeight) {
+                    goalCard.style.display = 'block';
+                    document.getElementById('goal-start-weight').textContent = startWeight.toFixed(1);
+                    document.getElementById('goal-target-weight').textContent = goalWeight.toFixed(1);
+                    document.getElementById('goal-progress-percent').textContent = '100';
+                    document.getElementById('goal-progress-bar').style.width = '100%';
+                    document.getElementById('goal-remaining').textContent = '0 kg';
+                    document.getElementById('goal-weekly-rate').textContent = '--';
+                    document.getElementById('goal-eta-date').textContent = 'Achieved!';
+                    document.getElementById('goal-message').textContent = '🎉 Congratulations! You\'ve reached your goal!';
+                    document.getElementById('goal-message').style.background = 'rgba(52, 199, 89, 0.2)';
+                    return;
+                }
+
+                // Calculate progress
+                const totalToLose = startWeight - goalWeight;
+                const alreadyLost = startWeight - currentWeight;
+                const remaining = currentWeight - goalWeight;
+                const progressPercent = Math.max(0, Math.min(100, (alreadyLost / totalToLose) * 100));
+
+                // Calculate weekly rate (last 4 weeks)
+                const fourWeeksAgo = new Date();
+                fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
+                const recentWeights = sortedWeights.filter(w =>
+                    new Date(w.timestamp) >= fourWeeksAgo
+                );
+
+                let weeklyRate = 0;
+                let etaText = '--';
+
+                if (recentWeights.length >= 2) {
+                    const oldestRecent = recentWeights[0];
+                    const newestRecent = recentWeights[recentWeights.length - 1];
+                    const daysDiff = (new Date(newestRecent.timestamp) - new Date(oldestRecent.timestamp)) / (1000 * 60 * 60 * 24);
+                    const weightDiff = oldestRecent.weight_kg - newestRecent.weight_kg;
+
+                    if (daysDiff > 0) {
+                        weeklyRate = (weightDiff / daysDiff) * 7;
+
+                        // Calculate ETA
+                        if (weeklyRate > 0) {
+                            const weeksToGoal = remaining / weeklyRate;
+                            const etaDate = new Date();
+                            etaDate.setDate(etaDate.getDate() + (weeksToGoal * 7));
+
+                            // Format date based on how far away it is
+                            if (weeksToGoal < 8) {
+                                etaText = `${Math.ceil(weeksToGoal)} weeks`;
+                            } else {
+                                etaText = etaDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                            }
+                        } else {
+                            etaText = '--';
+                        }
+                    }
+                }
+
+                // Update UI
+                goalCard.style.display = 'block';
+                document.getElementById('goal-start-weight').textContent = startWeight.toFixed(1);
+                document.getElementById('goal-target-weight').textContent = goalWeight.toFixed(1);
+                document.getElementById('goal-progress-percent').textContent = progressPercent.toFixed(0);
+                document.getElementById('goal-progress-bar').style.width = progressPercent + '%';
+                document.getElementById('goal-remaining').textContent = remaining.toFixed(1) + ' kg';
+                document.getElementById('goal-weekly-rate').textContent = weeklyRate > 0 ?
+                    '-' + weeklyRate.toFixed(2) + ' kg' : '--';
+                document.getElementById('goal-eta-date').textContent = etaText;
+
+                // Update message based on progress
+                const messageEl = document.getElementById('goal-message');
+                if (progressPercent >= 75) {
+                    messageEl.textContent = '🔥 Almost there! You\'re in the home stretch!';
+                    messageEl.style.background = 'rgba(52, 199, 89, 0.15)';
+                } else if (progressPercent >= 50) {
+                    messageEl.textContent = '💪 Great progress! You\'re halfway to your goal!';
+                    messageEl.style.background = 'rgba(52, 199, 89, 0.1)';
+                } else if (progressPercent >= 25) {
+                    messageEl.textContent = '👍 Keep going! You\'re making steady progress!';
+                    messageEl.style.background = 'rgba(52, 199, 89, 0.1)';
+                } else if (weeklyRate > 0) {
+                    messageEl.textContent = '🎯 You\'re on track! Stay consistent!';
+                    messageEl.style.background = 'rgba(52, 199, 89, 0.1)';
+                } else {
+                    messageEl.textContent = '📊 Keep tracking to see your progress!';
+                    messageEl.style.background = 'rgba(128, 128, 128, 0.1)';
+                    messageEl.style.color = 'var(--text-secondary)';
                 }
             }
 
