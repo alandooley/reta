@@ -2427,13 +2427,30 @@
                 this.setupSwipeToDelete();
             }
 
-            // Floating Action Button
+            // Floating Action Button (context-aware)
             setupFAB() {
                 const fab = document.getElementById('fab-button');
                 if (fab) {
                     fab.addEventListener('click', () => {
                         this.triggerHaptic();
-                        this.openModal('add-shot-modal');
+
+                        // Get active tab to determine which modal to open
+                        const activeTab = document.querySelector('.nav-btn.active');
+                        const currentTab = activeTab ? activeTab.dataset.tab : 'summary';
+
+                        // Open appropriate modal based on current tab
+                        switch (currentTab) {
+                            case 'shots':
+                                this.openModal('add-shot-modal');
+                                break;
+                            case 'results':
+                                this.openModal('add-weight-modal');
+                                break;
+                            default:
+                                // Default to adding shot for other tabs
+                                this.openModal('add-shot-modal');
+                                break;
+                        }
                     });
                 }
             }
@@ -2494,11 +2511,17 @@
                 document.addEventListener('touchend', async () => {
                     if (isPulling) {
                         this.triggerHaptic('medium');
-                        await this.syncFromCloud();
+
+                        // Remove indicator immediately for better UX
                         isPulling = false;
                         if (indicator) {
                             indicator.classList.remove('active');
                         }
+
+                        // Sync in background (don't await to avoid blocking UI)
+                        this.syncFromCloud().catch(err => {
+                            console.error('Pull-to-refresh sync failed:', err);
+                        });
                     }
                     startY = 0;
                 }, { passive: true });
@@ -6133,6 +6156,17 @@
                 app.saveData();
                 app.updateUI();
 
+                // Sync deletion to cloud
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.deleteVial(vialId);
+                        console.log('Vial deleted from cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to delete vial from cloud:', error);
+                        // Don't block user - deletion already happened locally
+                    }
+                }
+
                 // Animate out
                 element.style.opacity = '0';
                 element.style.transform = 'translateX(100px)';
@@ -6707,6 +6741,12 @@
                 lastAuthUserId = null;
                 authGate.style.display = 'flex';
                 appContent.style.display = 'none';
+
+                // Reset auth gate button to initial state
+                if (authGateButton) {
+                    authGateButton.textContent = 'Sign In with Google';
+                    authGateButton.disabled = false;
+                }
 
                 // Disable cloud backup button
                 const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
