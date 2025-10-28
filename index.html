@@ -1819,12 +1819,6 @@
             ⚠️ Offline - Changes saved locally
         </div>
 
-        <!-- Pull to Refresh -->
-        <div id="pull-to-refresh" class="pull-to-refresh">
-            <div class="pull-to-refresh-spinner"></div>
-            <span>Refreshing...</span>
-        </div>
-
         <!-- Floating Action Button -->
         <button id="fab-button" class="fab" title="Quick Add Shot">+</button>
 
@@ -2388,6 +2382,7 @@
                 this.charts = {};
                 this._isSyncing = false;  // Guard against concurrent syncs
                 this._lastSyncTime = 0;    // Debounce rapid syncs
+                this._pendingDeletions = new Set();  // Track items being deleted to prevent re-sync
                 this.init();
             }
 
@@ -2493,48 +2488,11 @@
                 });
             }
 
-            // Pull to Refresh
+            // Pull to Refresh (DISABLED - element removed from DOM)
             setupPullToRefresh() {
-                let startY = 0;
-                let isPulling = false;
-                const threshold = 80;
-                const indicator = document.getElementById('pull-to-refresh');
-
-                document.addEventListener('touchstart', (e) => {
-                    if (window.scrollY === 0) {
-                        startY = e.touches[0].clientY;
-                    }
-                }, { passive: true });
-
-                document.addEventListener('touchmove', (e) => {
-                    if (window.scrollY === 0) {
-                        const currentY = e.touches[0].clientY;
-                        const pullDistance = currentY - startY;
-
-                        if (pullDistance > threshold && !isPulling) {
-                            isPulling = true;
-                            if (indicator) indicator.classList.add('active');
-                        }
-                    }
-                }, { passive: true });
-
-                document.addEventListener('touchend', async () => {
-                    if (isPulling) {
-                        this.triggerHaptic('medium');
-
-                        // Remove indicator immediately for better UX
-                        isPulling = false;
-                        if (indicator) {
-                            indicator.classList.remove('active');
-                        }
-
-                        // Sync in background (don't await to avoid blocking UI)
-                        this.syncFromCloud().catch(err => {
-                            console.error('Pull-to-refresh sync failed:', err);
-                        });
-                    }
-                    startY = 0;
-                }, { passive: true });
+                // Disabled to prevent "Refreshing..." indicator from appearing
+                // Pull-to-refresh functionality removed for better UX
+                console.log('Pull-to-refresh disabled');
             }
 
             // Keyboard Shortcuts
@@ -2809,17 +2767,24 @@
                 const merged = new Map();
 
                 // First, add all cloud items (source of truth for synced data)
+                // BUT exclude items that are pending deletion
                 cloudData.forEach(item => {
-                    merged.set(item[keyField], item);
+                    const itemId = item[keyField];
+                    if (!this._pendingDeletions.has(itemId)) {
+                        merged.set(itemId, item);
+                    } else {
+                        console.log(`Skipping ${itemId} from cloud sync - pending deletion`);
+                    }
                 });
 
                 // Then add local items that aren't in cloud yet
                 // These are likely pending sync or were just added
                 localData.forEach(item => {
-                    const cloudItem = merged.get(item[keyField]);
-                    if (!cloudItem) {
+                    const itemId = item[keyField];
+                    const cloudItem = merged.get(itemId);
+                    if (!cloudItem && !this._pendingDeletions.has(itemId)) {
                         // Item exists locally but not in cloud - keep it (pending sync)
-                        merged.set(item[keyField], item);
+                        merged.set(itemId, item);
                     }
                     // If item exists in cloud, cloud version is source of truth
                 });
@@ -6212,6 +6177,10 @@
 
                 const deletedVial = app.data.vials[index];
 
+                // Mark as pending deletion to prevent sync from re-adding
+                app._pendingDeletions.add(vialId);
+                console.log(`Added ${vialId} to pending deletions`);
+
                 // Add to undo stack
                 this.undoStack.push({
                     type: 'vial',
@@ -6236,10 +6205,22 @@
                     try {
                         await apiClient.deleteVial(vialId);
                         console.log('Vial deleted from cloud successfully');
+                        // Remove from pending deletions after successful cloud deletion
+                        app._pendingDeletions.delete(vialId);
+                        console.log(`Removed ${vialId} from pending deletions`);
                     } catch (error) {
                         console.error('Failed to delete vial from cloud:', error);
-                        // Don't block user - deletion already happened locally
+                        // Keep in pending deletions for 30 seconds then remove
+                        setTimeout(() => {
+                            app._pendingDeletions.delete(vialId);
+                            console.log(`Removed ${vialId} from pending deletions after timeout`);
+                        }, 30000);
                     }
+                } else {
+                    // Not authenticated, remove from pending after 5 seconds
+                    setTimeout(() => {
+                        app._pendingDeletions.delete(vialId);
+                    }, 5000);
                 }
 
                 // Animate out
@@ -6316,6 +6297,15 @@
                 }
 
                 const operation = this.undoStack.pop();
+
+                // Remove from pending deletions if present
+                const itemId = operation.type === 'vial' ? operation.data.vial_id :
+                               operation.type === 'injection' ? operation.data.id :
+                               operation.data.timestamp;
+                if (app._pendingDeletions.has(itemId)) {
+                    app._pendingDeletions.delete(itemId);
+                    console.log(`Removed ${itemId} from pending deletions (undo)`);
+                }
 
                 // Restore locally
                 switch (operation.type) {
