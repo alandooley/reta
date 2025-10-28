@@ -1618,6 +1618,30 @@
             height: 14px;
         }
 
+        /* Time Range Selector */
+        .time-range-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-width: 50px;
+        }
+
+        .time-range-btn:hover {
+            background: var(--border-color);
+        }
+
+        .time-range-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
         /* Swipe to Delete */
         .shot-item, .weight-item, .vial-item {
             position: relative;
@@ -1942,6 +1966,12 @@
         <div id="results-tab" class="tab-content" style="display: none;">
             <div class="container">
                 <h2>Weight & Progress</h2>
+                <div class="time-range-selector" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+                    <button class="time-range-btn" data-range="7">7D</button>
+                    <button class="time-range-btn active" data-range="30">30D</button>
+                    <button class="time-range-btn" data-range="90">90D</button>
+                    <button class="time-range-btn" data-range="all">ALL</button>
+                </div>
                 <div class="chart-controls">
                     <button class="chart-view-btn active" data-view="combined" title="Combined View">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -2380,6 +2410,7 @@
                     }
                 };
                 this.charts = {};
+                this.timeRange = 30; // Default to 30 days
                 this._isSyncing = false;  // Guard against concurrent syncs
                 this._lastSyncTime = 0;    // Debounce rapid syncs
                 this._pendingDeletions = new Set();  // Track items being deleted to prevent re-sync
@@ -2418,6 +2449,7 @@
                 this.setupPullToRefresh();
                 this.setupKeyboardShortcuts();
                 this.setupChartViewToggles();
+                this.setupTimeRangeSelector();
                 this.setupCountdownInteraction();
                 this.setupSwipeToDelete();
             }
@@ -2535,6 +2567,27 @@
 
                         const view = btn.dataset.view;
                         this.switchChartView(view);
+                    });
+                });
+            }
+
+            setupTimeRangeSelector() {
+                const buttons = document.querySelectorAll('.time-range-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.triggerHaptic('light');
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        const range = btn.dataset.range;
+                        this.timeRange = range === 'all' ? 'all' : parseInt(range);
+
+                        // Update chart with new time range
+                        const activeView = document.querySelector('.chart-view-btn.active');
+                        const view = activeView ? activeView.dataset.view : 'combined';
+                        if (view !== 'table') {
+                            this.updateWeightChart(view);
+                        }
                     });
                 });
             }
@@ -4610,13 +4663,20 @@
                     container.innerHTML = '<canvas id="weight-chart"></canvas>';
                 }
 
-                const sortedWeights = [...this.data.weights].sort((a, b) =>
-                    new Date(a.timestamp) - new Date(b.timestamp)
-                );
+                // Filter data based on selected time range
+                const now = new Date();
+                let cutoffDate = null;
+                if (this.timeRange !== 'all') {
+                    cutoffDate = new Date(now.getTime() - this.timeRange * 24 * 60 * 60 * 1000);
+                }
 
-                const sortedInjections = [...this.data.injections].sort((a, b) =>
-                    new Date(a.timestamp) - new Date(b.timestamp)
-                );
+                const sortedWeights = [...this.data.weights]
+                    .filter(w => this.timeRange === 'all' || new Date(w.timestamp) >= cutoffDate)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                const sortedInjections = [...this.data.injections]
+                    .filter(i => this.timeRange === 'all' || new Date(i.timestamp) >= cutoffDate)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 // Detect mobile screen for responsive chart configuration
                 const isMobile = window.innerWidth <= 480;
@@ -4658,7 +4718,7 @@
                     }
                 }];
 
-                // Add BMI dataset if height is available
+                // Add BMI dataset if height is available (shares left axis with weight)
                 if (this.data.settings.heightCm) {
                     const heightM = this.data.settings.heightCm / 100;
                     const bmiData = sortedWeights.map(w => {
@@ -4676,7 +4736,7 @@
                         backgroundColor: 'rgba(175, 82, 222, 0.1)',
                         fill: false,
                         tension: 0.4,
-                        yAxisID: 'y2',
+                        yAxisID: 'y',
                         pointRadius: isMobile ? 4 : 3,
                         pointHoverRadius: isMobile ? 6 : 5,
                         pointHitRadius: isMobile ? 12 : 8,
@@ -4776,13 +4836,13 @@
                                     },
                                     maxTicksLimit: isMobile ? 6 : 8,
                                     callback: function(value) {
-                                        return value.toFixed(1) + ' kg';
+                                        return value.toFixed(1);
                                     }
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Weight (kg)',
-                                    color: '#34C759',
+                                    text: 'Weight (kg) / BMI',
+                                    color: '#cccccc',
                                     font: {
                                         size: fontSize.title
                                     }
@@ -4817,34 +4877,6 @@
                                 },
                                 beginAtZero: true,
                                 grace: '10%'
-                            },
-                            y2: {
-                                type: 'linear',
-                                display: !!this.data.settings.heightCm,
-                                position: 'right',
-                                grid: {
-                                    drawOnChartArea: false,
-                                },
-                                ticks: {
-                                    color: '#cccccc',
-                                    font: {
-                                        size: fontSize.tick
-                                    },
-                                    maxTicksLimit: isMobile ? 6 : 8,
-                                    callback: function(value) {
-                                        return value.toFixed(1);
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'BMI',
-                                    color: '#AF52DE',
-                                    font: {
-                                        size: fontSize.title
-                                    }
-                                },
-                                beginAtZero: false,
-                                grace: '5%'
                             }
                         }
                     }
