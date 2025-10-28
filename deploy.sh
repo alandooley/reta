@@ -1,82 +1,99 @@
 #!/bin/bash
-# Deploy Retatrutide Tracker to AWS
-# Usage: ./deploy.sh [frontend|backend|all]
 
-set -e  # Exit on error
+# Retatrutide Tracker - Deployment Script
+# This script deploys the frontend to AWS S3 + CloudFront
 
+set -e  # Exit on any error
+
+echo "🚀 Deploying Retatrutide Tracker..."
+echo ""
+
+# Colors for output
+GREEN='\033[0;32m'
+BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Configuration
 PROFILE="reta-admin"
 REGION="eu-west-1"
 BUCKET="retatrutide-frontend-372208783486"
 DISTRIBUTION_ID="E2ZD0ACBBK8F5K"
 
-# Colors for output
-GREEN='\033[0;32m'
-BLUE='\033[0;34m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# Check if on correct branch
+CURRENT_BRANCH=$(git branch --show-current)
+TARGET_BRANCH="claude/mobile-graph-ux-review-011CUZTYadnTQvRKxoSkJ2st"
 
-deploy_frontend() {
-    echo -e "${BLUE}Deploying frontend to S3...${NC}"
+if [ "$CURRENT_BRANCH" != "$TARGET_BRANCH" ]; then
+    echo -e "${YELLOW}⚠️  Not on deployment branch. Switching...${NC}"
+    git fetch origin
+    git checkout $TARGET_BRANCH
+    echo -e "${GREEN}✓ Switched to $TARGET_BRANCH${NC}"
+    echo ""
+fi
 
-    # Upload main files
-    aws s3 cp index.html s3://${BUCKET}/ --profile ${PROFILE} --region ${REGION}
-    aws s3 cp manifest.json s3://${BUCKET}/ --profile ${PROFILE} --region ${REGION}
-    aws s3 cp robots.txt s3://${BUCKET}/ --profile ${PROFILE} --region ${REGION}
-    aws s3 cp sw.js s3://${BUCKET}/ --profile ${PROFILE} --region ${REGION}
+# Step 1: Upload to S3
+echo -e "${BLUE}📤 Step 1/3: Uploading index.html to S3...${NC}"
+aws s3 cp index.html s3://$BUCKET/ \
+    --profile $PROFILE \
+    --region $REGION
 
-    # Sync js directory
-    aws s3 sync js/ s3://${BUCKET}/js/ --delete --profile ${PROFILE} --region ${REGION}
+echo -e "${GREEN}✓ Upload complete${NC}"
+echo ""
 
-    echo -e "${GREEN}✓ Frontend uploaded to S3${NC}"
+# Step 2: Invalidate CloudFront cache
+echo -e "${BLUE}🔄 Step 2/3: Invalidating CloudFront cache...${NC}"
+INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation \
+    --distribution-id $DISTRIBUTION_ID \
+    --paths "/*" \
+    --profile $PROFILE \
+    --output json)
 
-    # Invalidate CloudFront cache
-    echo -e "${BLUE}Invalidating CloudFront cache...${NC}"
-    INVALIDATION_ID=$(aws cloudfront create-invalidation \
-        --distribution-id ${DISTRIBUTION_ID} \
-        --paths "/*" \
-        --profile ${PROFILE} \
-        --query 'Invalidation.Id' \
-        --output text)
+INVALIDATION_ID=$(echo $INVALIDATION_OUTPUT | grep -o '"Id": "[^"]*' | grep -o '[^"]*$')
 
-    echo -e "${GREEN}✓ CloudFront invalidation created: ${INVALIDATION_ID}${NC}"
-    echo -e "${BLUE}Cache will be cleared in 1-2 minutes${NC}"
-}
+echo -e "${GREEN}✓ Cache invalidation started${NC}"
+echo -e "   Invalidation ID: ${INVALIDATION_ID}"
+echo ""
 
-deploy_backend() {
-    echo -e "${BLUE}Deploying backend infrastructure...${NC}"
+# Step 3: Wait for propagation
+echo -e "${BLUE}⏳ Step 3/3: Waiting for cache invalidation to complete...${NC}"
+echo -e "   This usually takes 2-5 minutes"
+echo ""
 
-    cd reta-cloud-infrastructure
+aws cloudfront wait invalidation-completed \
+    --distribution-id $DISTRIBUTION_ID \
+    --id $INVALIDATION_ID \
+    --profile $PROFILE \
+    2>/dev/null &
 
-    # Build TypeScript
-    echo -e "${BLUE}Building TypeScript...${NC}"
-    npm run build
+WAIT_PID=$!
+SECONDS=0
 
-    # Deploy with CDK
-    echo -e "${BLUE}Deploying CDK stack...${NC}"
-    npx cdk deploy --require-approval never --profile ${PROFILE}
+# Show progress spinner
+spin='-\|/'
+i=0
+while kill -0 $WAIT_PID 2>/dev/null; do
+    i=$(( (i+1) %4 ))
+    printf "\r   ${spin:$i:1} Waiting... ${SECONDS}s elapsed"
+    sleep 1
+done
+wait $WAIT_PID
 
-    cd ..
+echo ""
+echo -e "${GREEN}✓ Cache invalidation complete${NC}"
+echo ""
 
-    echo -e "${GREEN}✓ Backend infrastructure deployed${NC}"
-}
-
-# Main deployment logic
-case "${1:-all}" in
-    frontend)
-        deploy_frontend
-        ;;
-    backend)
-        deploy_backend
-        ;;
-    all)
-        deploy_frontend
-        deploy_backend
-        ;;
-    *)
-        echo -e "${RED}Usage: $0 [frontend|backend|all]${NC}"
-        exit 1
-        ;;
-esac
-
-echo -e "${GREEN}✓ Deployment complete!${NC}"
-echo -e "${BLUE}Frontend: https://d13m7vzwjqe4pp.cloudfront.net/${NC}"
+# Success message
+echo -e "${GREEN}🎉 Deployment successful!${NC}"
+echo ""
+echo "Your app is now live at:"
+echo -e "${BLUE}https://d13m7vzwjqe4pp.cloudfront.net${NC}"
+echo ""
+echo "Test on your iPhone 16 Pro:"
+echo "  1. Open the URL above in Chrome"
+echo "  2. Hard refresh (pull to refresh)"
+echo "  3. Look for SVG icons in bottom navigation"
+echo "  4. Check that chart is taller on Results tab"
+echo "  5. Try the blue FAB button (bottom-right)"
+echo ""
+echo -e "${YELLOW}Note: You may need to clear Safari cache if changes don't appear immediately${NC}"

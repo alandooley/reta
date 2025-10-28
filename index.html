@@ -25,6 +25,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
+    <!-- Confetti for celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
@@ -898,8 +901,14 @@
         }
 
         .nav-icon {
-            font-size: 24px;
+            width: 24px;
+            height: 24px;
             margin-bottom: var(--spacing-xs);
+            stroke: currentColor;
+        }
+
+        .nav-btn.active .nav-icon {
+            stroke: var(--accent-color);
         }
 
         .nav-label {
@@ -1452,6 +1461,325 @@
         .flex-column { flex-direction: column; }
         .justify-between { justify-content: space-between; }
         .align-center { align-items: center; }
+
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl) var(--spacing-md);
+            text-align: center;
+            min-height: 300px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: var(--spacing-lg);
+            max-width: 300px;
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF, #0051a8);
+            color: white;
+            border: none;
+            font-size: 28px;
+            font-weight: 300;
+            line-height: 1;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+            z-index: 99;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.5);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Form Validation */
+        .form-group input:invalid:not(:focus):not(:placeholder-shown),
+        .form-group select:invalid:not(:focus) {
+            border-color: var(--danger-color);
+        }
+
+        .form-group input:valid:not(:focus):not(:placeholder-shown):not([type="datetime-local"]):not([type="date"]),
+        .form-group select:valid:not(:focus):not([value=""]) {
+            border-color: var(--success-color);
+        }
+
+        .field-error {
+            color: var(--danger-color);
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-group.error .field-error {
+            display: block;
+        }
+
+        /* Pull to Refresh Indicator */
+        .pull-to-refresh {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            background: var(--card-bg);
+            padding: 12px 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pull-to-refresh.active {
+            transform: translateX(-50%) translateY(10px);
+        }
+
+        .pull-to-refresh-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Chart Controls */
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            justify-content: flex-end;
+        }
+
+        .chart-view-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chart-view-btn:hover {
+            background: var(--border-color);
+        }
+
+        .chart-view-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .chart-view-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Swipe to Delete */
+        .shot-item, .weight-item, .vial-item {
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .shot-item.swiping, .weight-item.swiping, .vial-item.swiping {
+            transition: none;
+        }
+
+        .delete-action {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 80px;
+            background: var(--danger-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .shot-item.swiped .delete-action,
+        .weight-item.swiped .delete-action,
+        .vial-item.swiped .delete-action {
+            opacity: 1;
+        }
+
+        /* Animated Transitions */
+        .tab-content {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Offline Indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--warning-color);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 10002;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .offline-indicator.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100%);
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Weekly Insights Card */
+        .insight-card {
+            background: linear-gradient(135deg, var(--card-bg) 0%, #2d2d2d 100%);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .insight-card h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .insight-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .insight-stat:last-child {
+            border-bottom: none;
+        }
+
+        .insight-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .insight-value {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .insight-trend {
+            color: var(--success-color);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .insight-trend.negative {
+            color: var(--danger-color);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Countdown Timer Enhancements */
+        .countdown-circle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .countdown-circle:active {
+            transform: scale(0.98);
+        }
+
+        .countdown-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1486,6 +1814,20 @@
             ✓ Saved
         </div>
 
+        <!-- Offline Indicator -->
+        <div id="offline-indicator" class="offline-indicator">
+            ⚠️ Offline - Changes saved locally
+        </div>
+
+        <!-- Pull to Refresh -->
+        <div id="pull-to-refresh" class="pull-to-refresh">
+            <div class="pull-to-refresh-spinner"></div>
+            <span>Refreshing...</span>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="fab-button" class="fab" title="Quick Add Shot">+</button>
+
         <!-- Header -->
         <header id="app-header">
         <div class="header-content">
@@ -1504,6 +1846,26 @@
         <!-- Summary Tab -->
         <div id="summary-tab" class="tab-content" style="display: none;">
             <div class="container">
+                <!-- Weekly Insights Card -->
+                <div id="weekly-insights" class="insight-card" style="display: none;">
+                    <h3>This Week's Progress</h3>
+                    <div class="insight-stat">
+                        <span class="insight-label">Weight Change</span>
+                        <span class="insight-value" id="insight-weight-change">--</span>
+                        <span class="insight-trend" id="insight-weight-trend">--</span>
+                    </div>
+                    <div class="insight-stat">
+                        <span class="insight-label">Adherence</span>
+                        <span class="insight-value" id="insight-adherence">--</span>
+                        <span class="insight-trend" id="insight-adherence-trend">--</span>
+                    </div>
+                    <div class="insight-stat">
+                        <span class="insight-label">Avg Dose</span>
+                        <span class="insight-value" id="insight-avg-dose">--</span>
+                        <span class="insight-trend">--</span>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="total-shots">0</div>
@@ -1586,8 +1948,34 @@
         <div id="results-tab" class="tab-content" style="display: none;">
             <div class="container">
                 <h2>Weight & Progress</h2>
-                <div class="chart-container">
+                <div class="chart-controls">
+                    <button class="chart-view-btn active" data-view="combined" title="Combined View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18 17l-5-5-3 3-4-4"/>
+                        </svg>
+                        <span>Combined</span>
+                    </button>
+                    <button class="chart-view-btn" data-view="weight" title="Weight Only">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Weight</span>
+                    </button>
+                    <button class="chart-view-btn" data-view="table" title="Table View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18M9 3v18"/>
+                        </svg>
+                        <span>Table</span>
+                    </button>
+                </div>
+                <div class="chart-container" id="chart-view">
                     <canvas id="weight-chart"></canvas>
+                </div>
+                <div id="table-view" class="table-view" style="display: none;">
+                    <div id="weight-table"></div>
                 </div>
                 <div class="results-stats">
                     <div class="result-card">
@@ -1799,23 +2187,40 @@
     <!-- Bottom Navigation -->
     <nav id="bottom-nav" class="bottom-nav">
         <button class="nav-btn active" data-tab="summary">
-            <span class="nav-icon">📊</span>
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+            </svg>
             <span class="nav-label">Summary</span>
         </button>
         <button class="nav-btn" data-tab="shots">
-            <span class="nav-icon">💉</span>
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 2l4 4-4 4M10 8l-2 2 2 2"/>
+                <path d="M22 6H10a8 8 0 00-8 8v0a2 2 0 002 2h10"/>
+                <circle cx="18" cy="18" r="3"/>
+            </svg>
             <span class="nav-label">Shots</span>
         </button>
         <button class="nav-btn" data-tab="results">
-            <span class="nav-icon">📈</span>
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"/>
+                <path d="M18 17l-5-5-4 4-4-7"/>
+            </svg>
             <span class="nav-label">Results</span>
         </button>
         <button class="nav-btn" data-tab="inventory">
-            <span class="nav-icon">📦</span>
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
             <span class="nav-label">Inventory</span>
         </button>
         <button class="nav-btn" data-tab="settings">
-            <span class="nav-icon">⚙️</span>
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.25m4.24 4.24l4.24 4.25M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.25"/>
+            </svg>
             <span class="nav-label">Settings</span>
         </button>
     </nav>
@@ -1989,6 +2394,7 @@
                 try {
                     await this.loadData();
                     this.setupEventListeners();
+                    this.setupUXEnhancements(); // NEW: Setup all UX improvements
                     this.updateUI();
                     this.startCountdownTimer();
                     this.setupInjectionReminders();
@@ -1996,11 +2402,328 @@
                     this.checkLowStock();
                     this.scheduleWeeklySummary();
                     this.validateDataIntegrity();
+                    this.updateWeeklyInsights(); // NEW: Update insights on load
                 } catch (error) {
                     console.error('Error during initialization:', error);
                 } finally {
                     // Always hide loading screen, even if there's an error
                     this.hideLoadingScreen();
+                }
+            }
+
+            // ====================================
+            // UX ENHANCEMENTS
+            // ====================================
+
+            setupUXEnhancements() {
+                this.setupFAB();
+                this.setupOfflineIndicator();
+                this.setupPullToRefresh();
+                this.setupKeyboardShortcuts();
+                this.setupChartViewToggles();
+                this.setupCountdownInteraction();
+                this.setupSwipeToDelete();
+            }
+
+            // Floating Action Button
+            setupFAB() {
+                const fab = document.getElementById('fab-button');
+                if (fab) {
+                    fab.addEventListener('click', () => {
+                        this.triggerHaptic();
+                        this.openModal('add-shot-modal');
+                    });
+                }
+            }
+
+            // Haptic Feedback
+            triggerHaptic(type = 'light') {
+                if ('vibrate' in navigator) {
+                    const patterns = {
+                        light: 10,
+                        medium: 20,
+                        heavy: 30
+                    };
+                    navigator.vibrate(patterns[type] || 10);
+                }
+            }
+
+            // Offline/Online Indicators
+            setupOfflineIndicator() {
+                const indicator = document.getElementById('offline-indicator');
+
+                window.addEventListener('online', () => {
+                    if (indicator) indicator.classList.remove('show');
+                    this.showNotification('Back online - syncing data...', 'success');
+                    this.syncFromCloud();
+                });
+
+                window.addEventListener('offline', () => {
+                    if (indicator) indicator.classList.add('show');
+                    this.showNotification('Offline - changes saved locally', 'warning');
+                });
+            }
+
+            // Pull to Refresh
+            setupPullToRefresh() {
+                let startY = 0;
+                let isPulling = false;
+                const threshold = 80;
+                const indicator = document.getElementById('pull-to-refresh');
+
+                document.addEventListener('touchstart', (e) => {
+                    if (window.scrollY === 0) {
+                        startY = e.touches[0].clientY;
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchmove', (e) => {
+                    if (window.scrollY === 0) {
+                        const currentY = e.touches[0].clientY;
+                        const pullDistance = currentY - startY;
+
+                        if (pullDistance > threshold && !isPulling) {
+                            isPulling = true;
+                            if (indicator) indicator.classList.add('active');
+                        }
+                    }
+                }, { passive: true });
+
+                document.addEventListener('touchend', async () => {
+                    if (isPulling) {
+                        this.triggerHaptic('medium');
+                        await this.syncFromCloud();
+                        isPulling = false;
+                        if (indicator) {
+                            indicator.classList.remove('active');
+                        }
+                    }
+                    startY = 0;
+                }, { passive: true });
+            }
+
+            // Keyboard Shortcuts
+            setupKeyboardShortcuts() {
+                document.addEventListener('keydown', (e) => {
+                    // Ignore if typing in input/textarea
+                    if (e.target.matches('input, textarea')) return;
+
+                    // Cmd/Ctrl + N: New shot
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+                        e.preventDefault();
+                        this.triggerHaptic();
+                        this.openModal('add-shot-modal');
+                    }
+
+                    // Cmd/Ctrl + W: New weight
+                    if ((e.metaKey || e.ctrlKey) && e.key === 'w') {
+                        e.preventDefault();
+                        this.triggerHaptic();
+                        this.openModal('add-weight-modal');
+                    }
+
+                    // Number keys 1-5: Switch tabs
+                    if (/[1-5]/.test(e.key)) {
+                        e.preventDefault();
+                        const tabs = ['summary', 'shots', 'results', 'inventory', 'settings'];
+                        this.switchTab(tabs[parseInt(e.key) - 1]);
+                    }
+                });
+            }
+
+            // Chart View Toggles
+            setupChartViewToggles() {
+                const buttons = document.querySelectorAll('.chart-view-btn');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this.triggerHaptic('light');
+                        buttons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        const view = btn.dataset.view;
+                        this.switchChartView(view);
+                    });
+                });
+            }
+
+            switchChartView(view) {
+                const chartView = document.getElementById('chart-view');
+                const tableView = document.getElementById('table-view');
+
+                if (view === 'table') {
+                    chartView.style.display = 'none';
+                    tableView.style.display = 'block';
+                    this.renderWeightTable();
+                } else {
+                    chartView.style.display = 'block';
+                    tableView.style.display = 'none';
+                    this.updateWeightChart(view);
+                }
+            }
+
+            renderWeightTable() {
+                const tableDiv = document.getElementById('weight-table');
+                if (!tableDiv) return;
+
+                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                let html = `
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 12px; text-align: left; color: var(--text-secondary);">Date</th>
+                                <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Weight (kg)</th>
+                                <th style="padding: 12px; text-align: right; color: var(--text-secondary);">Change</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                sortedWeights.forEach((weight, idx) => {
+                    const date = new Date(weight.timestamp).toLocaleDateString();
+                    const nextWeight = sortedWeights[idx + 1];
+                    const change = nextWeight ? (weight.weight_kg - nextWeight.weight_kg).toFixed(1) : '--';
+                    const changeColor = change > 0 ? 'var(--danger-color)' : change < 0 ? 'var(--success-color)' : 'var(--text-secondary)';
+
+                    html += `
+                        <tr style="border-bottom: 1px solid var(--border-color);">
+                            <td style="padding: 12px; color: var(--text-primary);">${date}</td>
+                            <td style="padding: 12px; text-align: right; color: var(--text-primary); font-weight: 600;">${weight.weight_kg.toFixed(1)}</td>
+                            <td style="padding: 12px; text-align: right; color: ${changeColor}; font-weight: 600;">${change !== '--' ? (change > 0 ? '+' : '') + change : '--'}</td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+
+                tableDiv.innerHTML = html;
+            }
+
+            // Enhanced Countdown Interaction
+            setupCountdownInteraction() {
+                const countdown = document.querySelector('.countdown-circle');
+                if (countdown) {
+                    countdown.addEventListener('click', () => {
+                        this.triggerHaptic('medium');
+                        this.openModal('add-shot-modal');
+                    });
+                }
+            }
+
+            // Swipe to Delete
+            setupSwipeToDelete() {
+                // Will be applied to dynamically created list items
+                this.swipeToDeleteEnabled = true;
+            }
+
+            addSwipeToDeleteHandlers(element) {
+                if (!this.swipeToDeleteEnabled) return;
+
+                let touchStartX = 0;
+                let touchEndX = 0;
+                const swipeThreshold = 80;
+
+                element.addEventListener('touchstart', (e) => {
+                    touchStartX = e.touches[0].clientX;
+                    element.classList.add('swiping');
+                }, { passive: true });
+
+                element.addEventListener('touchmove', (e) => {
+                    touchEndX = e.touches[0].clientX;
+                    const swipeDistance = touchStartX - touchEndX;
+
+                    if (swipeDistance > 0 && swipeDistance < 100) {
+                        element.style.transform = `translateX(-${swipeDistance}px)`;
+                    }
+                }, { passive: true });
+
+                element.addEventListener('touchend', () => {
+                    element.classList.remove('swiping');
+                    const swipeDistance = touchStartX - touchEndX;
+
+                    if (swipeDistance > swipeThreshold) {
+                        element.classList.add('swiped');
+                        element.style.transform = `translateX(-80px)`;
+                        this.triggerHaptic('medium');
+                    } else {
+                        element.classList.remove('swiped');
+                        element.style.transform = '';
+                    }
+
+                    touchStartX = 0;
+                    touchEndX = 0;
+                }, { passive: true });
+            }
+
+            // Weekly Insights
+            updateWeeklyInsights() {
+                const insightsCard = document.getElementById('weekly-insights');
+                if (!insightsCard) return;
+
+                const now = new Date();
+                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+                // Get this week's weights
+                const weekWeights = this.data.weights.filter(w =>
+                    new Date(w.timestamp) >= oneWeekAgo
+                ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Get this week's injections
+                const weekInjections = this.data.injections.filter(i =>
+                    new Date(i.timestamp) >= oneWeekAgo
+                );
+
+                if (weekWeights.length < 2 && weekInjections.length === 0) {
+                    insightsCard.style.display = 'none';
+                    return;
+                }
+
+                insightsCard.style.display = 'block';
+
+                // Weight change
+                if (weekWeights.length >= 2) {
+                    const firstWeight = weekWeights[0].weight_kg;
+                    const lastWeight = weekWeights[weekWeights.length - 1].weight_kg;
+                    const change = lastWeight - firstWeight;
+
+                    document.getElementById('insight-weight-change').textContent =
+                        `${change >= 0 ? '+' : ''}${change.toFixed(1)} kg`;
+
+                    const trendEl = document.getElementById('insight-weight-trend');
+                    if (change < 0) {
+                        trendEl.textContent = `↓ ${Math.abs(change * 2.2).toFixed(1)} lbs`;
+                        trendEl.classList.remove('negative');
+                    } else {
+                        trendEl.textContent = `↑ ${(change * 2.2).toFixed(1)} lbs`;
+                        trendEl.classList.add('negative');
+                    }
+                } else {
+                    document.getElementById('insight-weight-change').textContent = '--';
+                    document.getElementById('insight-weight-trend').textContent = '--';
+                }
+
+                // Adherence
+                const expectedInjections = Math.floor(7 / this.data.settings.injectionFrequency);
+                const adherence = expectedInjections > 0 ?
+                    Math.round((weekInjections.length / expectedInjections) * 100) : 0;
+
+                document.getElementById('insight-adherence').textContent =
+                    `${adherence}%`;
+                document.getElementById('insight-adherence-trend').textContent =
+                    adherence >= 100 ? '✓ On track' : '⚠️ Below target';
+
+                // Average dose
+                if (weekInjections.length > 0) {
+                    const avgDose = weekInjections.reduce((sum, inj) => sum + inj.dose_mg, 0) / weekInjections.length;
+                    document.getElementById('insight-avg-dose').textContent =
+                        `${avgDose.toFixed(1)} mg`;
+                } else {
+                    document.getElementById('insight-avg-dose').textContent = '--';
                 }
             }
 
@@ -2186,7 +2909,7 @@
             // INJECTION MANAGEMENT
             // ====================================
 
-            addInjection(injection) {
+            async addInjection(injection) {
                 const newInjection = {
                     id: this.generateId(),
                     timestamp: injection.timestamp || new Date().toISOString(),
@@ -2205,6 +2928,27 @@
                 this.saveData();
                 this.updateUI();
                 this.setupInjectionReminders();
+
+                // Check for milestones and celebrate
+                this.checkMilestones();
+
+                // Push to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createInjection({
+                            id: newInjection.id,
+                            timestamp: newInjection.timestamp,
+                            doseMg: newInjection.dose_mg,
+                            site: newInjection.injection_site,
+                            vialId: newInjection.vial_id,
+                            notes: newInjection.notes
+                        });
+                        console.log('Injection synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync injection to cloud:', error);
+                        // Still saved locally, so don't block the user
+                    }
+                }
             }
 
             updateVialUsage(vialId, doseMg) {
@@ -2287,7 +3031,7 @@
             // WEIGHT MANAGEMENT
             // ====================================
 
-            addWeight(weight) {
+            async addWeight(weight) {
                 const newWeight = {
                     timestamp: weight.timestamp || new Date().toISOString(),
                     weight_kg: parseFloat(weight.weight_kg),
@@ -2301,6 +3045,26 @@
                 this.data.weights.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 this.saveData();
                 this.updateUI();
+
+                // Check for milestones and celebrate
+                this.checkMilestones();
+
+                // Push to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createWeight({
+                            timestamp: newWeight.timestamp,
+                            weightKg: newWeight.weight_kg,
+                            source: newWeight.source,
+                            bmi: newWeight.bmi,
+                            bodyFatPercentage: newWeight.body_fat_percentage
+                        });
+                        console.log('Weight synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync weight to cloud:', error);
+                        // Still saved locally, so don't block the user
+                    }
+                }
             }
 
             // ====================================
@@ -3120,12 +3884,37 @@
                 const overlay = document.getElementById('modal-overlay');
                 const modal = document.getElementById(modalId);
 
-                // Set current date/time for date inputs
+                // Trigger haptic feedback
+                this.triggerHaptic('light');
+
+                // Set current date/time for date inputs with smart defaults
                 const now = new Date();
                 const localDateTime = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
                 if (modalId === 'add-shot-modal') {
-                    document.getElementById('shot-date').value = localDateTime;
+                    // Smart default: Use last injection time + frequency
+                    const lastInjection = this.data.injections[0];
+                    if (lastInjection) {
+                        const lastDate = new Date(lastInjection.timestamp);
+                        const nextDate = new Date(lastDate.getTime() + this.data.settings.injectionFrequency * 24 * 60 * 60 * 1000);
+
+                        // If next date is in the past or more than a week in future, use current time
+                        if (nextDate <= now && nextDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
+                            const nextDateTime = new Date(nextDate.getTime() - nextDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                            document.getElementById('shot-date').value = nextDateTime;
+
+                            // Pre-fill last dose if available
+                            const lastDose = document.getElementById('shot-dose');
+                            if (lastDose && lastInjection.dose_mg) {
+                                lastDose.value = lastInjection.dose_mg;
+                            }
+                        } else {
+                            document.getElementById('shot-date').value = localDateTime;
+                        }
+                    } else {
+                        document.getElementById('shot-date').value = localDateTime;
+                    }
+
                     this.populateVialSelect();
                 } else if (modalId === 'add-vial-modal') {
                     document.getElementById('vial-order-date').value = now.toISOString().split('T')[0];
@@ -3192,7 +3981,7 @@
                 }
             }
 
-            handleAddShot() {
+            async handleAddShot() {
                 const form = document.getElementById('add-shot-form');
                 const formData = new FormData(form);
 
@@ -3208,14 +3997,14 @@
 
                 // Add weight entry if provided
                 if (injection.weight_kg) {
-                    this.addWeight({
+                    await this.addWeight({
                         timestamp: injection.timestamp,
                         weight_kg: injection.weight_kg,
                         source: 'manual'
                     });
                 }
 
-                this.addInjection(injection);
+                await this.addInjection(injection);
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
@@ -3300,7 +4089,7 @@
                 }, 300);
             }
 
-            handleAddWeight() {
+            async handleAddWeight() {
                 const weight = {
                     timestamp: document.getElementById('weight-date').value,
                     weight_kg: parseFloat(document.getElementById('weight-kg').value),
@@ -3309,7 +4098,7 @@
                     source: 'manual'
                 };
 
-                this.addWeight(weight);
+                await this.addWeight(weight);
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
@@ -3339,7 +4128,12 @@
                             <path d="M10 11v6M14 11v6"/>
                         </svg>
                     </button>
+                    <div class="delete-action">Delete</div>
                 `;
+
+                // Add swipe to delete handlers
+                this.addSwipeToDeleteHandlers(div);
+
                 return div;
             }
 
@@ -3656,7 +4450,7 @@
                 return { labels, levels, projectedLevels };
             }
 
-            updateWeightChart() {
+            updateWeightChart(view = 'combined') {
                 const canvas = document.getElementById('weight-chart');
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
@@ -3673,12 +4467,23 @@
                 }
 
                 if (this.data.weights.length === 0) {
-                    // Show empty state
-                    ctx.fillStyle = '#888888';
-                    ctx.font = '16px -apple-system, BlinkMacSystemFont, sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('No weight data yet', canvas.width / 2, canvas.height / 2);
+                    // Show better empty state
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>No weight data yet</h3>
+                            <p>Start tracking your progress by adding your first weight entry</p>
+                            <button class="btn-primary" onclick="app.openModal('add-weight-modal')">Add Weight</button>
+                        </div>
+                    `;
                     return;
+                }
+
+                // Ensure canvas exists for chart
+                if (!canvas.parentElement.querySelector('canvas')) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = '<canvas id="weight-chart"></canvas>';
                 }
 
                 const sortedWeights = [...this.data.weights].sort((a, b) =>
@@ -3708,43 +4513,49 @@
                     title: 12
                 };
 
+                // Build datasets based on view mode
+                const datasets = [{
+                    label: 'Weight (kg)',
+                    data: sortedWeights.map(w => ({
+                        x: w.timestamp,
+                        y: w.weight_kg
+                    })),
+                    borderColor: '#34C759',
+                    backgroundColor: 'rgba(52, 199, 89, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y',
+                    pointRadius: isMobile ? 5 : 4,
+                    pointHoverRadius: isMobile ? 7 : 6,
+                    pointHitRadius: isMobile ? 12 : 8,
+                    pointBackgroundColor: function(context) {
+                        const weight = sortedWeights[context.dataIndex];
+                        return weight.source === 'withings' ? '#FF9500' : '#34C759';
+                    }
+                }];
+
+                // Add dose dataset only for combined view
+                if (view === 'combined' && sortedInjections.length > 0) {
+                    datasets.push({
+                        label: 'Dose (mg)',
+                        data: sortedInjections.map(i => ({
+                            x: i.timestamp,
+                            y: i.dose_mg
+                        })),
+                        type: 'scatter',
+                        backgroundColor: '#007AFF',
+                        borderColor: '#007AFF',
+                        borderWidth: 2,
+                        pointRadius: isMobile ? 7 : 6,
+                        pointHoverRadius: isMobile ? 9 : 8,
+                        pointHitRadius: isMobile ? 14 : 10,
+                        yAxisID: 'y1'
+                    });
+                }
+
                 this.charts.weightChart = new Chart(ctx, {
                     type: 'line',
-                    data: {
-                        datasets: [{
-                            label: 'Weight (kg)',
-                            data: sortedWeights.map(w => ({
-                                x: w.timestamp,
-                                y: w.weight_kg
-                            })),
-                            borderColor: '#34C759',
-                            backgroundColor: 'rgba(52, 199, 89, 0.1)',
-                            fill: true,
-                            tension: 0.4,
-                            yAxisID: 'y',
-                            pointRadius: isMobile ? 5 : 4,
-                            pointHoverRadius: isMobile ? 7 : 6,
-                            pointHitRadius: isMobile ? 12 : 8,
-                            pointBackgroundColor: function(context) {
-                                const weight = sortedWeights[context.dataIndex];
-                                return weight.source === 'withings' ? '#FF9500' : '#34C759';
-                            }
-                        }, {
-                            label: 'Dose (mg)',
-                            data: sortedInjections.map(i => ({
-                                x: i.timestamp,
-                                y: i.dose_mg
-                            })),
-                            type: 'scatter',
-                            backgroundColor: '#007AFF',
-                            borderColor: '#007AFF',
-                            borderWidth: 2,
-                            pointRadius: isMobile ? 7 : 6,
-                            pointHoverRadius: isMobile ? 9 : 8,
-                            pointHitRadius: isMobile ? 14 : 10,
-                            yAxisID: 'y1'
-                        }]
-                    },
+                    data: { datasets },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
@@ -4773,11 +5584,186 @@
             }
 
             showTestNotification() {
-                this.scheduleNotification(
-                    'Test Notification',
-                    'Your notification system is working correctly! 💉',
-                    100 // Show almost immediately
-                );
+                // Enhanced notification with actions
+                this.showEnhancedNotification({
+                    title: 'Test Notification',
+                    body: 'Your notification system is working correctly!',
+                    icon: '/icon-192.png',
+                    badge: '/badge-72.png',
+                    actions: [
+                        { action: 'open', title: '✓ Open App' },
+                        { action: 'dismiss', title: '✕ Dismiss' }
+                    ]
+                });
+            }
+
+            // Enhanced notification with actions (Android/Desktop)
+            showEnhancedNotification(options) {
+                if (!('Notification' in window) || Notification.permission !== 'granted') {
+                    return;
+                }
+
+                // Basic notification for browsers without action support
+                if (!('actions' in Notification.prototype)) {
+                    new Notification(options.title, {
+                        body: options.body,
+                        icon: options.icon,
+                        badge: options.badge
+                    });
+                    return;
+                }
+
+                // Enhanced notification with actions
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(options.title, {
+                            body: options.body,
+                            icon: options.icon || '/icon-192.png',
+                            badge: options.badge || '/badge-72.png',
+                            actions: options.actions || [],
+                            vibrate: options.vibrate || [200, 100, 200],
+                            tag: options.tag || 'default',
+                            requireInteraction: options.requireInteraction || false,
+                            data: options.data || {}
+                        });
+                    });
+                } else {
+                    // Fallback for browsers without service worker
+                    new Notification(options.title, {
+                        body: options.body,
+                        icon: options.icon,
+                        badge: options.badge
+                    });
+                }
+            }
+
+            // Confetti animations
+            triggerConfetti(type = 'default') {
+                if (typeof confetti === 'undefined') return;
+
+                switch (type) {
+                    case 'milestone':
+                        // Milestone achievement - big celebration
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#007AFF', '#34C759', '#FF9500']
+                        });
+                        break;
+
+                    case 'goal':
+                        // Weight loss goal - shower from top
+                        const duration = 3 * 1000;
+                        const animationEnd = Date.now() + duration;
+                        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+
+                        function randomInRange(min, max) {
+                            return Math.random() * (max - min) + min;
+                        }
+
+                        const interval = setInterval(function() {
+                            const timeLeft = animationEnd - Date.now();
+
+                            if (timeLeft <= 0) {
+                                return clearInterval(interval);
+                            }
+
+                            const particleCount = 50 * (timeLeft / duration);
+                            confetti(Object.assign({}, defaults, {
+                                particleCount,
+                                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                            }));
+                            confetti(Object.assign({}, defaults, {
+                                particleCount,
+                                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                            }));
+                        }, 250);
+                        break;
+
+                    case 'ontrack':
+                        // Adheren ce milestone - small celebration
+                        confetti({
+                            particleCount: 50,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#34C759', '#00C853']
+                        });
+                        confetti({
+                            particleCount: 50,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#34C759', '#00C853']
+                        });
+                        break;
+
+                    default:
+                        // Default celebration
+                        confetti({
+                            particleCount: 30,
+                            spread: 60,
+                            origin: { y: 0.7 }
+                        });
+                }
+            }
+
+            // Check for milestones and trigger celebrations
+            checkMilestones() {
+                const totalInjections = this.data.injections.length;
+                const weights = this.data.weights;
+
+                // Injection milestones
+                if ([10, 25, 50, 100].includes(totalInjections)) {
+                    this.triggerConfetti('milestone');
+                    this.showEnhancedNotification({
+                        title: `🎉 ${totalInjections} Injections Milestone!`,
+                        body: `You've completed ${totalInjections} injections. Great progress!`,
+                        tag: 'milestone-' + totalInjections,
+                        requireInteraction: true
+                    });
+                }
+
+                // Weight loss milestones (if we have enough data)
+                if (weights.length >= 2) {
+                    const sorted = [...weights].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    const firstWeight = sorted[0].weight_kg;
+                    const currentWeight = sorted[sorted.length - 1].weight_kg;
+                    const loss = firstWeight - currentWeight;
+
+                    // 5kg, 10kg, 15kg, 20kg milestones
+                    const milestones = [5, 10, 15, 20, 25, 30];
+                    milestones.forEach(target => {
+                        if (loss >= target && !localStorage.getItem(`milestone-${target}kg`)) {
+                            localStorage.setItem(`milestone-${target}kg`, 'true');
+                            this.triggerConfetti('goal');
+                            this.showEnhancedNotification({
+                                title: `🎯 ${target}kg Weight Loss!`,
+                                body: `Amazing progress! You've lost ${loss.toFixed(1)}kg total!`,
+                                tag: 'weightloss-' + target,
+                                requireInteraction: true,
+                                actions: [
+                                    { action: 'view', title: '📊 View Progress' }
+                                ]
+                            });
+                        }
+                    });
+                }
+
+                // Perfect adherence week
+                const now = new Date();
+                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const weekInjections = this.data.injections.filter(i => new Date(i.timestamp) >= oneWeekAgo);
+                const expectedInjections = Math.floor(7 / this.data.settings.injectionFrequency);
+
+                if (weekInjections.length >= expectedInjections && expectedInjections > 0) {
+                    const weekKey = `week-${now.getFullYear()}-${now.getMonth()}-${Math.floor(now.getDate() / 7)}`;
+                    if (!localStorage.getItem(`adherence-${weekKey}`)) {
+                        localStorage.setItem(`adherence-${weekKey}`, 'true');
+                        this.triggerConfetti('ontrack');
+                    }
+                }
             }
 
             // ====================================
