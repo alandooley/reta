@@ -6621,7 +6621,19 @@
                 // User is signed out
                 if (authButton) {
                     authButton.textContent = 'Sign In with Google';
-                    authButton.onclick = () => authManager.signInWithGoogle();
+                    authButton.onclick = async () => {
+                        authButton.textContent = 'Redirecting...';
+                        authButton.disabled = true;
+                        try {
+                            await authManager.signInWithGoogle();
+                            // Page will redirect, so no need to reset button state
+                        } catch (error) {
+                            console.error('Sign in error:', error);
+                            authButton.textContent = 'Sign In with Google';
+                            authButton.disabled = false;
+                            alert(error.message || 'Failed to sign in. Please try again.');
+                        }
+                    };
                 }
                 if (userInfo) {
                     userInfo.style.display = 'none';
@@ -6639,15 +6651,17 @@
             // Sign in handler for auth gate
             if (authGateButton) {
                 authGateButton.addEventListener('click', async () => {
-                    authGateButton.textContent = 'Signing in...';
+                    authGateButton.textContent = 'Redirecting to Google...';
                     authGateButton.disabled = true;
                     try {
                         await authManager.signInWithGoogle();
+                        // Note: Page will redirect, so code after this won't execute
                     } catch (error) {
                         console.error('Sign in error:', error);
                         authGateButton.textContent = 'Sign In with Google';
                         authGateButton.disabled = false;
-                        alert('Failed to sign in. Please try again.');
+                        // Show the detailed error message
+                        alert(error.message || 'Failed to sign in. Please try again.');
                     }
                 });
             }

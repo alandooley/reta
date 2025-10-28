@@ -27,6 +27,23 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
+        // Check for redirect result first (for mobile/Safari compatibility)
+        try {
+            const result = await firebase.auth().getRedirectResult();
+            if (result.user) {
+                console.log('Sign-in completed via redirect:', result.user.email);
+                // Auth state listener will handle the rest
+            }
+        } catch (error) {
+            console.error('Redirect result error:', error);
+            // Show user-friendly error
+            if (error.code === 'auth/popup-closed-by-user' ||
+                error.code === 'auth/cancelled-popup-request' ||
+                error.message.includes('missing initial state')) {
+                console.log('Auth flow was interrupted or storage is unavailable. Please try signing in again.');
+            }
+        }
+
         // Listen for auth state changes
         firebase.auth().onAuthStateChanged(async (user) => {
             console.log('Auth state changed:', user ? user.email : 'signed out');
@@ -55,22 +72,32 @@ class AuthManager {
     }
 
     /**
-     * Sign in with Google
+     * Sign in with Google (uses redirect for mobile/Safari compatibility)
      */
     async signInWithGoogle() {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
-            const result = await firebase.auth().signInWithPopup(provider);
 
-            console.log('Signed in as:', result.user.email);
+            // Use redirect instead of popup for better mobile/Safari support
+            // This works around storage partitioning and third-party cookie issues
+            console.log('Starting Google sign-in redirect...');
+            await firebase.auth().signInWithRedirect(provider);
 
-            // Get ID token
-            await this.refreshIdToken();
-
-            return result.user;
+            // Note: After redirect, the page will reload and initialize()
+            // will call getRedirectResult() to complete the sign-in
         } catch (error) {
             console.error('Sign in error:', error);
-            throw new Error(`Sign in failed: ${error.message}`);
+
+            // Provide helpful error messages for common issues
+            if (error.code === 'auth/popup-blocked') {
+                throw new Error('Sign-in popup was blocked. Please allow popups and try again.');
+            } else if (error.code === 'auth/operation-not-allowed') {
+                throw new Error('Google sign-in is not enabled. Please contact support.');
+            } else if (error.message.includes('missing initial state')) {
+                throw new Error('Browser storage issue. Please enable cookies and try again.');
+            } else {
+                throw new Error(`Sign in failed: ${error.message}`);
+            }
         }
     }
 
