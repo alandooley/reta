@@ -2386,6 +2386,8 @@
                     }
                 };
                 this.charts = {};
+                this._isSyncing = false;  // Guard against concurrent syncs
+                this._lastSyncTime = 0;    // Debounce rapid syncs
                 this.init();
             }
 
@@ -2795,6 +2797,28 @@
             }
 
             async syncFromCloud() {
+                // Guard against concurrent syncs
+                if (this._isSyncing) {
+                    console.log('Sync already in progress, skipping...');
+                    return;
+                }
+
+                // Debounce rapid syncs (wait at least 2 seconds between syncs)
+                const now = Date.now();
+                if (now - this._lastSyncTime < 2000) {
+                    console.log('Sync called too soon after previous sync, skipping...');
+                    return;
+                }
+
+                // Check if user is authenticated
+                if (!authManager || !authManager.isAuthenticated()) {
+                    console.log('User not authenticated, skipping cloud sync');
+                    return;
+                }
+
+                this._isSyncing = true;
+                this._lastSyncTime = now;
+
                 try {
                     console.log('Syncing data from cloud...');
 
@@ -2852,6 +2876,9 @@
                     console.log('Cloud sync complete');
                 } catch (error) {
                     console.error('Error syncing from cloud:', error);
+                    // Don't rethrow - sync failures should be silent
+                } finally {
+                    this._isSyncing = false;
                 }
             }
 
@@ -6607,6 +6634,7 @@
             const authGate = document.getElementById('auth-gate');
             const authGateButton = document.getElementById('auth-gate-button');
             const appContent = document.getElementById('app-content');
+            let lastAuthUserId = null;  // Track last known user to prevent duplicate syncs
 
             // Sign in handler for auth gate
             if (authGateButton) {
@@ -6627,6 +6655,10 @@
             // Show/hide content based on auth state
             authManager.onAuthStateChange((user) => {
             if (user) {
+                // Check if this is a new auth state (not just a token refresh)
+                const isNewAuth = lastAuthUserId !== user.uid;
+                lastAuthUserId = user.uid;
+
                 // User signed in - show app, hide gate
                 authGate.style.display = 'none';
                 appContent.style.display = 'block';
@@ -6638,23 +6670,27 @@
                     cloudBackupBtn.disabled = false;
                 }
 
-                // Update cloud backup status
-                if (app) {
+                // Only run these on actual sign-in, not on token refresh
+                if (isNewAuth && app) {
+                    console.log('New auth detected, syncing data...');
+
+                    // Update cloud backup status
                     app.updateCloudBackupStatus();
 
                     // Check if auto-backup is needed
                     app.checkAutoBackup();
 
-                    // Sync data from cloud
+                    // Sync data from cloud (protected by guard)
                     app.syncFromCloud();
-                }
 
-                // Trigger migration wizard
-                setTimeout(() => {
-                    migrationWizard.autoStart();
-                }, 1000);
+                    // Trigger migration wizard
+                    setTimeout(() => {
+                        migrationWizard.autoStart();
+                    }, 1000);
+                }
             } else {
-                // User signed out - show gate, hide app
+                // User signed out - reset tracking and show gate
+                lastAuthUserId = null;
                 authGate.style.display = 'flex';
                 appContent.style.display = 'none';
 
