@@ -1452,6 +1452,325 @@
         .flex-column { flex-direction: column; }
         .justify-between { justify-content: space-between; }
         .align-center { align-items: center; }
+
+        /* Empty States */
+        .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: var(--spacing-xl) var(--spacing-md);
+            text-align: center;
+            min-height: 300px;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: var(--spacing-md);
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .empty-state p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-bottom: var(--spacing-lg);
+            max-width: 300px;
+        }
+
+        /* Floating Action Button (FAB) */
+        .fab {
+            position: fixed;
+            bottom: 90px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF, #0051a8);
+            color: white;
+            border: none;
+            font-size: 28px;
+            font-weight: 300;
+            line-height: 1;
+            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
+            z-index: 99;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .fab:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.5);
+        }
+
+        .fab:active {
+            transform: scale(0.95);
+        }
+
+        /* Form Validation */
+        .form-group input:invalid:not(:focus):not(:placeholder-shown),
+        .form-group select:invalid:not(:focus) {
+            border-color: var(--danger-color);
+        }
+
+        .form-group input:valid:not(:focus):not(:placeholder-shown):not([type="datetime-local"]):not([type="date"]),
+        .form-group select:valid:not(:focus):not([value=""]) {
+            border-color: var(--success-color);
+        }
+
+        .field-error {
+            color: var(--danger-color);
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+
+        .form-group.error .field-error {
+            display: block;
+        }
+
+        /* Pull to Refresh Indicator */
+        .pull-to-refresh {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100%);
+            background: var(--card-bg);
+            padding: 12px 24px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s;
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pull-to-refresh.active {
+            transform: translateX(-50%) translateY(10px);
+        }
+
+        .pull-to-refresh-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Chart Controls */
+        .chart-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            justify-content: flex-end;
+        }
+
+        .chart-view-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .chart-view-btn:hover {
+            background: var(--border-color);
+        }
+
+        .chart-view-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .chart-view-btn svg {
+            width: 14px;
+            height: 14px;
+        }
+
+        /* Swipe to Delete */
+        .shot-item, .weight-item, .vial-item {
+            position: relative;
+            transition: transform 0.3s;
+        }
+
+        .shot-item.swiping, .weight-item.swiping, .vial-item.swiping {
+            transition: none;
+        }
+
+        .delete-action {
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 80px;
+            background: var(--danger-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .shot-item.swiped .delete-action,
+        .weight-item.swiped .delete-action,
+        .vial-item.swiped .delete-action {
+            opacity: 1;
+        }
+
+        /* Animated Transitions */
+        .tab-content {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Offline Indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--warning-color);
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            z-index: 10002;
+            display: none;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        .offline-indicator.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                transform: translateX(-50%) translateY(-100%);
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+            }
+        }
+
+        /* Weekly Insights Card */
+        .insight-card {
+            background: linear-gradient(135deg, var(--card-bg) 0%, #2d2d2d 100%);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius);
+            padding: var(--spacing-lg);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .insight-card h3 {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .insight-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-sm) 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .insight-stat:last-child {
+            border-bottom: none;
+        }
+
+        .insight-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .insight-value {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .insight-trend {
+            color: var(--success-color);
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .insight-trend.negative {
+            color: var(--danger-color);
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-top-color: var(--accent-color);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        /* Countdown Timer Enhancements */
+        .countdown-circle {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .countdown-circle:active {
+            transform: scale(0.98);
+        }
+
+        .countdown-pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
     </style>
 </head>
 <body>
@@ -1486,6 +1805,20 @@
             ✓ Saved
         </div>
 
+        <!-- Offline Indicator -->
+        <div id="offline-indicator" class="offline-indicator">
+            ⚠️ Offline - Changes saved locally
+        </div>
+
+        <!-- Pull to Refresh -->
+        <div id="pull-to-refresh" class="pull-to-refresh">
+            <div class="pull-to-refresh-spinner"></div>
+            <span>Refreshing...</span>
+        </div>
+
+        <!-- Floating Action Button -->
+        <button id="fab-button" class="fab" title="Quick Add Shot">+</button>
+
         <!-- Header -->
         <header id="app-header">
         <div class="header-content">
@@ -1504,6 +1837,26 @@
         <!-- Summary Tab -->
         <div id="summary-tab" class="tab-content" style="display: none;">
             <div class="container">
+                <!-- Weekly Insights Card -->
+                <div id="weekly-insights" class="insight-card" style="display: none;">
+                    <h3>This Week's Progress</h3>
+                    <div class="insight-stat">
+                        <span class="insight-label">Weight Change</span>
+                        <span class="insight-value" id="insight-weight-change">--</span>
+                        <span class="insight-trend" id="insight-weight-trend">--</span>
+                    </div>
+                    <div class="insight-stat">
+                        <span class="insight-label">Adherence</span>
+                        <span class="insight-value" id="insight-adherence">--</span>
+                        <span class="insight-trend" id="insight-adherence-trend">--</span>
+                    </div>
+                    <div class="insight-stat">
+                        <span class="insight-label">Avg Dose</span>
+                        <span class="insight-value" id="insight-avg-dose">--</span>
+                        <span class="insight-trend">--</span>
+                    </div>
+                </div>
+
                 <div class="stats-grid">
                     <div class="stat-card">
                         <div class="stat-value" id="total-shots">0</div>
@@ -1586,8 +1939,34 @@
         <div id="results-tab" class="tab-content" style="display: none;">
             <div class="container">
                 <h2>Weight & Progress</h2>
-                <div class="chart-container">
+                <div class="chart-controls">
+                    <button class="chart-view-btn active" data-view="combined" title="Combined View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 3v18h18"/>
+                            <path d="M18 17l-5-5-3 3-4-4"/>
+                        </svg>
+                        <span>Combined</span>
+                    </button>
+                    <button class="chart-view-btn" data-view="weight" title="Weight Only">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                        <span>Weight</span>
+                    </button>
+                    <button class="chart-view-btn" data-view="table" title="Table View">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2"/>
+                            <path d="M3 9h18M9 3v18"/>
+                        </svg>
+                        <span>Table</span>
+                    </button>
+                </div>
+                <div class="chart-container" id="chart-view">
                     <canvas id="weight-chart"></canvas>
+                </div>
+                <div id="table-view" class="table-view" style="display: none;">
+                    <div id="weight-table"></div>
                 </div>
                 <div class="results-stats">
                     <div class="result-card">
