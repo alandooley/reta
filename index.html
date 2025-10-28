@@ -2929,6 +2929,9 @@
                 this.updateUI();
                 this.setupInjectionReminders();
 
+                // Check for milestones and celebrate
+                this.checkMilestones();
+
                 // Push to cloud if authenticated
                 if (authManager && authManager.isAuthenticated()) {
                     try {
@@ -3042,6 +3045,9 @@
                 this.data.weights.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 this.saveData();
                 this.updateUI();
+
+                // Check for milestones and celebrate
+                this.checkMilestones();
 
                 // Push to cloud if authenticated
                 if (authManager && authManager.isAuthenticated()) {
@@ -4122,7 +4128,12 @@
                             <path d="M10 11v6M14 11v6"/>
                         </svg>
                     </button>
+                    <div class="delete-action">Delete</div>
                 `;
+
+                // Add swipe to delete handlers
+                this.addSwipeToDeleteHandlers(div);
+
                 return div;
             }
 
@@ -5573,11 +5584,186 @@
             }
 
             showTestNotification() {
-                this.scheduleNotification(
-                    'Test Notification',
-                    'Your notification system is working correctly! 💉',
-                    100 // Show almost immediately
-                );
+                // Enhanced notification with actions
+                this.showEnhancedNotification({
+                    title: 'Test Notification',
+                    body: 'Your notification system is working correctly!',
+                    icon: '/icon-192.png',
+                    badge: '/badge-72.png',
+                    actions: [
+                        { action: 'open', title: '✓ Open App' },
+                        { action: 'dismiss', title: '✕ Dismiss' }
+                    ]
+                });
+            }
+
+            // Enhanced notification with actions (Android/Desktop)
+            showEnhancedNotification(options) {
+                if (!('Notification' in window) || Notification.permission !== 'granted') {
+                    return;
+                }
+
+                // Basic notification for browsers without action support
+                if (!('actions' in Notification.prototype)) {
+                    new Notification(options.title, {
+                        body: options.body,
+                        icon: options.icon,
+                        badge: options.badge
+                    });
+                    return;
+                }
+
+                // Enhanced notification with actions
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.ready.then(registration => {
+                        registration.showNotification(options.title, {
+                            body: options.body,
+                            icon: options.icon || '/icon-192.png',
+                            badge: options.badge || '/badge-72.png',
+                            actions: options.actions || [],
+                            vibrate: options.vibrate || [200, 100, 200],
+                            tag: options.tag || 'default',
+                            requireInteraction: options.requireInteraction || false,
+                            data: options.data || {}
+                        });
+                    });
+                } else {
+                    // Fallback for browsers without service worker
+                    new Notification(options.title, {
+                        body: options.body,
+                        icon: options.icon,
+                        badge: options.badge
+                    });
+                }
+            }
+
+            // Confetti animations
+            triggerConfetti(type = 'default') {
+                if (typeof confetti === 'undefined') return;
+
+                switch (type) {
+                    case 'milestone':
+                        // Milestone achievement - big celebration
+                        confetti({
+                            particleCount: 100,
+                            spread: 70,
+                            origin: { y: 0.6 },
+                            colors: ['#007AFF', '#34C759', '#FF9500']
+                        });
+                        break;
+
+                    case 'goal':
+                        // Weight loss goal - shower from top
+                        const duration = 3 * 1000;
+                        const animationEnd = Date.now() + duration;
+                        const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 10000 };
+
+                        function randomInRange(min, max) {
+                            return Math.random() * (max - min) + min;
+                        }
+
+                        const interval = setInterval(function() {
+                            const timeLeft = animationEnd - Date.now();
+
+                            if (timeLeft <= 0) {
+                                return clearInterval(interval);
+                            }
+
+                            const particleCount = 50 * (timeLeft / duration);
+                            confetti(Object.assign({}, defaults, {
+                                particleCount,
+                                origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 }
+                            }));
+                            confetti(Object.assign({}, defaults, {
+                                particleCount,
+                                origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 }
+                            }));
+                        }, 250);
+                        break;
+
+                    case 'ontrack':
+                        // Adheren ce milestone - small celebration
+                        confetti({
+                            particleCount: 50,
+                            angle: 60,
+                            spread: 55,
+                            origin: { x: 0 },
+                            colors: ['#34C759', '#00C853']
+                        });
+                        confetti({
+                            particleCount: 50,
+                            angle: 120,
+                            spread: 55,
+                            origin: { x: 1 },
+                            colors: ['#34C759', '#00C853']
+                        });
+                        break;
+
+                    default:
+                        // Default celebration
+                        confetti({
+                            particleCount: 30,
+                            spread: 60,
+                            origin: { y: 0.7 }
+                        });
+                }
+            }
+
+            // Check for milestones and trigger celebrations
+            checkMilestones() {
+                const totalInjections = this.data.injections.length;
+                const weights = this.data.weights;
+
+                // Injection milestones
+                if ([10, 25, 50, 100].includes(totalInjections)) {
+                    this.triggerConfetti('milestone');
+                    this.showEnhancedNotification({
+                        title: `🎉 ${totalInjections} Injections Milestone!`,
+                        body: `You've completed ${totalInjections} injections. Great progress!`,
+                        tag: 'milestone-' + totalInjections,
+                        requireInteraction: true
+                    });
+                }
+
+                // Weight loss milestones (if we have enough data)
+                if (weights.length >= 2) {
+                    const sorted = [...weights].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    const firstWeight = sorted[0].weight_kg;
+                    const currentWeight = sorted[sorted.length - 1].weight_kg;
+                    const loss = firstWeight - currentWeight;
+
+                    // 5kg, 10kg, 15kg, 20kg milestones
+                    const milestones = [5, 10, 15, 20, 25, 30];
+                    milestones.forEach(target => {
+                        if (loss >= target && !localStorage.getItem(`milestone-${target}kg`)) {
+                            localStorage.setItem(`milestone-${target}kg`, 'true');
+                            this.triggerConfetti('goal');
+                            this.showEnhancedNotification({
+                                title: `🎯 ${target}kg Weight Loss!`,
+                                body: `Amazing progress! You've lost ${loss.toFixed(1)}kg total!`,
+                                tag: 'weightloss-' + target,
+                                requireInteraction: true,
+                                actions: [
+                                    { action: 'view', title: '📊 View Progress' }
+                                ]
+                            });
+                        }
+                    });
+                }
+
+                // Perfect adherence week
+                const now = new Date();
+                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                const weekInjections = this.data.injections.filter(i => new Date(i.timestamp) >= oneWeekAgo);
+                const expectedInjections = Math.floor(7 / this.data.settings.injectionFrequency);
+
+                if (weekInjections.length >= expectedInjections && expectedInjections > 0) {
+                    const weekKey = `week-${now.getFullYear()}-${now.getMonth()}-${Math.floor(now.getDate() / 7)}`;
+                    if (!localStorage.getItem(`adherence-${weekKey}`)) {
+                        localStorage.setItem(`adherence-${weekKey}`, 'true');
+                        this.triggerConfetti('ontrack');
+                    }
+                }
             }
 
             // ====================================
