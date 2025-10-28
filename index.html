@@ -1547,8 +1547,9 @@
             display: block;
         }
 
-        /* Pull to Refresh Indicator */
+        /* Pull to Refresh Indicator - Disabled due to UX issues */
         .pull-to-refresh {
+            display: none !important;  /* Completely hidden */
             position: fixed;
             top: 60px;
             left: 50%;
@@ -1559,7 +1560,6 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
             transition: transform 0.3s;
             z-index: 1001;
-            display: flex;
             align-items: center;
             gap: 8px;
         }
@@ -2446,8 +2446,18 @@
                             case 'results':
                                 this.openModal('add-weight-modal');
                                 break;
+                            case 'inventory':
+                                this.openModal('add-vial-modal');
+                                break;
+                            case 'summary':
+                                // On summary, default to adding a shot
+                                this.openModal('add-shot-modal');
+                                break;
+                            case 'settings':
+                                // On settings, hide FAB or default to shot
+                                this.openModal('add-shot-modal');
+                                break;
                             default:
-                                // Default to adding shot for other tabs
                                 this.openModal('add-shot-modal');
                                 break;
                         }
@@ -3060,7 +3070,7 @@
             // VIAL MANAGEMENT
             // ====================================
 
-            addVial(vial) {
+            async addVial(vial) {
                 const concentration = vial.total_mg / vial.bac_water_ml;
                 const newVial = {
                     vial_id: this.generateId(),
@@ -3081,6 +3091,27 @@
                 this.data.vials.sort((a, b) => new Date(b.reconstitution_date) - new Date(a.reconstitution_date));
                 this.saveData();
                 this.updateUI();
+
+                // Push to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createVial({
+                            id: newVial.vial_id,
+                            startDate: newVial.order_date,
+                            initialVolumeMl: newVial.bac_water_ml,
+                            concentrationMgPerMl: newVial.concentration_mg_ml,
+                            currentVolumeMl: newVial.remaining_ml,
+                            usedVolumeMl: 0,
+                            status: newVial.status,
+                            source: newVial.supplier || '',
+                            notes: ''
+                        });
+                        console.log('Vial synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync vial to cloud:', error);
+                        // Still saved locally, so don't block the user
+                    }
+                }
             }
 
             calculateExpirationDate(reconstitutionDate, orderDate) {
@@ -4096,7 +4127,7 @@
                 }, 300);
             }
 
-            handleAddVial() {
+            async handleAddVial() {
                 const orderDate = document.getElementById('vial-order-date').value;
                 const supplier = document.getElementById('vial-supplier').value;
                 const totalMg = parseFloat(document.getElementById('vial-mg').value);
@@ -4108,6 +4139,7 @@
                 }
 
                 // Add multiple vials to dry stock
+                const newVials = [];
                 for (let i = 0; i < quantity; i++) {
                     const vial = {
                         vial_id: this.generateId(),
@@ -4124,11 +4156,34 @@
                     };
 
                     this.data.vials.push(vial);
+                    newVials.push(vial);
                 }
 
                 this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
                 this.saveData();
                 this.updateUI();
+
+                // Sync all new vials to cloud
+                if (authManager && authManager.isAuthenticated()) {
+                    for (const vial of newVials) {
+                        try {
+                            await apiClient.createVial({
+                                id: vial.vial_id,
+                                startDate: vial.order_date,
+                                initialVolumeMl: 0,  // Dry stock has no volume yet
+                                concentrationMgPerMl: 0,  // No concentration until reconstituted
+                                currentVolumeMl: 0,
+                                usedVolumeMl: 0,
+                                status: vial.status,
+                                source: vial.supplier || '',
+                                notes: `${totalMg}mg dry stock`
+                            });
+                            console.log(`Vial ${vial.vial_id} synced to cloud`);
+                        } catch (error) {
+                            console.error(`Failed to sync vial ${vial.vial_id} to cloud:`, error);
+                        }
+                    }
+                }
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
@@ -4136,7 +4191,7 @@
                 }, 300);
             }
 
-            handleActivateVial() {
+            async handleActivateVial() {
                 const vialId = document.getElementById('activate-vial-id').value;
                 const bacWaterMl = parseFloat(document.getElementById('activate-bac-water').value);
                 const reconstitutionDate = document.getElementById('activate-reconstitution-date').value;
@@ -4166,6 +4221,26 @@
 
                 this.saveData();
                 this.updateUI();
+
+                // Sync activated vial to cloud (create/update)
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.createVial({
+                            id: vial.vial_id,
+                            startDate: vial.reconstitution_date,
+                            initialVolumeMl: bacWaterMl,
+                            concentrationMgPerMl: concentrationMgMl,
+                            currentVolumeMl: vial.remaining_ml,
+                            usedVolumeMl: 0,
+                            status: vial.status,
+                            source: vial.supplier || '',
+                            notes: `${vial.total_mg}mg reconstituted`
+                        });
+                        console.log(`Vial ${vial.vial_id} activation synced to cloud`);
+                    } catch (error) {
+                        console.error(`Failed to sync vial activation to cloud:`, error);
+                    }
+                }
 
                 // Delay modal close to show save indicator
                 setTimeout(() => {
@@ -6234,7 +6309,7 @@
                 }
             }
 
-            undoLastDelete() {
+            async undoLastDelete() {
                 if (this.undoStack.length === 0) {
                     this.notificationManager.warning('Nothing to undo');
                     return;
@@ -6242,6 +6317,7 @@
 
                 const operation = this.undoStack.pop();
 
+                // Restore locally
                 switch (operation.type) {
                     case 'injection':
                         app.data.injections.splice(operation.index, 0, operation.data);
@@ -6256,6 +6332,51 @@
 
                 app.saveData();
                 app.updateUI();
+
+                // Sync restoration to cloud
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        switch (operation.type) {
+                            case 'injection':
+                                await apiClient.createInjection({
+                                    id: operation.data.id,
+                                    timestamp: operation.data.timestamp,
+                                    doseMg: operation.data.dose_mg,
+                                    site: operation.data.injection_site,
+                                    vialId: operation.data.vial_id,
+                                    notes: operation.data.notes || ''
+                                });
+                                console.log('Undone injection synced to cloud');
+                                break;
+                            case 'vial':
+                                await apiClient.createVial({
+                                    id: operation.data.vial_id,
+                                    startDate: operation.data.order_date,
+                                    initialVolumeMl: operation.data.bac_water_ml,
+                                    concentrationMgPerMl: operation.data.concentration_mg_per_ml,
+                                    currentVolumeMl: operation.data.current_volume_ml,
+                                    usedVolumeMl: operation.data.used_volume_ml,
+                                    status: operation.data.status,
+                                    source: operation.data.supplier || '',
+                                    notes: operation.data.notes || ''
+                                });
+                                console.log('Undone vial synced to cloud');
+                                break;
+                            case 'weight':
+                                await apiClient.createWeight({
+                                    timestamp: operation.data.timestamp,
+                                    weightKg: operation.data.weight_kg,
+                                    source: operation.data.source || 'manual',
+                                    notes: operation.data.notes || ''
+                                });
+                                console.log('Undone weight synced to cloud');
+                                break;
+                        }
+                    } catch (error) {
+                        console.error('Failed to sync undo to cloud:', error);
+                        this.notificationManager.warning('Restored locally but cloud sync failed');
+                    }
+                }
 
                 const typeNames = {
                     'injection': 'Injection',
