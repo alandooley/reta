@@ -3,7 +3,6 @@ name: Deploy to AWS
 on:
   push:
     branches:
-      - main
       - claude/mobile-graph-ux-review-*
   workflow_dispatch:  # Allow manual trigger
 
