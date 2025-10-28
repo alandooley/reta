@@ -27,10 +27,22 @@ jobs:
           
       - name: Upload to S3
         run: |
-          echo "📤 Uploading index.html to S3..."
+          echo "📤 Uploading frontend files to S3..."
+
+          # Upload main files
           aws s3 cp index.html s3://retatrutide-frontend-372208783486/ \
             --region eu-west-1
-          echo "✅ Upload complete"
+          aws s3 cp manifest.json s3://retatrutide-frontend-372208783486/ \
+            --region eu-west-1
+          aws s3 cp robots.txt s3://retatrutide-frontend-372208783486/ \
+            --region eu-west-1
+
+          # Sync js directory
+          aws s3 sync js/ s3://retatrutide-frontend-372208783486/js/ \
+            --region eu-west-1 \
+            --delete
+
+          echo "✅ Upload complete (index.html, manifest.json, robots.txt, js/)"
           
       - name: Invalidate CloudFront cache
         run: |
