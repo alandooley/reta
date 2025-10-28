@@ -4658,6 +4658,32 @@
                     }
                 }];
 
+                // Add BMI dataset if height is available
+                if (this.data.settings.heightCm) {
+                    const heightM = this.data.settings.heightCm / 100;
+                    const bmiData = sortedWeights.map(w => {
+                        const bmi = w.weight_kg / (heightM * heightM);
+                        return {
+                            x: w.timestamp,
+                            y: bmi
+                        };
+                    });
+
+                    datasets.push({
+                        label: 'BMI',
+                        data: bmiData,
+                        borderColor: '#AF52DE',
+                        backgroundColor: 'rgba(175, 82, 222, 0.1)',
+                        fill: false,
+                        tension: 0.4,
+                        yAxisID: 'y2',
+                        pointRadius: isMobile ? 4 : 3,
+                        pointHoverRadius: isMobile ? 6 : 5,
+                        pointHitRadius: isMobile ? 12 : 8,
+                        borderWidth: 2
+                    });
+                }
+
                 // Add dose dataset only for combined view
                 if (view === 'combined' && sortedInjections.length > 0) {
                     datasets.push({
@@ -4766,7 +4792,7 @@
                             },
                             y1: {
                                 type: 'linear',
-                                display: true,
+                                display: view === 'combined' && sortedInjections.length > 0,
                                 position: 'right',
                                 grid: {
                                     drawOnChartArea: false,
@@ -4791,6 +4817,34 @@
                                 },
                                 beginAtZero: true,
                                 grace: '10%'
+                            },
+                            y2: {
+                                type: 'linear',
+                                display: !!this.data.settings.heightCm,
+                                position: 'right',
+                                grid: {
+                                    drawOnChartArea: false,
+                                },
+                                ticks: {
+                                    color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : 8,
+                                    callback: function(value) {
+                                        return value.toFixed(1);
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'BMI',
+                                    color: '#AF52DE',
+                                    font: {
+                                        size: fontSize.title
+                                    }
+                                },
+                                beginAtZero: false,
+                                grace: '5%'
                             }
                         }
                     }
