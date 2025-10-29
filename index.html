@@ -3351,7 +3351,41 @@
                 const vialsList = document.getElementById('vials-list');
                 vialsList.innerHTML = '';
 
-                this.data.vials.forEach(vial => {
+                // Sort vials: Active first, Dry stock middle, Finished/Expired last
+                const sortedVials = [...this.data.vials].sort((a, b) => {
+                    const getStatusPriority = (vial) => {
+                        // Check if vial is expired, empty, or expiring (finished status)
+                        const now = new Date();
+                        const expDate = vial.expiration_date ? new Date(vial.expiration_date) : null;
+                        const isExpired = expDate && expDate < now;
+                        const isEmpty = vial.remaining_ml <= 0;
+
+                        if (vial.status === 'active' && !isExpired && !isEmpty) return 1; // Active at top
+                        if (vial.status === 'dry_stock') return 2; // Dry stock in middle
+                        return 3; // Finished/expired/empty at bottom
+                    };
+
+                    const priorityA = getStatusPriority(a);
+                    const priorityB = getStatusPriority(b);
+
+                    if (priorityA !== priorityB) {
+                        return priorityA - priorityB;
+                    }
+
+                    // Within same priority group, sort by most recent date
+                    if (priorityA === 1) {
+                        // Active vials: sort by reconstitution date (newest first)
+                        return new Date(b.reconstitution_date || 0) - new Date(a.reconstitution_date || 0);
+                    } else if (priorityA === 2) {
+                        // Dry stock: sort by order date (newest first)
+                        return new Date(b.order_date || 0) - new Date(a.order_date || 0);
+                    } else {
+                        // Finished: sort by expiration date (oldest first)
+                        return new Date(a.expiration_date || 0) - new Date(b.expiration_date || 0);
+                    }
+                });
+
+                sortedVials.forEach(vial => {
                     const vialItem = this.createVialListItem(vial);
                     vialsList.appendChild(vialItem);
                 });
