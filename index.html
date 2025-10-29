@@ -2208,32 +2208,6 @@
                     <button id="import-data-btn" class="btn-secondary">Import Data from File</button>
                 </div>
                 <div class="settings-section">
-                    <h3>Automatic Backups</h3>
-                    <div class="backup-info" style="margin-bottom: 16px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm);">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>Total Backups:</span>
-                            <span id="backup-count">Loading...</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>Auto Backups:</span>
-                            <span id="auto-backup-count">-</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                            <span>Manual Backups:</span>
-                            <span id="manual-backup-count">-</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span>Last Backup:</span>
-                            <span id="last-backup">-</span>
-                        </div>
-                    </div>
-                    <button id="create-backup-btn" class="btn-primary" style="margin-bottom: 8px;">Create Manual Backup</button>
-                    <button id="restore-backup-btn" class="btn-secondary">Restore from Backup</button>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-                        ℹ️ Auto-backups run every 5 minutes. Last 10 are kept. Data is also stored in IndexedDB for extra protection.
-                    </p>
-                </div>
-                <div class="settings-section">
                     <h3>☁️ Cloud Backup</h3>
                     <div id="cloud-backup-info" style="margin-bottom: 16px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm);">
                         <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">
@@ -3479,38 +3453,8 @@
                     document.getElementById('notify-low-stock').checked = this.data.settings.notifications.lowStock;
                     document.getElementById('notify-weekly-summary').checked = this.data.settings.notifications.weeklySummary;
                 }
-
-                // Update backup stats (with retry)
-                this.updateBackupStats();
             }
 
-            updateBackupStats() {
-                if (window.backupManager) {
-                    try {
-                        const stats = backupManager.getBackupStats();
-                        document.getElementById('backup-count').textContent = stats.total;
-                        document.getElementById('auto-backup-count').textContent = stats.auto;
-                        document.getElementById('manual-backup-count').textContent = stats.manual;
-                        const lastBackup = stats.lastBackup !== 'Never' ?
-                            new Date(stats.lastBackup).toLocaleString() : 'Never';
-                        document.getElementById('last-backup').textContent = lastBackup;
-                    } catch (error) {
-                        console.error('Error getting backup stats:', error);
-                        this.showFallbackBackupStats();
-                    }
-                } else {
-                    // Backup manager not ready yet - retry in 1 second
-                    setTimeout(() => this.updateBackupStats(), 1000);
-                    this.showFallbackBackupStats();
-                }
-            }
-
-            showFallbackBackupStats() {
-                document.getElementById('backup-count').textContent = '0';
-                document.getElementById('auto-backup-count').textContent = '0';
-                document.getElementById('manual-backup-count').textContent = '0';
-                document.getElementById('last-backup').textContent = 'Loading...';
-            }
 
             calculateNextShotDays() {
                 if (this.data.injections.length === 0) return 0;
@@ -3739,16 +3683,6 @@
                     this.testNotification();
                 });
 
-                // Create manual backup
-                document.getElementById('create-backup-btn').addEventListener('click', () => {
-                    this.createManualBackup();
-                });
-
-                // Restore from backup
-                document.getElementById('restore-backup-btn').addEventListener('click', () => {
-                    this.restoreFromBackup();
-                });
-
                 // Cloud backup
                 document.getElementById('create-cloud-backup-btn').addEventListener('click', () => {
                     this.createCloudBackup();
@@ -3939,65 +3873,6 @@
                 }
             }
 
-            createManualBackup() {
-                try {
-                    const label = prompt('Enter a label for this backup (optional):', 'Manual backup ' + new Date().toLocaleString());
-                    if (label === null) return; // User cancelled
-
-                    backupManager.createManualBackup(this.data, label);
-                    this.updateSettingsTab();
-                    alert('Backup created successfully!\n\n' + label);
-                } catch (error) {
-                    console.error('Failed to create backup:', error);
-                    alert('Failed to create backup: ' + error.message);
-                }
-            }
-
-            restoreFromBackup() {
-                try {
-                    const backups = backupManager.listBackups();
-
-                    if (backups.length === 0) {
-                        alert('No backups available');
-                        return;
-                    }
-
-                    // Build selection list
-                    let message = 'Select a backup to restore:\n\n';
-                    backups.forEach((backup, index) => {
-                        const date = new Date(backup.date).toLocaleString();
-                        const type = backup.type === 'auto' ? '🤖 Auto' : '👤 Manual';
-                        message += `${index + 1}. ${type} - ${backup.label || date}\n`;
-                        message += `   ${backup.injections} injections, ${backup.vials} vials, ${backup.weights} weights\n\n`;
-                    });
-
-                    const selection = prompt(message + '\nEnter the number of the backup to restore:');
-
-                    if (!selection) return; // User cancelled
-
-                    const index = parseInt(selection) - 1;
-                    if (isNaN(index) || index < 0 || index >= backups.length) {
-                        alert('Invalid selection');
-                        return;
-                    }
-
-                    const backup = backups[index];
-
-                    if (!confirm(`Restore backup from ${new Date(backup.date).toLocaleString()}?\n\nThis will replace your current data.`)) {
-                        return;
-                    }
-
-                    const restoredData = backupManager.restoreBackup(backup.key);
-                    this.data = restoredData;
-                    this.saveData();
-                    this.updateUI();
-
-                    alert('Backup restored successfully!');
-                } catch (error) {
-                    console.error('Failed to restore backup:', error);
-                    alert('Failed to restore backup: ' + error.message);
-                }
-            }
 
             async createCloudBackup() {
                 try {
@@ -5353,13 +5228,13 @@
                 let reorderAlert = "Stock levels look good";
                 let reorderColor = '#34C759';
 
-                if (totalDoses < 3 || daysRemaining < 7) {
+                if (totalDoses < 5 || daysRemaining < 14) {
                     reorderAlert = "🚨 Critical - Order immediately!";
                     reorderColor = '#FF3B30';
-                } else if (totalDoses < 5 || daysRemaining < 14) {
+                } else if (totalDoses < 8 || daysRemaining < 21) {
                     reorderAlert = "⚠️ Low stock - Order soon";
                     reorderColor = '#FF9500';
-                } else if (totalDoses < 8 || daysRemaining < 21) {
+                } else if (totalDoses < 12 || daysRemaining < 30) {
                     reorderAlert = "📋 Consider ordering";
                     reorderColor = '#FF9500';
                 }
@@ -5368,14 +5243,12 @@
                 reorderElement.textContent = reorderAlert;
                 reorderElement.style.color = reorderColor;
 
-                // Usage Rate
-                let usageRate = "Calculating...";
-                if (this.data.injections.length >= 2) {
-                    const injectionDays = this.data.injections.length * this.data.settings.injectionFrequency;
-                    const totalMg = this.data.injections.reduce((sum, inj) => sum + inj.dose_mg, 0);
-                    const avgDosePerWeek = (totalMg / injectionDays) * 7;
-                    usageRate = `${avgDosePerWeek.toFixed(1)} mg/week average`;
-                }
+                // Usage Rate - calculated from default dose and injection frequency
+                const defaultDose = this.data.settings.defaultDose || 2.0;
+                const injectionFrequency = this.data.settings.injectionFrequency || 7;
+                const dosesPerWeek = 7 / injectionFrequency;
+                const mgPerWeek = defaultDose * dosesPerWeek;
+                const usageRate = `${mgPerWeek.toFixed(1)} mg/week`;
                 document.getElementById('usage-rate').textContent = usageRate;
 
                 // Waste Tracking
@@ -6742,11 +6615,6 @@
         class ResilientBackupManager {
             constructor() {
                 this.storageKey = 'injection_data';
-                this.backupPrefix = 'injection_backup_';
-                this.autoBackupPrefix = 'injection_auto_';
-                this.maxAutoBackups = 10;
-                this.autoBackupInterval = 5 * 60 * 1000; // 5 minutes
-                this.lastBackupTime = null;
                 this.dbName = 'RetatrutideDB';
                 this.dbVersion = 1;
                 this.storeName = 'appData';
@@ -6756,12 +6624,6 @@
             async initialize() {
                 // Initialize IndexedDB
                 await this.initIndexedDB();
-
-                // Start auto-backup timer
-                this.startAutoBackup();
-
-                // Cleanup old backups
-                this.cleanupOldBackups();
 
                 console.log('Resilient backup system initialized');
             }
@@ -6798,9 +6660,6 @@
             }
 
             async saveData(data) {
-                // Create automatic backup before save
-                this.createAutoBackup(data);
-
                 // Save to localStorage
                 try {
                     localStorage.setItem(this.storageKey, JSON.stringify(data));
@@ -6885,172 +6744,6 @@
                 });
             }
 
-            createAutoBackup(data) {
-                try {
-                    // Check if enough time has passed since last backup
-                    const now = Date.now();
-                    if (this.lastBackupTime && (now - this.lastBackupTime) < this.autoBackupInterval) {
-                        return null;
-                    }
-
-                    const backupKey = `${this.autoBackupPrefix}${now}`;
-                    const backupData = {
-                        data: data,
-                        timestamp: now,
-                        date: new Date().toISOString(),
-                        type: 'auto'
-                    };
-
-                    localStorage.setItem(backupKey, JSON.stringify(backupData));
-                    this.lastBackupTime = now;
-
-                    // Cleanup old auto backups
-                    this.cleanupOldBackups('auto');
-
-                    return backupKey;
-                } catch (error) {
-                    console.error('Auto backup failed:', error);
-                    return null;
-                }
-            }
-
-            createManualBackup(data, label = '') {
-                try {
-                    const timestamp = Date.now();
-                    const backupKey = `${this.backupPrefix}manual_${timestamp}`;
-
-                    const backupData = {
-                        data: data,
-                        timestamp: timestamp,
-                        date: new Date().toISOString(),
-                        label: label || 'Manual backup',
-                        type: 'manual'
-                    };
-
-                    localStorage.setItem(backupKey, JSON.stringify(backupData));
-                    console.log('Manual backup created:', label);
-
-                    return backupKey;
-                } catch (error) {
-                    console.error('Failed to create manual backup:', error);
-                    throw error;
-                }
-            }
-
-            listBackups(type = null) {
-                const backups = [];
-
-                try {
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-
-                        const isManual = key.startsWith(this.backupPrefix);
-                        const isAuto = key.startsWith(this.autoBackupPrefix);
-
-                        if (!isManual && !isAuto) continue;
-                        if (type === 'manual' && !isManual) continue;
-                        if (type === 'auto' && !isAuto) continue;
-
-                        try {
-                            const stored = localStorage.getItem(key);
-                            const backup = JSON.parse(stored);
-
-                            backups.push({
-                                key: key,
-                                timestamp: backup.timestamp,
-                                date: backup.date,
-                                label: backup.label || (isAuto ? 'Auto backup' : 'Manual backup'),
-                                type: backup.type || (isAuto ? 'auto' : 'manual'),
-                                injections: backup.data?.injections?.length || 0,
-                                vials: backup.data?.vials?.length || 0,
-                                weights: backup.data?.weights?.length || 0
-                            });
-                        } catch (error) {
-                            // Skip corrupted backups
-                        }
-                    }
-
-                    // Sort by timestamp descending
-                    backups.sort((a, b) => b.timestamp - a.timestamp);
-                } catch (error) {
-                    console.error('Failed to list backups:', error);
-                }
-
-                return backups;
-            }
-
-            restoreBackup(backupKey) {
-                try {
-                    const stored = localStorage.getItem(backupKey);
-                    if (!stored) {
-                        throw new Error('Backup not found');
-                    }
-
-                    const backup = JSON.parse(stored);
-                    return backup.data;
-                } catch (error) {
-                    console.error('Failed to restore backup:', error);
-                    throw error;
-                }
-            }
-
-            deleteBackup(backupKey) {
-                try {
-                    localStorage.removeItem(backupKey);
-                    console.log('Backup deleted:', backupKey);
-                } catch (error) {
-                    console.error('Failed to delete backup:', error);
-                }
-            }
-
-            cleanupOldBackups(type = 'auto') {
-                try {
-                    const backups = this.listBackups(type);
-                    const maxBackups = type === 'auto' ? this.maxAutoBackups : 20;
-
-                    if (backups.length > maxBackups) {
-                        const toDelete = backups.slice(maxBackups);
-                        toDelete.forEach(backup => {
-                            localStorage.removeItem(backup.key);
-                        });
-                    }
-                } catch (error) {
-                    console.error('Failed to cleanup backups:', error);
-                }
-            }
-
-            startAutoBackup() {
-                if (this.autoBackupTimer) {
-                    clearInterval(this.autoBackupTimer);
-                }
-
-                this.autoBackupTimer = setInterval(() => {
-                    try {
-                        const stored = localStorage.getItem(this.storageKey);
-                        if (stored) {
-                            const data = JSON.parse(stored);
-                            this.createAutoBackup(data);
-                        }
-                    } catch (error) {
-                        console.error('Auto backup failed:', error);
-                    }
-                }, this.autoBackupInterval);
-
-                console.log('Auto backup started (every 5 minutes)');
-            }
-
-            getBackupStats() {
-                const backups = this.listBackups();
-                const autoBackups = backups.filter(b => b.type === 'auto');
-                const manualBackups = backups.filter(b => b.type === 'manual');
-
-                return {
-                    total: backups.length,
-                    auto: autoBackups.length,
-                    manual: manualBackups.length,
-                    lastBackup: backups[0]?.date || 'Never'
-                };
-            }
         }
 
         // ====================================
@@ -7069,9 +6762,6 @@
             // Initialize backup system
             backupManager = new ResilientBackupManager();
             await backupManager.initialize();
-
-            // Update backup stats now that backup manager is ready
-            app.updateSettingsTab();
 
             // Initialize delete functionality
             deleteManager = new SimpleDeleteManager();
