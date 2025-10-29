@@ -2145,6 +2145,21 @@
                         </div>
                     </label>
                     <label>
+                        Injection Day:
+                        <div class="setting-input-wrapper">
+                            <select id="day-of-dose">
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6" selected>Saturday</option>
+                            </select>
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
+                    <label>
                         Height (cm):
                         <div class="setting-input-wrapper">
                             <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
@@ -2438,6 +2453,7 @@
                     settings: {
                         injectionFrequency: 7,
                         defaultDose: 2.0,
+                        dayOfDose: 6, // Saturday (0=Sunday, 6=Saturday)
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
@@ -3191,6 +3207,45 @@
                 return date.toISOString();
             }
 
+            calculateDaysRemaining(totalDoses) {
+                if (totalDoses <= 0) return 0;
+
+                const today = new Date();
+                const targetDayOfWeek = this.data.settings.dayOfDose || 6; // Default to Saturday
+                const injectionFrequency = this.data.settings.injectionFrequency || 7;
+
+                // Find the next dose day from today
+                const daysUntilNextDose = (targetDayOfWeek - today.getDay() + 7) % 7;
+                const nextDoseDate = new Date(today);
+                nextDoseDate.setDate(today.getDate() + daysUntilNextDose);
+
+                // If the next dose day is today and we haven't taken it yet, use today
+                // Otherwise, calculate from the next occurrence
+                if (daysUntilNextDose === 0) {
+                    // Check if we've already dosed today
+                    const todayString = today.toISOString().split('T')[0];
+                    const dosedToday = this.data.injections.some(inj =>
+                        inj.timestamp.startsWith(todayString)
+                    );
+                    if (!dosedToday) {
+                        // Haven't dosed yet today, so start from today
+                        nextDoseDate.setTime(today.getTime());
+                    } else {
+                        // Already dosed today, next dose is in injectionFrequency days
+                        nextDoseDate.setDate(today.getDate() + injectionFrequency);
+                    }
+                }
+
+                // Calculate when the last dose will be taken
+                const totalDaysOfMedication = (totalDoses - 1) * injectionFrequency;
+                const lastDoseDate = new Date(nextDoseDate);
+                lastDoseDate.setDate(nextDoseDate.getDate() + totalDaysOfMedication);
+
+                // Calculate days from today to last dose
+                const daysRemaining = Math.ceil((lastDoseDate - today) / (1000 * 60 * 60 * 24));
+                return Math.max(0, daysRemaining);
+            }
+
             getActiveVial() {
                 const plannedDose = parseFloat(document.getElementById('planned-dose')?.value || 4.0);
                 return this.data.vials.find(v => {
@@ -3402,6 +3457,11 @@
                     document.getElementById('default-dose').value = this.data.settings.defaultDose;
                 }
 
+                // Update day of dose
+                if (this.data.settings.dayOfDose !== undefined) {
+                    document.getElementById('day-of-dose').value = this.data.settings.dayOfDose;
+                }
+
                 // Update user height
                 if (this.data.settings.heightCm) {
                     document.getElementById('user-height').value = this.data.settings.heightCm;
@@ -3597,6 +3657,15 @@
                 document.getElementById('default-dose').addEventListener('change', (e) => {
                     this.data.settings.defaultDose = parseFloat(e.target.value);
                     this.saveData();
+                    this.updateUI();
+                    this.showSettingSaveIndicator(e.target);
+                });
+
+                // Day of dose handler
+                document.getElementById('day-of-dose').addEventListener('change', (e) => {
+                    this.data.settings.dayOfDose = parseInt(e.target.value);
+                    this.saveData();
+                    this.updateUI();
                     this.showSettingSaveIndicator(e.target);
                 });
 
@@ -4463,8 +4532,9 @@
                     }
                 }
 
-                // Calculate remaining doses based on average 2mg dose (only for active vials)
-                const remainingDoses = vial.concentration_mg_ml ? Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0) : 0;
+                // Calculate remaining doses based on default dose from settings
+                const defaultDose = this.data.settings.defaultDose || 2.0;
+                const remainingDoses = vial.concentration_mg_ml ? Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / defaultDose) : 0;
 
                 div.innerHTML = `
                     <div class="vial-content">
@@ -5237,19 +5307,21 @@
                     new Date(v.expiration_date) < new Date()
                 );
 
+                const defaultDose = this.data.settings.defaultDose || 2.0;
                 let totalDoses = 0;
                 let totalMgUsed = 0;
 
                 activeVials.forEach(vial => {
-                    const dosesInVial = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / 2.0); // Assuming 2mg average dose
+                    const dosesInVial = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / defaultDose);
                     totalDoses += dosesInVial;
                 });
 
                 this.data.vials.forEach(vial => {
-                    totalMgUsed += vial.doses_used * 2.0; // Assuming 2mg average dose
+                    totalMgUsed += vial.doses_used * defaultDose;
                 });
 
-                const daysRemaining = Math.floor(totalDoses * this.data.settings.injectionFrequency);
+                // Calculate days remaining based on dose day
+                const daysRemaining = this.calculateDaysRemaining(totalDoses);
 
 
                 // Update basic stats
