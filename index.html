@@ -4685,35 +4685,37 @@
             }
 
             updateSupplyForecast() {
-                // Calculate total remaining supply from all non-expired vials (dry and activated)
-                // Assume 1ml bac water per vial for dry vials
+                // Calculate total remaining supply: (Total vial capacity) - (Total used in injections)
+                // Assume 1ml bac water per vial
                 const now = new Date();
-                const vialsWithSupply = this.data.vials.filter(v => {
+
+                // Get all non-expired vials
+                const availableVials = this.data.vials.filter(v => {
                     const isNotExpired = new Date(v.expiration_date) > now;
                     const hasConcentration = v.concentration_mg_ml > 0;
-
-                    // Include dry vials (unused) and active vials with remaining volume
-                    const isDryVial = v.status === 'dry';
-                    const isActiveWithVolume = v.status === 'active' && v.remaining_ml > 0;
-
-                    return (isDryVial || isActiveWithVolume) && isNotExpired && hasConcentration;
+                    return isNotExpired && hasConcentration;
                 });
 
-                let totalSupplyMg = 0;
-                vialsWithSupply.forEach(vial => {
-                    let remainingMg = 0;
-                    if (vial.status === 'dry') {
-                        // Dry vial - assume 1ml bac water will be added
-                        remainingMg = 1.0 * vial.concentration_mg_ml;
-                        console.log(`Dry vial ${vial.vial_id}: 1.0ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
-                    } else {
-                        // Active vial - use remaining volume
-                        remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
-                        console.log(`Active vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
-                    }
-                    totalSupplyMg += remainingMg;
+                // Calculate total capacity from all vials (assuming 1ml per vial)
+                let totalCapacityMg = 0;
+                availableVials.forEach(vial => {
+                    const vialCapacity = 1.0 * vial.concentration_mg_ml; // 1ml per vial
+                    totalCapacityMg += vialCapacity;
+                    console.log(`Vial ${vial.vial_id} (${vial.status}): ${vialCapacity}mg`);
                 });
-                console.log(`Total supply from ${vialsWithSupply.length} vials (dry + active): ${totalSupplyMg}mg`);
+
+                // Calculate total used from all injections
+                let totalUsedMg = 0;
+                this.data.injections.forEach(inj => {
+                    totalUsedMg += inj.dose_mg;
+                });
+
+                // Remaining supply = Total capacity - Total used
+                const totalSupplyMg = Math.max(0, totalCapacityMg - totalUsedMg);
+
+                console.log(`Total capacity: ${totalCapacityMg}mg`);
+                console.log(`Total used: ${totalUsedMg}mg`);
+                console.log(`Remaining supply: ${totalSupplyMg}mg`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
@@ -5103,12 +5105,12 @@
                                         day: isMobile ? 'M/d' : 'MMM d'
                                     }
                                 },
-                                // Add padding on both sides for visibility
+                                // Add padding on both sides for visibility (2 days on each side)
                                 min: sortedWeights.length > 0 ?
-                                    new Date(new Date(sortedWeights[0].timestamp).getTime() - 1 * 24 * 60 * 60 * 1000).toISOString() :
+                                    new Date(new Date(sortedWeights[0].timestamp).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() :
                                     undefined,
                                 max: sortedWeights.length > 0 ?
-                                    new Date(new Date(sortedWeights[sortedWeights.length - 1].timestamp).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString() :
+                                    new Date(new Date(sortedWeights[sortedWeights.length - 1].timestamp).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() :
                                     new Date().toISOString(),
                                 grid: {
                                     color: '#333333'
