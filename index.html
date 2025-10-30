@@ -786,45 +786,6 @@
             margin-bottom: var(--spacing-xl);
         }
 
-        /* Inventory Analytics */
-        .inventory-analytics {
-            margin-top: var(--spacing-xl);
-        }
-
-        .inventory-analytics h3 {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: var(--spacing-md);
-            color: var(--text-primary);
-        }
-
-        .analytics-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--spacing-md);
-        }
-
-        .analytics-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-md);
-        }
-
-        .analytics-title {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: var(--spacing-sm);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .analytics-content {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
 
         .inventory-card {
             background-color: var(--card-bg);
@@ -2259,36 +2220,6 @@
                     <div class="inventory-card">
                         <div class="inventory-value" id="days-remaining">0</div>
                         <div class="inventory-label">Days Remaining</div>
-                    </div>
-                </div>
-
-                <div class="inventory-analytics">
-                    <h3>Inventory Analytics</h3>
-                    <div class="analytics-grid">
-                        <div class="analytics-card">
-                            <div class="analytics-title">Reorder Alert</div>
-                            <div class="analytics-content" id="reorder-alert">
-                                Stock levels look good
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-title">Usage Rate</div>
-                            <div class="analytics-content" id="usage-rate">
-                                Calculating...
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-title">Waste Tracking</div>
-                            <div class="analytics-content" id="waste-tracking">
-                                No expired vials
-                            </div>
-                        </div>
-                        <div class="analytics-card">
-                            <div class="analytics-title">Next Order</div>
-                            <div class="analytics-content" id="next-order">
-                                Order in 30+ days
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -4685,37 +4616,26 @@
             }
 
             updateSupplyForecast() {
-                // Calculate total remaining supply: (Total vial capacity) - (Total used in injections)
-                // Assume 1ml bac water per vial
+                // Calculate total remaining supply based on remaining_ml in each vial
                 const now = new Date();
 
-                // Get all non-expired vials
+                // Get all vials that are in stock (active, insufficient, or not expired)
                 const availableVials = this.data.vials.filter(v => {
                     const isNotExpired = new Date(v.expiration_date) > now;
+                    const isNotEmpty = v.status !== 'empty' && v.status !== 'finished';
                     const hasConcentration = v.concentration_mg_ml > 0;
-                    return isNotExpired && hasConcentration;
+                    return isNotExpired && isNotEmpty && hasConcentration;
                 });
 
-                // Calculate total capacity from all vials (assuming 1ml per vial)
-                let totalCapacityMg = 0;
+                // Calculate total remaining supply from each vial
+                let totalSupplyMg = 0;
                 availableVials.forEach(vial => {
-                    const vialCapacity = 1.0 * vial.concentration_mg_ml; // 1ml per vial
-                    totalCapacityMg += vialCapacity;
-                    console.log(`Vial ${vial.vial_id} (${vial.status}): ${vialCapacity}mg`);
+                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+                    totalSupplyMg += remainingMg;
+                    console.log(`Vial ${vial.vial_id} (${vial.status}): ${remainingMg.toFixed(1)}mg remaining (${vial.remaining_ml.toFixed(2)}ml @ ${vial.concentration_mg_ml}mg/ml)`);
                 });
 
-                // Calculate total used from all injections
-                let totalUsedMg = 0;
-                this.data.injections.forEach(inj => {
-                    totalUsedMg += inj.dose_mg;
-                });
-
-                // Remaining supply = Total capacity - Total used
-                const totalSupplyMg = Math.max(0, totalCapacityMg - totalUsedMg);
-
-                console.log(`Total capacity: ${totalCapacityMg}mg`);
-                console.log(`Total used: ${totalUsedMg}mg`);
-                console.log(`Remaining supply: ${totalSupplyMg}mg`);
+                console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
@@ -4998,58 +4918,62 @@
                 // Note: BMI dataset removed to match screenshot design
                 // Note: Dose scatter plot removed - doses shown as labels on weight points instead
 
-                // Custom plugin to draw dose labels on weight data points
+                // Custom plugin to draw dose labels for ALL injections
                 const doseLabelsPlugin = {
                     id: 'doseLabels',
                     afterDatasetsDraw: (chart) => {
                         const ctx = chart.ctx;
-                        const meta = chart.getDatasetMeta(0); // Weight dataset
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
 
-                        if (!meta || !sortedWeights.length || !sortedInjections.length) return;
+                        if (!sortedInjections.length) return;
 
                         ctx.save();
                         ctx.font = `bold ${isMobile ? '10' : '11'}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        meta.data.forEach((point, index) => {
-                            const weight = sortedWeights[index];
-                            if (!weight) return;
+                        // Draw a label for each injection
+                        sortedInjections.forEach((injection, index) => {
+                            const injDate = new Date(injection.timestamp);
 
-                            // Find the closest injection within 7 days before this weight
-                            const weightDate = new Date(weight.timestamp);
-                            const sevenDaysAgo = new Date(weightDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            // Calculate x position from timestamp
+                            const x = xScale.getPixelForValue(injDate);
 
-                            const closestInjection = sortedInjections
-                                .filter(inj => {
-                                    const injDate = new Date(inj.timestamp);
-                                    return injDate <= weightDate && injDate >= sevenDaysAgo;
-                                })
-                                .sort((a, b) => Math.abs(new Date(a.timestamp) - weightDate) - Math.abs(new Date(b.timestamp) - weightDate))[0];
-
-                            if (closestInjection) {
-                                const x = point.x;
-                                const y = point.y;
-                                const label = `${closestInjection.dose_mg}mg`;
-
-                                // Draw background pill with matching point color
-                                const textWidth = ctx.measureText(label).width;
-                                const padding = isMobile ? 5 : 6;
-                                const pillWidth = textWidth + padding * 2;
-                                const pillHeight = isMobile ? 16 : 18;
-                                const pillX = x - pillWidth / 2;
-                                const pillY = y - (isMobile ? 24 : 28);
-
-                                // Use the same color as the point
-                                ctx.fillStyle = pointColors[index];
-                                ctx.beginPath();
-                                ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
-                                ctx.fill();
-
-                                // Draw text
-                                ctx.fillStyle = '#FFFFFF';
-                                ctx.fillText(label, x, pillY + pillHeight - 4);
+                            // Find the closest weight to determine y position
+                            let y;
+                            if (sortedWeights.length > 0) {
+                                const closestWeight = sortedWeights.reduce((closest, weight) => {
+                                    const weightDate = new Date(weight.timestamp);
+                                    const closestDate = new Date(closest.timestamp);
+                                    return Math.abs(weightDate - injDate) < Math.abs(closestDate - injDate) ? weight : closest;
+                                });
+                                y = yScale.getPixelForValue(closestWeight.weight_kg);
+                            } else {
+                                // If no weights, position at middle of chart
+                                y = (yScale.top + yScale.bottom) / 2;
                             }
+
+                            const label = `${injection.dose_mg}mg`;
+
+                            // Draw background pill with colorful gradient
+                            const textWidth = ctx.measureText(label).width;
+                            const padding = isMobile ? 5 : 6;
+                            const pillWidth = textWidth + padding * 2;
+                            const pillHeight = isMobile ? 16 : 18;
+                            const pillX = x - pillWidth / 2;
+                            const pillY = y - (isMobile ? 24 : 28);
+
+                            // Cycle through color palette for variety
+                            const color = colorPalette[index % colorPalette.length];
+                            ctx.fillStyle = color;
+                            ctx.beginPath();
+                            ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
+                            ctx.fill();
+
+                            // Draw text
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillText(label, x, pillY + pillHeight - 4);
                         });
 
                         ctx.restore();
@@ -5065,6 +4989,14 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 35,
+                                left: 10,
+                                right: 10,
+                                bottom: 5
+                            }
+                        },
                         interaction: {
                             mode: 'nearest',
                             intersect: false
