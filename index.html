@@ -493,32 +493,144 @@
             color: var(--text-secondary);
         }
 
-        /* Results Stats */
+        /* Results Header */
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-header h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .add-shot-btn-results {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: none;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+
+        .add-shot-btn-results:hover {
+            opacity: 0.7;
+        }
+
+        /* Time Period Segmented Control */
+        .time-period-control {
+            display: flex;
+            background-color: #3a3a3a;
+            border-radius: 10px;
+            padding: 2px;
+            margin-bottom: 24px;
+        }
+
+        .period-btn {
+            flex: 1;
+            background-color: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .period-btn.active {
+            background-color: #505050;
+            color: var(--text-primary);
+        }
+
+        .period-btn:hover:not(.active) {
+            color: var(--text-primary);
+        }
+
+        /* Weight Change Section */
+        .weight-change-section {
+            margin-bottom: 24px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
+        }
+
+        .section-icon {
+            width: 24px;
+            height: 24px;
+            color: var(--text-secondary);
+        }
+
+        .date-range {
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        /* Results Stats Grid (2x3) */
+        .results-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .result-card {
+            background-color: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .result-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+
+        .metric-icon {
+            width: 16px;
+            height: 16px;
+            stroke-width: 2.5;
+        }
+
+        .result-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Old results-stats for backward compatibility */
         .results-stats {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: var(--spacing-md);
             margin-top: var(--spacing-lg);
-        }
-
-        .result-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-lg);
-            text-align: center;
-        }
-
-        .result-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--success-color);
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .result-label {
-            font-size: 14px;
-            color: var(--text-muted);
         }
 
         /* Inventory */
@@ -1125,6 +1237,30 @@
                 grid-template-columns: 1fr;
             }
 
+            .results-stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .result-card {
+                padding: 12px;
+            }
+
+            .result-value {
+                font-size: 20px;
+            }
+
+            .period-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
             .modal-content {
                 margin: var(--spacing-sm);
                 max-width: calc(100% - 32px);
@@ -1618,29 +1754,7 @@
             height: 14px;
         }
 
-        /* Time Range Selector */
-        .time-range-btn {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            color: var(--text-secondary);
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            min-width: 50px;
-        }
-
-        .time-range-btn:hover {
-            background: var(--border-color);
-        }
-
-        .time-range-btn.active {
-            background: var(--accent-color);
-            color: white;
-            border-color: var(--accent-color);
-        }
+        /* Time Range Selector - Removed, now using .period-btn styles defined above */
 
         /* Swipe to Delete */
         .shot-item, .weight-item, .vial-item {
@@ -1965,12 +2079,20 @@
         <!-- Results Tab -->
         <div id="results-tab" class="tab-content" style="display: none;">
             <div class="container">
-                <h2>Weight & Progress</h2>
-                <div class="time-range-selector" style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
-                    <button class="time-range-btn" data-range="7">7D</button>
-                    <button class="time-range-btn active" data-range="30">30D</button>
-                    <button class="time-range-btn" data-range="90">90D</button>
-                    <button class="time-range-btn" data-range="all">ALL</button>
+                <!-- Results Header -->
+                <div class="results-header">
+                    <h2>Results</h2>
+                    <button class="add-shot-btn-results" onclick="app.showAddInjectionModal()">
+                        + Add shot
+                    </button>
+                </div>
+
+                <!-- Time Period Segmented Control -->
+                <div class="time-period-control">
+                    <button class="period-btn active" data-months="1">1 month</button>
+                    <button class="period-btn" data-months="3">3 months</button>
+                    <button class="period-btn" data-months="6">6 months</button>
+                    <button class="period-btn" data-months="all">All time</button>
                 </div>
                 <div class="chart-controls">
                     <button class="chart-view-btn active" data-view="combined" title="Combined View">
@@ -2001,18 +2123,84 @@
                 <div id="table-view" class="table-view" style="display: none;">
                     <div id="weight-table"></div>
                 </div>
-                <div class="results-stats">
-                    <div class="result-card">
-                        <div class="result-value" id="weight-change">0 kg</div>
-                        <div class="result-label">Weight Change</div>
+
+                <!-- Weight Change Section -->
+                <div class="weight-change-section">
+                    <div class="section-header">
+                        <div class="section-title">
+                            <svg class="section-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+                            </svg>
+                            <h3>Weight Change</h3>
+                        </div>
+                        <div class="date-range" id="date-range-display">Sep 27, 2025 - Oct 29</div>
                     </div>
-                    <div class="result-card">
-                        <div class="result-value" id="current-weight">0 kg</div>
-                        <div class="result-label">Current Weight</div>
-                    </div>
-                    <div class="result-card">
-                        <div class="result-value" id="current-bmi">--</div>
-                        <div class="result-label">Current BMI</div>
+
+                    <!-- Metric Cards Grid (2x3) -->
+                    <div class="results-stats-grid">
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                                </svg>
+                                Total change
+                            </div>
+                            <div class="result-value" id="total-change">-25 lb</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
+                                </svg>
+                                Current BMI
+                            </div>
+                            <div class="result-value" id="current-bmi">--</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <path d="M12 6v6l4 2"/>
+                                </svg>
+                                Weight
+                            </div>
+                            <div class="result-value" id="current-weight">208.0 lb</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/>
+                                    <text x="12" y="16" text-anchor="middle" fill="currentColor" font-size="10">%</text>
+                                </svg>
+                                Percent
+                            </div>
+                            <div class="result-value" id="percent-change">-11%</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 2v20M17 12H7M17 7H7M17 17H7"/>
+                                </svg>
+                                Weekly avg
+                            </div>
+                            <div class="result-value" id="weekly-avg">-5.5 lb/wk</div>
+                        </div>
+
+                        <div class="result-card">
+                            <div class="result-label">
+                                <svg class="metric-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>
+                                </svg>
+                                Progress
+                            </div>
+                            <div class="result-value" id="goal-progress">52%</div>
+                        </div>
                     </div>
                 </div>
 
@@ -2603,15 +2791,24 @@
             }
 
             setupTimeRangeSelector() {
-                const buttons = document.querySelectorAll('.time-range-btn');
+                const buttons = document.querySelectorAll('.period-btn');
                 buttons.forEach(btn => {
                     btn.addEventListener('click', () => {
                         this.triggerHaptic('light');
                         buttons.forEach(b => b.classList.remove('active'));
                         btn.classList.add('active');
 
-                        const range = btn.dataset.range;
-                        this.timeRange = range === 'all' ? 'all' : parseInt(range);
+                        const months = btn.dataset.months;
+                        // Convert months to days for internal time range
+                        if (months === 'all') {
+                            this.timeRange = 'all';
+                        } else {
+                            const monthsNum = parseInt(months);
+                            this.timeRange = monthsNum * 30; // Approximate days per month
+                        }
+
+                        // Update stats with new time range
+                        this.updateWeightStats();
 
                         // Update chart with new time range
                         const activeView = document.querySelector('.chart-view-btn.active');
@@ -3552,15 +3749,7 @@
                     this.openModal('activate-vial-modal');
                 });
 
-                // Results tab weight button (we'll add this)
-                const addWeightBtn = document.createElement('button');
-                addWeightBtn.textContent = 'Add Weight';
-                addWeightBtn.className = 'btn-secondary';
-                addWeightBtn.style.marginBottom = '16px';
-                addWeightBtn.addEventListener('click', () => {
-                    this.openModal('add-weight-modal');
-                });
-                document.querySelector('#results-tab .container').insertBefore(addWeightBtn, document.querySelector('#results-tab h2').nextSibling);
+                // Note: Add shot button is now in the Results header (no need to dynamically create it)
 
                 // Close modal handlers
                 document.querySelectorAll('.modal-close, [data-modal]').forEach(btn => {
@@ -4748,70 +4937,98 @@
                 };
 
                 // Build datasets based on view mode
+                // Create gradient colors for the weight line (cycling through different colors)
+                const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
+                const pointColors = sortedWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
+
                 const datasets = [{
                     label: 'Weight (kg)',
                     data: sortedWeights.map(w => ({
                         x: w.timestamp,
                         y: w.weight_kg
                     })),
-                    borderColor: '#34C759',
-                    backgroundColor: 'rgba(52, 199, 89, 0.1)',
-                    fill: true,
+                    borderColor: '#AF52DE',
+                    backgroundColor: 'transparent',
+                    fill: false,
                     tension: 0.4,
                     yAxisID: 'y',
-                    pointRadius: isMobile ? 5 : 4,
-                    pointHoverRadius: isMobile ? 7 : 6,
-                    pointHitRadius: isMobile ? 12 : 8,
-                    pointBackgroundColor: function(context) {
-                        const weight = sortedWeights[context.dataIndex];
-                        return weight && weight.source === 'withings' ? '#FF9500' : '#34C759';
+                    pointRadius: isMobile ? 6 : 5,
+                    pointHoverRadius: isMobile ? 8 : 7,
+                    pointHitRadius: isMobile ? 14 : 12,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointBorderWidth: 2,
+                    segment: {
+                        borderColor: (ctx) => {
+                            if (!ctx.p0DataIndex || ctx.p0DataIndex >= pointColors.length - 1) return colorPalette[0];
+                            return pointColors[ctx.p0DataIndex];
+                        }
                     }
                 }];
 
-                // Add BMI dataset if height is available (shares left axis with weight)
-                if (this.data.settings.heightCm) {
-                    const heightM = this.data.settings.heightCm / 100;
-                    const bmiData = sortedWeights.map(w => {
-                        const bmi = w.weight_kg / (heightM * heightM);
-                        return {
-                            x: w.timestamp,
-                            y: bmi
-                        };
-                    });
+                // Note: BMI dataset removed to match screenshot design
+                // Note: Dose scatter plot removed - doses shown as labels on weight points instead
 
-                    datasets.push({
-                        label: 'BMI',
-                        data: bmiData,
-                        borderColor: '#AF52DE',
-                        backgroundColor: 'rgba(175, 82, 222, 0.1)',
-                        fill: false,
-                        tension: 0.4,
-                        yAxisID: 'y',
-                        pointRadius: isMobile ? 4 : 3,
-                        pointHoverRadius: isMobile ? 6 : 5,
-                        pointHitRadius: isMobile ? 12 : 8,
-                        borderWidth: 2
-                    });
-                }
+                // Custom plugin to draw dose labels on weight data points
+                const doseLabelsPlugin = {
+                    id: 'doseLabels',
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const meta = chart.getDatasetMeta(0); // Weight dataset
 
-                // Add dose dataset only for combined view
-                if (view === 'combined' && sortedInjections.length > 0) {
-                    datasets.push({
-                        label: 'Dose (mg)',
-                        data: sortedInjections.map(i => ({
-                            x: i.timestamp,
-                            y: i.dose_mg
-                        })),
-                        type: 'scatter',
-                        backgroundColor: '#007AFF',
-                        borderColor: '#007AFF',
-                        borderWidth: 2,
-                        pointRadius: isMobile ? 7 : 6,
-                        pointHoverRadius: isMobile ? 9 : 8,
-                        pointHitRadius: isMobile ? 14 : 10,
-                        yAxisID: 'y1'
-                    });
-                }
+                        if (!meta || !sortedWeights.length || !sortedInjections.length) return;
+
+                        ctx.save();
+                        ctx.font = `bold ${isMobile ? '10' : '11'}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+
+                        meta.data.forEach((point, index) => {
+                            const weight = sortedWeights[index];
+                            if (!weight) return;
+
+                            // Find the closest injection within 7 days before this weight
+                            const weightDate = new Date(weight.timestamp);
+                            const sevenDaysAgo = new Date(weightDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+                            const closestInjection = sortedInjections
+                                .filter(inj => {
+                                    const injDate = new Date(inj.timestamp);
+                                    return injDate <= weightDate && injDate >= sevenDaysAgo;
+                                })
+                                .sort((a, b) => Math.abs(new Date(a.timestamp) - weightDate) - Math.abs(new Date(b.timestamp) - weightDate))[0];
+
+                            if (closestInjection) {
+                                const x = point.x;
+                                const y = point.y;
+                                const label = `${closestInjection.dose_mg}mg`;
+
+                                // Draw background pill with matching point color
+                                const textWidth = ctx.measureText(label).width;
+                                const padding = isMobile ? 5 : 6;
+                                const pillWidth = textWidth + padding * 2;
+                                const pillHeight = isMobile ? 16 : 18;
+                                const pillX = x - pillWidth / 2;
+                                const pillY = y - (isMobile ? 24 : 28);
+
+                                // Use the same color as the point
+                                ctx.fillStyle = pointColors[index];
+                                ctx.beginPath();
+                                ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
+                                ctx.fill();
+
+                                // Draw text
+                                ctx.fillStyle = '#FFFFFF';
+                                ctx.fillText(label, x, pillY + pillHeight - 4);
+                            }
+                        });
+
+                        ctx.restore();
+                    }
+                };
+
+                // Register the custom plugin
+                Chart.register(doseLabelsPlugin);
 
                 this.charts.weightChart = new Chart(ctx, {
                     type: 'line',
@@ -4847,7 +5064,8 @@
                                 bodyFont: {
                                     size: isMobile ? 12 : 13
                                 }
-                            }
+                            },
+                            doseLabels: {} // Enable our custom plugin
                         },
                         scales: {
                             x: {
@@ -4933,15 +5151,55 @@
                 });
             }
 
+            // Helper function: Convert kg to lb
+            kgToLbs(kg) {
+                return kg * 2.20462;
+            }
+
+            // Helper function: Convert lb to kg
+            lbsToKg(lbs) {
+                return lbs / 2.20462;
+            }
+
+            // Helper function: Get date range for display
+            getDateRangeText(weights) {
+                if (!weights || weights.length === 0) return '';
+
+                const sorted = [...weights].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const start = new Date(sorted[0].timestamp);
+                const end = new Date(sorted[sorted.length - 1].timestamp);
+
+                const formatOptions = { month: 'short', day: 'numeric', year: 'numeric' };
+                return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
+            }
+
             updateWeightStats() {
-                if (this.data.weights.length < 2) {
-                    document.getElementById('weight-change').textContent = '0 kg';
+                // Get weights for current time range
+                const cutoffDate = this.timeRange === 'all' ? new Date(0) :
+                    new Date(Date.now() - this.timeRange * 24 * 60 * 60 * 1000);
+
+                const filteredWeights = this.data.weights.filter(w =>
+                    this.timeRange === 'all' || new Date(w.timestamp) >= cutoffDate
+                );
+
+                // Update date range display
+                const dateRangeEl = document.getElementById('date-range-display');
+                if (dateRangeEl) {
+                    dateRangeEl.textContent = this.getDateRangeText(filteredWeights);
+                }
+
+                if (filteredWeights.length < 2) {
+                    // Set defaults if not enough data
+                    document.getElementById('total-change').textContent = '0 kg';
                     document.getElementById('current-weight').textContent = '0 kg';
                     document.getElementById('current-bmi').textContent = '--';
+                    document.getElementById('percent-change').textContent = '0%';
+                    document.getElementById('weekly-avg').textContent = '0 kg/wk';
+                    document.getElementById('goal-progress').textContent = '--';
                     return;
                 }
 
-                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                const sortedWeights = [...filteredWeights].sort((a, b) =>
                     new Date(a.timestamp) - new Date(b.timestamp)
                 );
 
@@ -4950,34 +5208,88 @@
 
                 // Safety check for undefined weights
                 if (!firstWeight || !lastWeight || !lastWeight.weight_kg || !firstWeight.weight_kg) {
-                    document.getElementById('weight-change').textContent = '0 kg';
+                    document.getElementById('total-change').textContent = '0 kg';
                     document.getElementById('current-weight').textContent = '0 kg';
                     document.getElementById('current-bmi').textContent = '--';
+                    document.getElementById('percent-change').textContent = '0%';
+                    document.getElementById('weekly-avg').textContent = '0 kg/wk';
+                    document.getElementById('goal-progress').textContent = '--';
                     return;
                 }
 
+                // Calculate metrics in kg
                 const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
+                const currentWeightKg = lastWeight.weight_kg;
+                const startWeightKg = firstWeight.weight_kg;
 
-                const changeText = weightChangeKg >= 0 ?
+                // 1. Total change (in kg)
+                const totalChangeText = weightChangeKg >= 0 ?
                     `+${Math.abs(weightChangeKg).toFixed(1)} kg` :
-                    `-${Math.abs(weightChangeKg).toFixed(1)} kg`;
+                    `${weightChangeKg.toFixed(1)} kg`;
+                document.getElementById('total-change').textContent = totalChangeText;
 
-                document.getElementById('weight-change').textContent = changeText;
-                document.getElementById('current-weight').textContent =
-                    `${lastWeight.weight_kg.toFixed(1)} kg`;
+                // 2. Current weight (in kg)
+                document.getElementById('current-weight').textContent = `${currentWeightKg.toFixed(1)} kg`;
 
-                // Update color based on weight change
-                const weightChangeElement = document.getElementById('weight-change');
-                if (weightChangeKg < 0) {
-                    weightChangeElement.style.color = '#34C759'; // Green for weight loss
-                } else if (weightChangeKg > 0) {
-                    weightChangeElement.style.color = '#FF9500'; // Orange for weight gain
+                // 3. Current BMI
+                this.updateBMI();
+
+                // 4. Percent change
+                const percentChange = (weightChangeKg / startWeightKg) * 100;
+                const percentText = percentChange >= 0 ?
+                    `+${percentChange.toFixed(0)}%` :
+                    `${percentChange.toFixed(0)}%`;
+                document.getElementById('percent-change').textContent = percentText;
+
+                // 5. Weekly average (kg/wk)
+                const daysDiff = (new Date(lastWeight.timestamp) - new Date(firstWeight.timestamp)) / (1000 * 60 * 60 * 24);
+                const weeks = daysDiff / 7;
+                const weeklyAvgKg = weeks > 0 ? (weightChangeKg / weeks) : 0;
+                const weeklyText = weeklyAvgKg >= 0 ?
+                    `+${weeklyAvgKg.toFixed(1)} kg/wk` :
+                    `${weeklyAvgKg.toFixed(1)} kg/wk`;
+                document.getElementById('weekly-avg').textContent = weeklyText;
+
+                // 6. Goal progress (%)
+                if (this.data.settings.goalWeight) {
+                    const goalWeightKg = this.data.settings.goalWeight;
+                    const totalToLose = startWeightKg - goalWeightKg;
+                    const lostSoFar = startWeightKg - currentWeightKg;
+                    const progress = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 0;
+                    document.getElementById('goal-progress').textContent = `${Math.max(0, Math.min(100, progress)).toFixed(0)}%`;
                 } else {
-                    weightChangeElement.style.color = '#888888'; // Gray for no change
+                    document.getElementById('goal-progress').textContent = '--';
                 }
 
-                // Update BMI
-                this.updateBMI();
+                // Color coding for total change
+                const totalChangeEl = document.getElementById('total-change');
+                if (weightChangeKg < 0) {
+                    totalChangeEl.style.color = '#34C759'; // Green for weight loss
+                } else if (weightChangeKg > 0) {
+                    totalChangeEl.style.color = '#FF9500'; // Orange for weight gain
+                } else {
+                    totalChangeEl.style.color = 'var(--text-primary)';
+                }
+
+                // Color coding for percent change
+                const percentEl = document.getElementById('percent-change');
+                if (percentChange < 0) {
+                    percentEl.style.color = '#34C759';
+                } else if (percentChange > 0) {
+                    percentEl.style.color = '#FF9500';
+                } else {
+                    percentEl.style.color = 'var(--text-primary)';
+                }
+
+                // Color coding for weekly average
+                const weeklyEl = document.getElementById('weekly-avg');
+                if (weeklyAvgKg < 0) {
+                    weeklyEl.style.color = '#34C759';
+                } else if (weeklyAvgKg > 0) {
+                    weeklyEl.style.color = '#FF9500';
+                } else {
+                    weeklyEl.style.color = 'var(--text-primary)';
+                }
             }
 
             updateBMI() {
