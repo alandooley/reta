@@ -24,6 +24,8 @@
     <!-- Chart.js for data visualization -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
 
     <!-- Confetti for celebrations -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -528,7 +530,54 @@
             background-color: #3a3a3a;
             border-radius: 10px;
             padding: 2px;
-            margin-bottom: 24px;
+            margin-bottom: 8px;
+        }
+
+        .chart-hint {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            gap: 8px;
+        }
+
+        .chart-hint-text {
+            flex: 1;
+        }
+
+        .reset-zoom-btn {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--accent-color);
+            border-radius: 6px;
+            padding: 4px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .reset-zoom-btn:hover {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .reset-zoom-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        @media (max-width: 480px) {
+            .chart-hint {
+                font-size: 11px;
+            }
+
+            .reset-zoom-btn {
+                font-size: 11px;
+                padding: 3px 10px;
+            }
         }
 
         .period-btn {
@@ -2013,11 +2062,21 @@
 
                 <!-- Time Period Segmented Control -->
                 <div class="time-period-control">
-                    <button class="period-btn active" data-months="1">1 month</button>
+                    <button class="period-btn" data-months="1">1 month</button>
                     <button class="period-btn" data-months="3">3 months</button>
                     <button class="period-btn" data-months="6">6 months</button>
-                    <button class="period-btn" data-months="all">All time</button>
+                    <button class="period-btn active" data-months="all">All time</button>
                 </div>
+
+                <!-- Chart Interaction Hint -->
+                <div class="chart-hint">
+                    <span class="chart-hint-text">
+                        <span class="desktop-hint">Scroll or pinch to zoom • Shift+drag to pan</span>
+                        <span class="mobile-hint" style="display: none;">Pinch to zoom • Drag to pan</span>
+                    </span>
+                    <button class="reset-zoom-btn" onclick="app.resetChartZoom()" id="reset-zoom-btn">Reset Zoom</button>
+                </div>
+
                 <div class="chart-container" id="chart-view">
                     <canvas id="weight-chart"></canvas>
                 </div>
@@ -2500,7 +2559,7 @@
                     }
                 };
                 this.charts = {};
-                this.timeRange = 30; // Default to 30 days
+                this.timeRange = 'all'; // Default to showing all data
                 this._isSyncing = false;  // Guard against concurrent syncs
                 this._lastSyncTime = 0;    // Debounce rapid syncs
                 this._pendingDeletions = new Set();  // Track items being deleted to prevent re-sync
@@ -2541,6 +2600,7 @@
                 this.setupTimeRangeSelector();
                 this.setupCountdownInteraction();
                 this.setupSwipeToDelete();
+                this.setupChartHints();
             }
 
             // Floating Action Button (context-aware)
@@ -2684,6 +2744,32 @@
                     tableView.style.display = 'none';
                     this.updateWeightChart(view);
                 }
+            }
+
+            resetChartZoom() {
+                if (this.charts.weightChart) {
+                    this.charts.weightChart.resetZoom();
+                    this.triggerHaptic('light');
+                }
+            }
+
+            setupChartHints() {
+                const updateHints = () => {
+                    const isMobile = window.innerWidth <= 768;
+                    const desktopHint = document.querySelector('.desktop-hint');
+                    const mobileHint = document.querySelector('.mobile-hint');
+
+                    if (desktopHint && mobileHint) {
+                        desktopHint.style.display = isMobile ? 'none' : 'inline';
+                        mobileHint.style.display = isMobile ? 'inline' : 'none';
+                    }
+                };
+
+                // Update on load
+                updateHints();
+
+                // Update on resize
+                window.addEventListener('resize', updateHints);
             }
 
             renderWeightTable() {
@@ -4968,7 +5054,30 @@
                                     size: isMobile ? 12 : 13
                                 }
                             },
-                            doseLabels: {} // Enable our custom plugin
+                            doseLabels: {}, // Enable our custom plugin
+                            zoom: {
+                                pan: {
+                                    enabled: true,
+                                    mode: 'x',
+                                    modifierKey: isMobile ? null : 'shift'
+                                },
+                                zoom: {
+                                    wheel: {
+                                        enabled: !isMobile,
+                                        speed: 0.1
+                                    },
+                                    pinch: {
+                                        enabled: isMobile
+                                    },
+                                    mode: 'x'
+                                },
+                                limits: {
+                                    x: {
+                                        min: 'original',
+                                        max: 'original'
+                                    }
+                                }
+                            }
                         },
                         scales: {
                             x: {
