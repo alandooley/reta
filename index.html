@@ -2146,7 +2146,7 @@
                                 </svg>
                                 Total change
                             </div>
-                            <div class="result-value" id="total-change">-25 lb</div>
+                            <div class="result-value" id="total-change">-11.3 kg</div>
                         </div>
 
                         <div class="result-card">
@@ -2168,7 +2168,7 @@
                                 </svg>
                                 Weight
                             </div>
-                            <div class="result-value" id="current-weight">208.0 lb</div>
+                            <div class="result-value" id="current-weight">94.5 kg</div>
                         </div>
 
                         <div class="result-card">
@@ -2189,7 +2189,7 @@
                                 </svg>
                                 Weekly avg
                             </div>
-                            <div class="result-value" id="weekly-avg">-5.5 lb/wk</div>
+                            <div class="result-value" id="weekly-avg">-2.5 kg/wk</div>
                         </div>
 
                         <div class="result-card">
@@ -2970,10 +2970,10 @@
 
                     const trendEl = document.getElementById('insight-weight-trend');
                     if (change < 0) {
-                        trendEl.textContent = `↓ ${Math.abs(change * 2.2).toFixed(1)} lbs`;
+                        trendEl.textContent = `↓ ${Math.abs(change).toFixed(1)} kg`;
                         trendEl.classList.remove('negative');
                     } else {
-                        trendEl.textContent = `↑ ${(change * 2.2).toFixed(1)} lbs`;
+                        trendEl.textContent = `↑ ${change.toFixed(1)} kg`;
                         trendEl.classList.add('negative');
                     }
                 } else {
@@ -3538,13 +3538,29 @@
             updateSummaryTab() {
                 const totalShots = this.data.injections.length;
                 const lastInjection = this.getMostRecentInjection();
-                const lastLevel = lastInjection ? lastInjection.medication_level_at_injection || 0 : 0;
+
+                // Calculate remaining vial volume after last shot
+                let vialRemainingMl = 0;
+                if (lastInjection && lastInjection.vial_id) {
+                    const vial = this.data.vials.find(v => v.id === lastInjection.vial_id);
+                    if (vial) {
+                        // Calculate total used from this vial
+                        const injectionsFromVial = this.data.injections
+                            .filter(inj => inj.vial_id === vial.id)
+                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                        const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
+                        const totalUsedMl = totalUsedMg / vial.concentration_mg_ml;
+                        vialRemainingMl = 1.0 - totalUsedMl; // Assuming 1ml bac water per vial
+                    }
+                }
+
                 const nextShotDays = this.calculateNextShotDays();
 
                 document.getElementById('total-shots').textContent = totalShots;
                 document.getElementById('last-dose').textContent = lastInjection ?
                     `${lastInjection.dose_mg} mg` : '0 mg';
-                document.getElementById('current-level').textContent = `${lastLevel.toFixed(1)} mg`;
+                document.getElementById('current-level').textContent = `${vialRemainingMl.toFixed(2)} ml`;
                 document.getElementById('next-shot').textContent = `${nextShotDays} days`;
 
                 this.updateCountdown();
@@ -4669,24 +4685,35 @@
             }
 
             updateSupplyForecast() {
-                // Calculate total remaining supply from all non-expired vials with remaining volume
+                // Calculate total remaining supply from all non-expired vials (dry and activated)
+                // Assume 1ml bac water per vial for dry vials
                 const now = new Date();
                 const vialsWithSupply = this.data.vials.filter(v => {
-                    const hasRemainingVolume = v.remaining_ml > 0;
-                    const isActive = v.status === 'active';
                     const isNotExpired = new Date(v.expiration_date) > now;
                     const hasConcentration = v.concentration_mg_ml > 0;
 
-                    return hasRemainingVolume && isActive && isNotExpired && hasConcentration;
+                    // Include dry vials (unused) and active vials with remaining volume
+                    const isDryVial = v.status === 'dry';
+                    const isActiveWithVolume = v.status === 'active' && v.remaining_ml > 0;
+
+                    return (isDryVial || isActiveWithVolume) && isNotExpired && hasConcentration;
                 });
 
                 let totalSupplyMg = 0;
                 vialsWithSupply.forEach(vial => {
-                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+                    let remainingMg = 0;
+                    if (vial.status === 'dry') {
+                        // Dry vial - assume 1ml bac water will be added
+                        remainingMg = 1.0 * vial.concentration_mg_ml;
+                        console.log(`Dry vial ${vial.vial_id}: 1.0ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
+                    } else {
+                        // Active vial - use remaining volume
+                        remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+                        console.log(`Active vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
+                    }
                     totalSupplyMg += remainingMg;
-                    console.log(`Active vial ${vial.vial_id}: ${vial.remaining_ml}ml * ${vial.concentration_mg_ml}mg/ml = ${remainingMg}mg`);
                 });
-                console.log(`Total supply from ${vialsWithSupply.length} active vials: ${totalSupplyMg}mg`);
+                console.log(`Total supply from ${vialsWithSupply.length} vials (dry + active): ${totalSupplyMg}mg`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
@@ -5076,7 +5103,13 @@
                                         day: isMobile ? 'M/d' : 'MMM d'
                                     }
                                 },
-                                max: new Date().toISOString(),
+                                // Add padding on both sides for visibility
+                                min: sortedWeights.length > 0 ?
+                                    new Date(new Date(sortedWeights[0].timestamp).getTime() - 1 * 24 * 60 * 60 * 1000).toISOString() :
+                                    undefined,
+                                max: sortedWeights.length > 0 ?
+                                    new Date(new Date(sortedWeights[sortedWeights.length - 1].timestamp).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString() :
+                                    new Date().toISOString(),
                                 grid: {
                                     color: '#333333'
                                 },
