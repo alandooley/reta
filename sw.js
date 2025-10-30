@@ -1,5 +1,5 @@
 // Service Worker for Injection Tracker PWA
-const VERSION = '1.1.0';
+const VERSION = '1.1.1';
 const CACHE_NAME = `injection-tracker-v${VERSION}`;
 const CACHE_ASSETS = [
   './',
@@ -42,6 +42,13 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
+
+  // CRITICAL: Don't intercept OAuth redirect URLs (they have state/code parameters from Firebase)
+  if (url.searchParams.has('state') || url.searchParams.has('code')) {
+    // Let OAuth redirects pass through to the network
+    event.respondWith(fetch(request));
+    return;
+  }
 
   // Network-first for API calls and dynamic content
   if (url.pathname.includes('/api/') || request.method !== 'GET') {

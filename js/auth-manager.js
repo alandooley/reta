@@ -27,15 +27,42 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
+        // Set persistence to LOCAL (persists across browser sessions)
+        try {
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            console.log('Firebase auth persistence set to LOCAL');
+        } catch (error) {
+            console.error('Failed to set persistence:', error);
+        }
+
         // Check for redirect result first (for mobile/Safari compatibility)
         try {
+            console.log('Checking for OAuth redirect result...');
+            console.log('Current URL:', window.location.href);
+            console.log('URL params:', window.location.search);
+
             const result = await firebase.auth().getRedirectResult();
+            console.log('getRedirectResult() returned:', {
+                hasResult: !!result,
+                hasUser: !!result?.user,
+                hasCredential: !!result?.credential,
+                userEmail: result?.user?.email
+            });
+
             if (result.user) {
-                console.log('Sign-in completed via redirect:', result.user.email);
+                console.log('✅ Sign-in completed via redirect:', result.user.email);
+                console.log('User UID:', result.user.uid);
                 // Auth state listener will handle the rest
+            } else if (result && !result.user) {
+                console.log('⚠️ Redirect result returned but no user object');
+            } else {
+                console.log('ℹ️ No redirect result (normal for initial page load)');
             }
         } catch (error) {
-            console.error('Redirect result error:', error);
+            console.error('❌ Redirect result error:', error);
+            console.error('Error code:', error.code);
+            console.error('Error message:', error.message);
+            console.error('Error stack:', error.stack);
             // Show user-friendly error
             if (error.code === 'auth/popup-closed-by-user' ||
                 error.code === 'auth/cancelled-popup-request' ||
@@ -78,19 +105,28 @@ class AuthManager {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
 
-            // Use redirect instead of popup for better mobile/Safari support
-            // This works around storage partitioning and third-party cookie issues
-            console.log('Starting Google sign-in redirect...');
-            await firebase.auth().signInWithRedirect(provider);
+            // Use popup for CloudFront domain to avoid redirect issues
+            // Use redirect for Firebase hosting domains
+            const isCloudFront = window.location.hostname.includes('cloudfront.net');
 
-            // Note: After redirect, the page will reload and initialize()
-            // will call getRedirectResult() to complete the sign-in
+            if (isCloudFront) {
+                console.log('Starting Google sign-in via popup (CloudFront domain)...');
+                const result = await firebase.auth().signInWithPopup(provider);
+                console.log('✅ Popup sign-in successful:', result.user.email);
+            } else {
+                console.log('Starting Google sign-in via redirect (Firebase hosting)...');
+                await firebase.auth().signInWithRedirect(provider);
+                // Note: After redirect, the page will reload and initialize()
+                // will call getRedirectResult() to complete the sign-in
+            }
         } catch (error) {
             console.error('Sign in error:', error);
 
             // Provide helpful error messages for common issues
             if (error.code === 'auth/popup-blocked') {
                 throw new Error('Sign-in popup was blocked. Please allow popups and try again.');
+            } else if (error.code === 'auth/popup-closed-by-user') {
+                throw new Error('Sign-in popup was closed. Please try again.');
             } else if (error.code === 'auth/operation-not-allowed') {
                 throw new Error('Google sign-in is not enabled. Please contact support.');
             } else if (error.message.includes('missing initial state')) {

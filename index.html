@@ -3370,10 +3370,26 @@
             }
 
             updateResultsTab() {
-                this.updateWeightChart();
-                this.updateWeightStats();
-                this.updateGoalProgress();
-                this.updateWeightsList();
+                try {
+                    this.updateWeightChart();
+                } catch (error) {
+                    console.error('Error updating weight chart:', error);
+                }
+                try {
+                    this.updateWeightStats();
+                } catch (error) {
+                    console.error('Error updating weight stats:', error);
+                }
+                try {
+                    this.updateGoalProgress();
+                } catch (error) {
+                    console.error('Error updating goal progress:', error);
+                }
+                try {
+                    this.updateWeightsList();
+                } catch (error) {
+                    console.error('Error updating weights list:', error);
+                }
             }
 
             updateInventoryTab() {
@@ -4748,7 +4764,7 @@
                     pointHitRadius: isMobile ? 12 : 8,
                     pointBackgroundColor: function(context) {
                         const weight = sortedWeights[context.dataIndex];
-                        return weight.source === 'withings' ? '#FF9500' : '#34C759';
+                        return weight && weight.source === 'withings' ? '#FF9500' : '#34C759';
                     }
                 }];
 
@@ -4931,6 +4947,14 @@
 
                 const firstWeight = sortedWeights[0];
                 const lastWeight = sortedWeights[sortedWeights.length - 1];
+
+                // Safety check for undefined weights
+                if (!firstWeight || !lastWeight || !lastWeight.weight_kg || !firstWeight.weight_kg) {
+                    document.getElementById('weight-change').textContent = '0 kg';
+                    document.getElementById('current-weight').textContent = '0 kg';
+                    document.getElementById('current-bmi').textContent = '--';
+                    return;
+                }
 
                 const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
 
@@ -5134,17 +5158,28 @@
                     return;
                 }
 
-                const sortedWeights = [...this.data.weights].sort((a, b) =>
+                // Filter out invalid weights first
+                const validWeights = this.data.weights.filter(w => w && w.weight_kg && w.timestamp);
+
+                const sortedWeights = [...validWeights].sort((a, b) =>
                     new Date(b.timestamp) - new Date(a.timestamp)
                 );
 
                 sortedWeights.forEach(weight => {
                     const weightItem = this.createWeightListItem(weight);
-                    weightsList.appendChild(weightItem);
+                    if (weightItem && weightItem.hasChildNodes()) {
+                        weightsList.appendChild(weightItem);
+                    }
                 });
             }
 
             createWeightListItem(weight) {
+                // Safety check for invalid weight data
+                if (!weight || !weight.weight_kg) {
+                    console.warn('Invalid weight data:', weight);
+                    return document.createElement('div');
+                }
+
                 const div = document.createElement('div');
                 div.className = 'weight-item';
                 div.setAttribute('data-item-id', weight.timestamp);
