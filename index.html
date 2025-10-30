@@ -4850,7 +4850,7 @@
                 // Note: BMI dataset removed to match screenshot design
                 // Note: Dose scatter plot removed - doses shown as labels on weight points instead
 
-                // Custom plugin to draw dose labels above weight points only
+                // Custom plugin to draw dose labels - all doses shown, positioned above weights when available
                 const doseLabelsPlugin = {
                     id: 'doseLabels',
                     afterDatasetsDraw: (chart) => {
@@ -4858,52 +4858,64 @@
                         const xScale = chart.scales.x;
                         const yScale = chart.scales.y;
 
-                        if (!sortedWeights.length) return;
+                        if (!sortedInjections.length) return;
 
                         ctx.save();
                         ctx.font = `bold ${isMobile ? '10' : '11'}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        // Draw a label for each weight point that has a corresponding injection
-                        sortedWeights.forEach((weight, index) => {
-                            const weightDate = new Date(weight.timestamp);
-                            const x = xScale.getPixelForValue(weightDate);
-                            const y = yScale.getPixelForValue(weight.weight_kg);
+                        // Draw a label for EVERY injection
+                        sortedInjections.forEach((injection, index) => {
+                            const injDate = new Date(injection.timestamp);
+                            const x = xScale.getPixelForValue(injDate);
 
-                            // Find injection on the same day as this weight
+                            // Try to find a matching weight to position above it
                             // Allow up to 24 hours difference to account for different time-of-day entries
-                            const matchingInjection = sortedInjections.find(injection => {
-                                const injDate = new Date(injection.timestamp);
-                                const timeDiff = Math.abs(injDate - weightDate);
+                            let y;
+                            const matchingWeight = sortedWeights.find(weight => {
+                                const weightDate = new Date(weight.timestamp);
+                                const timeDiff = Math.abs(weightDate - injDate);
                                 const hoursDiff = timeDiff / (1000 * 60 * 60);
                                 return hoursDiff <= 24; // Same day or within 24 hours
                             });
 
-                            // Only draw label if there's a matching injection for this weight
-                            if (matchingInjection) {
-                                const label = `${matchingInjection.dose_mg}mg`;
-
-                                // Draw background pill with colorful gradient
-                                const textWidth = ctx.measureText(label).width;
-                                const padding = isMobile ? 5 : 6;
-                                const pillWidth = textWidth + padding * 2;
-                                const pillHeight = isMobile ? 16 : 18;
-                                const pillX = x - pillWidth / 2;
-                                const pillY = y - (isMobile ? 24 : 28);
-
-                                // Cycle through color palette for variety
-                                const color = colorPalette[index % colorPalette.length];
-                                ctx.fillStyle = color;
-                                ctx.beginPath();
-                                ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
-                                ctx.fill();
-
-                                // Draw text
-                                ctx.fillStyle = '#FFFFFF';
-                                ctx.fillText(label, x, pillY + pillHeight - 4);
+                            if (matchingWeight) {
+                                // Position above the matching weight point
+                                y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            } else if (sortedWeights.length > 0) {
+                                // No exact match - find closest weight to determine approximate y position
+                                const closestWeight = sortedWeights.reduce((closest, weight) => {
+                                    const weightDate = new Date(weight.timestamp);
+                                    const closestDate = new Date(closest.timestamp);
+                                    return Math.abs(weightDate - injDate) < Math.abs(closestDate - injDate) ? weight : closest;
+                                });
+                                y = yScale.getPixelForValue(closestWeight.weight_kg);
+                            } else {
+                                // No weights at all - position at middle of chart
+                                y = (yScale.top + yScale.bottom) / 2;
                             }
-                            // If no matching injection, leave blank (no label drawn)
+
+                            const label = `${injection.dose_mg}mg`;
+
+                            // Draw background pill with colorful gradient
+                            const textWidth = ctx.measureText(label).width;
+                            const padding = isMobile ? 5 : 6;
+                            const pillWidth = textWidth + padding * 2;
+                            const pillHeight = isMobile ? 16 : 18;
+                            const pillX = x - pillWidth / 2;
+                            const pillY = y - (isMobile ? 24 : 28);
+
+                            // Cycle through color palette for variety
+                            const color = colorPalette[index % colorPalette.length];
+                            ctx.fillStyle = color;
+                            ctx.beginPath();
+                            ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
+                            ctx.fill();
+
+                            // Draw text
+                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillText(label, x, pillY + pillHeight - 4);
                         });
 
                         ctx.restore();
