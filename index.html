@@ -4561,7 +4561,7 @@
 
                 // Calculate remaining doses based on default dose from settings
                 const defaultDose = this.data.settings.defaultDose || 2.0;
-                const remainingDoses = vial.concentration_mg_ml ? Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / defaultDose) : 0;
+                const remainingDoses = vial.concentration_mg_ml ? ((vial.remaining_ml * vial.concentration_mg_ml) / defaultDose).toFixed(1) : 0;
 
                 div.innerHTML = `
                     <div class="vial-content">
@@ -4619,31 +4619,43 @@
                 // Calculate total remaining supply based on remaining_ml in each vial
                 const now = new Date();
 
-                // Get all vials that are in stock (active, insufficient, or not expired)
-                const availableVials = this.data.vials.filter(v => {
+                // Get all active vials that are in stock
+                const activeVials = this.data.vials.filter(v => {
                     const isNotExpired = new Date(v.expiration_date) > now;
                     const isNotEmpty = v.status !== 'empty' && v.status !== 'finished';
                     const hasConcentration = v.concentration_mg_ml > 0;
-                    return isNotExpired && isNotEmpty && hasConcentration;
+                    return v.status === 'active' && isNotExpired && isNotEmpty && hasConcentration;
                 });
 
-                // Calculate total remaining supply from each vial
+                // Get all dry stock vials
+                const dryStockVials = this.data.vials.filter(v => {
+                    const isNotExpired = new Date(v.expiration_date) > now;
+                    return v.status === 'dry_stock' && isNotExpired;
+                });
+
+                // Calculate total remaining supply from active vials
                 let totalSupplyMg = 0;
-                availableVials.forEach(vial => {
+                activeVials.forEach(vial => {
                     const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
                     totalSupplyMg += remainingMg;
-                    console.log(`Vial ${vial.vial_id} (${vial.status}): ${remainingMg.toFixed(1)}mg remaining (${vial.remaining_ml.toFixed(2)}ml @ ${vial.concentration_mg_ml}mg/ml)`);
+                    console.log(`Vial ${vial.vial_id} (active): ${remainingMg.toFixed(1)}mg remaining (${vial.remaining_ml.toFixed(2)}ml @ ${vial.concentration_mg_ml}mg/ml)`);
                 });
 
-                console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg`);
+                // Add dry stock vials (full amount)
+                dryStockVials.forEach(vial => {
+                    totalSupplyMg += vial.total_mg;
+                    console.log(`Vial ${vial.vial_id} (dry_stock): ${vial.total_mg}mg available`);
+                });
+
+                console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg (${activeVials.length} active + ${dryStockVials.length} dry stock)`);
 
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
                 const plannedWeeklyDose = parseFloat(plannedDoseInput?.value || 4.0);
 
-                // Calculate duration
+                // Calculate duration - use ceiling for conservative estimate
                 const weeksRemaining = plannedWeeklyDose > 0 ? Math.floor(totalSupplyMg / plannedWeeklyDose) : 0;
-                const daysRemaining = weeksRemaining * 7;
+                const daysRemaining = Math.floor((totalSupplyMg / plannedWeeklyDose) * 7);
 
                 // Calculate run out date
                 const runOutDate = new Date();
@@ -5492,6 +5504,11 @@
                     new Date(v.expiration_date) > new Date()
                 );
 
+                const dryStockVials = this.data.vials.filter(v =>
+                    v.status === 'dry_stock' &&
+                    new Date(v.expiration_date) > new Date()
+                );
+
                 const expiredVials = this.data.vials.filter(v =>
                     new Date(v.expiration_date) < new Date()
                 );
@@ -5500,8 +5517,15 @@
                 let totalDoses = 0;
                 let totalMgUsed = 0;
 
+                // Count doses from active vials
                 activeVials.forEach(vial => {
-                    const dosesInVial = Math.floor((vial.remaining_ml * vial.concentration_mg_ml) / defaultDose);
+                    const dosesInVial = (vial.remaining_ml * vial.concentration_mg_ml) / defaultDose;
+                    totalDoses += dosesInVial;
+                });
+
+                // Count doses from dry stock vials (full vials)
+                dryStockVials.forEach(vial => {
+                    const dosesInVial = vial.total_mg / defaultDose;
                     totalDoses += dosesInVial;
                 });
 
@@ -5514,7 +5538,7 @@
 
 
                 // Update basic stats
-                document.getElementById('total-stock').textContent = totalDoses;
+                document.getElementById('total-stock').textContent = totalDoses.toFixed(1);
                 document.getElementById('days-remaining').textContent = daysRemaining;
                 // Cost fields removed - no longer tracking costs
 
