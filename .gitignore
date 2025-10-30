@@ -43,11 +43,25 @@ Thumbs.db
 credentials.json
 *.pem
 *.key
+firebase-config.json
+firebase-service-account.json
+
+# Personal health data
+*.csv
+injection_log*.csv
 
 # Backup files
 *.backup
 *_backup.html
+*-backup-*.html
 *.bak
+
+# Temporary files
+nul
+response.json
+
+# Claude local settings
+.claude/settings.local.json
 
 # Cache
 .cache/
