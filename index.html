@@ -4976,8 +4976,8 @@
                                 label = `${injection.dose_mg}mg`;
                             }
 
-                            // Stagger labels vertically to reduce overlap in dense views
-                            const staggerOffset = avgSpacing < 50 ? (index % 3) * (pillHeight + 2) : 0;
+                            // No staggering needed since we only show shots with weights (naturally spaced)
+                            const staggerOffset = 0;
 
                             // Draw background pill with colorful gradient
                             const textWidth = ctx.measureText(label).width;
