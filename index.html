@@ -4860,8 +4860,44 @@
 
                         if (!sortedInjections.length) return;
 
+                        // Calculate data density for adaptive label sizing
+                        const chartWidth = xScale.right - xScale.left;
+                        const avgSpacing = sortedInjections.length > 1 ? chartWidth / sortedInjections.length : chartWidth;
+
+                        // Adaptive sizing based on data density
+                        let fontSize, padding, pillHeight, yOffset, labelFormat;
+                        if (avgSpacing < 30) {
+                            // Very dense - ultra compact mode
+                            fontSize = isMobile ? 8 : 9;
+                            padding = isMobile ? 3 : 4;
+                            pillHeight = isMobile ? 12 : 14;
+                            yOffset = isMobile ? 16 : 18;
+                            labelFormat = 'minimal'; // Just number
+                        } else if (avgSpacing < 50) {
+                            // Dense - compact mode
+                            fontSize = isMobile ? 9 : 10;
+                            padding = isMobile ? 4 : 5;
+                            pillHeight = isMobile ? 14 : 16;
+                            yOffset = isMobile ? 20 : 22;
+                            labelFormat = 'short'; // Number without "mg"
+                        } else if (avgSpacing < 80) {
+                            // Medium density - normal mode
+                            fontSize = isMobile ? 10 : 11;
+                            padding = isMobile ? 5 : 6;
+                            pillHeight = isMobile ? 16 : 18;
+                            yOffset = isMobile ? 24 : 28;
+                            labelFormat = 'full'; // Full label with "mg"
+                        } else {
+                            // Low density - comfortable mode
+                            fontSize = isMobile ? 11 : 12;
+                            padding = isMobile ? 6 : 7;
+                            pillHeight = isMobile ? 18 : 20;
+                            yOffset = isMobile ? 28 : 32;
+                            labelFormat = 'full';
+                        }
+
                         ctx.save();
-                        ctx.font = `bold ${isMobile ? '10' : '11'}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
@@ -4896,15 +4932,24 @@
                                 y = (yScale.top + yScale.bottom) / 2;
                             }
 
-                            const label = `${injection.dose_mg}mg`;
+                            // Format label based on density
+                            let label;
+                            if (labelFormat === 'minimal') {
+                                label = `${injection.dose_mg}`;
+                            } else if (labelFormat === 'short') {
+                                label = `${injection.dose_mg}`;
+                            } else {
+                                label = `${injection.dose_mg}mg`;
+                            }
+
+                            // Stagger labels vertically to reduce overlap in dense views
+                            const staggerOffset = avgSpacing < 50 ? (index % 3) * (pillHeight + 2) : 0;
 
                             // Draw background pill with colorful gradient
                             const textWidth = ctx.measureText(label).width;
-                            const padding = isMobile ? 5 : 6;
                             const pillWidth = textWidth + padding * 2;
-                            const pillHeight = isMobile ? 16 : 18;
                             const pillX = x - pillWidth / 2;
-                            const pillY = y - (isMobile ? 24 : 28);
+                            const pillY = y - yOffset - staggerOffset;
 
                             // Cycle through color palette for variety
                             const color = colorPalette[index % colorPalette.length];
@@ -4915,7 +4960,7 @@
 
                             // Draw text
                             ctx.fillStyle = '#FFFFFF';
-                            ctx.fillText(label, x, pillY + pillHeight - 4);
+                            ctx.fillText(label, x, pillY + pillHeight - 3);
                         });
 
                         ctx.restore();
