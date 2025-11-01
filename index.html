@@ -286,6 +286,18 @@
             height: auto !important;
         }
 
+        .chart-section {
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .chart-section-title {
+            color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: var(--spacing-md);
+            padding-left: var(--spacing-md);
+        }
+
         .supply-forecast {
             display: flex;
             flex-direction: column;
@@ -2018,9 +2030,23 @@
                     <button class="period-btn" data-months="6">6 months</button>
                     <button class="period-btn" data-months="all">All time</button>
                 </div>
-                <div class="chart-container" id="chart-view">
-                    <canvas id="weight-chart"></canvas>
+
+                <!-- Shots with Weight Chart -->
+                <div class="chart-section">
+                    <h3 class="chart-section-title">Shots with Weight</h3>
+                    <div class="chart-container" id="shots-weight-chart-view">
+                        <canvas id="shots-weight-chart"></canvas>
+                    </div>
                 </div>
+
+                <!-- Weight Only Chart -->
+                <div class="chart-section">
+                    <h3 class="chart-section-title">Weight Trend</h3>
+                    <div class="chart-container" id="weight-only-chart-view">
+                        <canvas id="weight-only-chart"></canvas>
+                    </div>
+                </div>
+
                 <div id="table-view" class="table-view" style="display: none;">
                     <div id="weight-table"></div>
                 </div>
@@ -4748,39 +4774,25 @@
             }
 
             updateWeightChart(view = 'combined') {
-                const canvas = document.getElementById('weight-chart');
-                if (!canvas) return;
-                const ctx = canvas.getContext('2d');
-
                 // Check if Chart.js is loaded
                 if (typeof Chart === 'undefined') {
                     console.warn('Chart.js not loaded, skipping weight chart update');
                     return;
                 }
 
+                // Update both charts
+                this.updateShotsWithWeightChart();
+                this.updateWeightOnlyChart();
+            }
+
+            updateShotsWithWeightChart() {
+                const canvas = document.getElementById('shots-weight-chart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
                 // Destroy existing chart if it exists
-                if (this.charts.weightChart) {
-                    this.charts.weightChart.destroy();
-                }
-
-                if (this.data.weights.length === 0) {
-                    // Show better empty state
-                    const container = canvas.parentElement;
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <div class="empty-state-icon">📊</div>
-                            <h3>No weight data yet</h3>
-                            <p>Start tracking your progress by adding your first weight entry</p>
-                            <button class="btn-primary" onclick="app.openModal('add-weight-modal')">Add Weight</button>
-                        </div>
-                    `;
-                    return;
-                }
-
-                // Ensure canvas exists for chart
-                if (!canvas.parentElement.querySelector('canvas')) {
-                    const container = canvas.parentElement;
-                    container.innerHTML = '<canvas id="weight-chart"></canvas>';
+                if (this.charts.shotsWeightChart) {
+                    this.charts.shotsWeightChart.destroy();
                 }
 
                 // Filter data based on selected time range
@@ -4797,6 +4809,47 @@
                 const sortedInjections = [...this.data.injections]
                     .filter(i => this.timeRange === 'all' || new Date(i.timestamp) >= cutoffDate)
                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Filter to only show injections that have a matching weight (within 24 hours)
+                const injectionsWithWeights = sortedInjections.filter(injection => {
+                    const injDate = new Date(injection.timestamp);
+                    return sortedWeights.some(weight => {
+                        const weightDate = new Date(weight.timestamp);
+                        const timeDiff = Math.abs(weightDate - injDate);
+                        const hoursDiff = timeDiff / (1000 * 60 * 60);
+                        return hoursDiff <= 24;
+                    });
+                });
+
+                // Filter weights to only show those that have a matching injection
+                const weightsWithInjections = sortedWeights.filter(weight => {
+                    const weightDate = new Date(weight.timestamp);
+                    return injectionsWithWeights.some(injection => {
+                        const injDate = new Date(injection.timestamp);
+                        const timeDiff = Math.abs(weightDate - injDate);
+                        const hoursDiff = timeDiff / (1000 * 60 * 60);
+                        return hoursDiff <= 24;
+                    });
+                });
+
+                if (injectionsWithWeights.length === 0 || weightsWithInjections.length === 0) {
+                    // Show empty state
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>No shots with weight data yet</h3>
+                            <p>Add weight entries on the same day as your shots to see them here</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Ensure canvas exists for chart
+                if (!canvas.parentElement.querySelector('canvas')) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = '<canvas id="shots-weight-chart"></canvas>';
+                }
 
                 // Detect mobile screen for responsive chart configuration
                 const isMobile = window.innerWidth <= 480;
@@ -4817,14 +4870,13 @@
                     title: 12
                 };
 
-                // Build datasets based on view mode
-                // Create gradient colors for the weight line (cycling through different colors)
+                // Build datasets - only show weights that have matching injections
                 const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
-                const pointColors = sortedWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
+                const pointColors = weightsWithInjections.map((w, idx) => colorPalette[idx % colorPalette.length]);
 
                 const datasets = [{
                     label: 'Weight (kg)',
-                    data: sortedWeights.map(w => ({
+                    data: weightsWithInjections.map(w => ({
                         x: w.timestamp,
                         y: w.weight_kg
                     })),
@@ -4847,10 +4899,7 @@
                     }
                 }];
 
-                // Note: BMI dataset removed to match screenshot design
-                // Note: Dose scatter plot removed - doses shown as labels on weight points instead
-
-                // Custom plugin to draw dose labels - all doses shown, positioned above weights when available
+                // Custom plugin to draw dose labels - only for injections with matching weights
                 const doseLabelsPlugin = {
                     id: 'doseLabels',
                     afterDatasetsDraw: (chart) => {
@@ -4858,11 +4907,11 @@
                         const xScale = chart.scales.x;
                         const yScale = chart.scales.y;
 
-                        if (!sortedInjections.length) return;
+                        if (!injectionsWithWeights.length) return;
 
                         // Calculate data density for adaptive label sizing
                         const chartWidth = xScale.right - xScale.left;
-                        const avgSpacing = sortedInjections.length > 1 ? chartWidth / sortedInjections.length : chartWidth;
+                        const avgSpacing = injectionsWithWeights.length > 1 ? chartWidth / injectionsWithWeights.length : chartWidth;
 
                         // Adaptive sizing based on data density
                         let fontSize, padding, pillHeight, yOffset, labelFormat;
@@ -4901,36 +4950,21 @@
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        // Draw a label for EVERY injection
-                        sortedInjections.forEach((injection, index) => {
+                        // Draw a label for each injection that has a matching weight
+                        injectionsWithWeights.forEach((injection, index) => {
                             const injDate = new Date(injection.timestamp);
                             const x = xScale.getPixelForValue(injDate);
 
-                            // Try to find a matching weight to position above it
-                            // Allow up to 24 hours difference to account for different time-of-day entries
-                            let y;
-                            const matchingWeight = sortedWeights.find(weight => {
+                            // Find the matching weight to position the label above it
+                            const matchingWeight = weightsWithInjections.find(weight => {
                                 const weightDate = new Date(weight.timestamp);
                                 const timeDiff = Math.abs(weightDate - injDate);
                                 const hoursDiff = timeDiff / (1000 * 60 * 60);
-                                return hoursDiff <= 24; // Same day or within 24 hours
+                                return hoursDiff <= 24;
                             });
 
-                            if (matchingWeight) {
-                                // Position above the matching weight point
-                                y = yScale.getPixelForValue(matchingWeight.weight_kg);
-                            } else if (sortedWeights.length > 0) {
-                                // No exact match - find closest weight to determine approximate y position
-                                const closestWeight = sortedWeights.reduce((closest, weight) => {
-                                    const weightDate = new Date(weight.timestamp);
-                                    const closestDate = new Date(closest.timestamp);
-                                    return Math.abs(weightDate - injDate) < Math.abs(closestDate - injDate) ? weight : closest;
-                                });
-                                y = yScale.getPixelForValue(closestWeight.weight_kg);
-                            } else {
-                                // No weights at all - position at middle of chart
-                                y = (yScale.top + yScale.bottom) / 2;
-                            }
+                            // Position above the matching weight point
+                            const y = yScale.getPixelForValue(matchingWeight.weight_kg);
 
                             // Format label based on density
                             let label;
@@ -4968,7 +5002,7 @@
                 };
 
                 // Pass plugin directly to chart instance instead of global registration
-                this.charts.weightChart = new Chart(ctx, {
+                this.charts.shotsWeightChart = new Chart(ctx, {
                     type: 'line',
                     data: { datasets },
                     plugins: [doseLabelsPlugin],
@@ -4978,6 +5012,202 @@
                         layout: {
                             padding: {
                                 top: 35,
+                                left: 10,
+                                right: 10,
+                                bottom: 5
+                            }
+                        },
+                        interaction: {
+                            mode: 'nearest',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#ffffff',
+                                    font: {
+                                        size: fontSize.legend
+                                    },
+                                    padding: isMobile ? 8 : 12,
+                                    boxWidth: isMobile ? 30 : 40
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(42, 42, 42, 0.95)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#333333',
+                                borderWidth: 1,
+                                padding: isMobile ? 10 : 12,
+                                titleFont: {
+                                    size: isMobile ? 12 : 13
+                                },
+                                bodyFont: {
+                                    size: isMobile ? 12 : 13
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: isMobile ? 'M/d' : 'MMM d'
+                                    }
+                                },
+                                // Add padding on both sides for visibility (2 days on each side)
+                                min: weightsWithInjections.length > 0 ?
+                                    new Date(new Date(weightsWithInjections[0].timestamp).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() :
+                                    undefined,
+                                max: weightsWithInjections.length > 0 ?
+                                    new Date(new Date(weightsWithInjections[weightsWithInjections.length - 1].timestamp).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() :
+                                    new Date().toISOString(),
+                                grid: {
+                                    color: '#333333'
+                                },
+                                ticks: {
+                                    color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : isTablet ? 8 : 10,
+                                    maxRotation: isMobile ? 45 : 0,
+                                    minRotation: isMobile ? 45 : 0
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                grid: {
+                                    color: '#333333'
+                                },
+                                ticks: {
+                                    color: '#cccccc',
+                                    font: {
+                                        size: fontSize.tick
+                                    },
+                                    maxTicksLimit: isMobile ? 6 : 8,
+                                    callback: function(value) {
+                                        return value.toFixed(1);
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Weight (kg)',
+                                    color: '#cccccc',
+                                    font: {
+                                        size: fontSize.title
+                                    }
+                                },
+                                beginAtZero: false,
+                                grace: '5%'
+                            }
+                        }
+                    }
+                });
+            }
+
+            updateWeightOnlyChart() {
+                const canvas = document.getElementById('weight-only-chart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+
+                // Destroy existing chart if it exists
+                if (this.charts.weightOnlyChart) {
+                    this.charts.weightOnlyChart.destroy();
+                }
+
+                // Filter data based on selected time range
+                const now = new Date();
+                let cutoffDate = null;
+                if (this.timeRange !== 'all') {
+                    cutoffDate = new Date(now.getTime() - this.timeRange * 24 * 60 * 60 * 1000);
+                }
+
+                const sortedWeights = [...this.data.weights]
+                    .filter(w => this.timeRange === 'all' || new Date(w.timestamp) >= cutoffDate)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                if (sortedWeights.length === 0) {
+                    // Show empty state
+                    const container = canvas.parentElement;
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">📊</div>
+                            <h3>No weight data yet</h3>
+                            <p>Start tracking your progress by adding your first weight entry</p>
+                            <button class="btn-primary" onclick="app.openModal('add-weight-modal')">Add Weight</button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                // Ensure canvas exists for chart
+                if (!canvas.parentElement.querySelector('canvas')) {
+                    const container = canvas.parentElement;
+                    container.innerHTML = '<canvas id="weight-only-chart"></canvas>';
+                }
+
+                // Detect mobile screen for responsive chart configuration
+                const isMobile = window.innerWidth <= 480;
+                const isTablet = window.innerWidth > 480 && window.innerWidth <= 768;
+
+                // Dynamic font sizing based on screen size
+                const fontSize = isMobile ? {
+                    legend: 11,
+                    tick: 10,
+                    title: 11
+                } : isTablet ? {
+                    legend: 11,
+                    tick: 10,
+                    title: 12
+                } : {
+                    legend: 12,
+                    tick: 11,
+                    title: 12
+                };
+
+                // Build datasets - show all weights
+                const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
+                const pointColors = sortedWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
+
+                const datasets = [{
+                    label: 'Weight (kg)',
+                    data: sortedWeights.map(w => ({
+                        x: w.timestamp,
+                        y: w.weight_kg
+                    })),
+                    borderColor: '#AF52DE',
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.4,
+                    yAxisID: 'y',
+                    pointRadius: isMobile ? 6 : 5,
+                    pointHoverRadius: isMobile ? 8 : 7,
+                    pointHitRadius: isMobile ? 14 : 12,
+                    pointBackgroundColor: pointColors,
+                    pointBorderColor: pointColors,
+                    pointBorderWidth: 2,
+                    segment: {
+                        borderColor: (ctx) => {
+                            if (!ctx.p0DataIndex || ctx.p0DataIndex >= pointColors.length - 1) return colorPalette[0];
+                            return pointColors[ctx.p0DataIndex];
+                        }
+                    }
+                }];
+
+                // Create chart without dose labels plugin
+                this.charts.weightOnlyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 15,
                                 left: 10,
                                 right: 10,
                                 bottom: 5
@@ -5061,7 +5291,7 @@
                                 },
                                 title: {
                                     display: true,
-                                    text: 'Weight (kg) / BMI',
+                                    text: 'Weight (kg)',
                                     color: '#cccccc',
                                     font: {
                                         size: fontSize.title
@@ -5069,34 +5299,6 @@
                                 },
                                 beginAtZero: false,
                                 grace: '5%'
-                            },
-                            y1: {
-                                type: 'linear',
-                                display: view === 'combined' && sortedInjections.length > 0,
-                                position: 'right',
-                                grid: {
-                                    drawOnChartArea: false,
-                                },
-                                ticks: {
-                                    color: '#cccccc',
-                                    font: {
-                                        size: fontSize.tick
-                                    },
-                                    maxTicksLimit: isMobile ? 6 : 8,
-                                    callback: function(value) {
-                                        return value.toFixed(1) + ' mg';
-                                    }
-                                },
-                                title: {
-                                    display: true,
-                                    text: 'Dose (mg)',
-                                    color: '#007AFF',
-                                    font: {
-                                        size: fontSize.title
-                                    }
-                                },
-                                beginAtZero: true,
-                                grace: '10%'
                             }
                         }
                     }
