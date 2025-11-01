@@ -4922,12 +4922,11 @@
                     }
                 };
 
-                // Register the custom plugin
-                Chart.register(doseLabelsPlugin);
-
+                // Pass plugin directly to chart instance instead of global registration
                 this.charts.weightChart = new Chart(ctx, {
                     type: 'line',
                     data: { datasets },
+                    plugins: [doseLabelsPlugin],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
@@ -4967,8 +4966,7 @@
                                 bodyFont: {
                                     size: isMobile ? 12 : 13
                                 }
-                            },
-                            doseLabels: {} // Enable our custom plugin
+                            }
                         },
                         scales: {
                             x: {
