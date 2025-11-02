@@ -4917,31 +4917,31 @@
                         let fontSize, padding, pillHeight, yOffset, labelFormat;
                         if (avgSpacing < 30) {
                             // Very dense - ultra compact mode
-                            fontSize = isMobile ? 8 : 9;
-                            padding = isMobile ? 3 : 4;
-                            pillHeight = isMobile ? 12 : 14;
-                            yOffset = isMobile ? 16 : 18;
+                            fontSize = isMobile ? 10 : 12;
+                            padding = isMobile ? 4 : 6;
+                            pillHeight = isMobile ? 16 : 18;
+                            yOffset = isMobile ? 20 : 24;
                             labelFormat = 'minimal'; // Just number
                         } else if (avgSpacing < 50) {
                             // Dense - compact mode
-                            fontSize = isMobile ? 9 : 10;
-                            padding = isMobile ? 4 : 5;
-                            pillHeight = isMobile ? 14 : 16;
-                            yOffset = isMobile ? 20 : 22;
+                            fontSize = isMobile ? 11 : 13;
+                            padding = isMobile ? 5 : 7;
+                            pillHeight = isMobile ? 18 : 20;
+                            yOffset = isMobile ? 24 : 28;
                             labelFormat = 'short'; // Number without "mg"
                         } else if (avgSpacing < 80) {
                             // Medium density - normal mode
-                            fontSize = isMobile ? 10 : 11;
-                            padding = isMobile ? 5 : 6;
-                            pillHeight = isMobile ? 16 : 18;
-                            yOffset = isMobile ? 24 : 28;
+                            fontSize = isMobile ? 12 : 14;
+                            padding = isMobile ? 6 : 8;
+                            pillHeight = isMobile ? 20 : 22;
+                            yOffset = isMobile ? 28 : 32;
                             labelFormat = 'full'; // Full label with "mg"
                         } else {
                             // Low density - comfortable mode
-                            fontSize = isMobile ? 11 : 12;
-                            padding = isMobile ? 6 : 7;
-                            pillHeight = isMobile ? 18 : 20;
-                            yOffset = isMobile ? 28 : 32;
+                            fontSize = isMobile ? 13 : 15;
+                            padding = isMobile ? 7 : 9;
+                            pillHeight = isMobile ? 22 : 24;
+                            yOffset = isMobile ? 32 : 36;
                             labelFormat = 'full';
                         }
 
