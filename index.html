@@ -6767,6 +6767,18 @@
                                 this.handleDeleteShot(item, itemId, timestamp);
                             };
                         }
+
+                        // Also add handler to the delete action button that appears after swipe
+                        const deleteAction = item.querySelector('.delete-action');
+                        if (deleteAction && !deleteAction.dataset.initialized) {
+                            deleteAction.dataset.initialized = 'true';
+                            deleteAction.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteShot(item, itemId, timestamp);
+                            };
+                        }
                     });
                 };
 
@@ -6793,6 +6805,18 @@
                                 this.handleDeleteVial(item, itemId, timestamp);
                             };
                         }
+
+                        // Also add handler to the delete action button that appears after swipe
+                        const deleteAction = item.querySelector('.delete-action');
+                        if (deleteAction && !deleteAction.dataset.initialized) {
+                            deleteAction.dataset.initialized = 'true';
+                            deleteAction.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteVial(item, itemId, timestamp);
+                            };
+                        }
                     });
                 };
 
@@ -6812,6 +6836,18 @@
                         if (deleteBtn && !deleteBtn.dataset.initialized) {
                             deleteBtn.dataset.initialized = 'true';
                             deleteBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                const timestamp = item.getAttribute('data-timestamp');
+                                this.handleDeleteWeight(item, timestamp);
+                            };
+                        }
+
+                        // Also add handler to the delete action button that appears after swipe
+                        const deleteAction = item.querySelector('.delete-action');
+                        if (deleteAction && !deleteAction.dataset.initialized) {
+                            deleteAction.dataset.initialized = 'true';
+                            deleteAction.onclick = (e) => {
                                 e.stopPropagation();
                                 const itemId = item.getAttribute('data-item-id');
                                 const timestamp = item.getAttribute('data-timestamp');
