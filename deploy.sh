@@ -22,27 +22,49 @@ DISTRIBUTION_ID="E2ZD0ACBBK8F5K"
 
 # Check if on correct branch
 CURRENT_BRANCH=$(git branch --show-current)
-TARGET_BRANCH="claude/mobile-graph-ux-review-011CUZTYadnTQvRKxoSkJ2st"
+echo -e "${BLUE}Current branch: $CURRENT_BRANCH${NC}"
+echo ""
 
-if [ "$CURRENT_BRANCH" != "$TARGET_BRANCH" ]; then
-    echo -e "${YELLOW}⚠️  Not on deployment branch. Switching...${NC}"
-    git fetch origin
-    git checkout $TARGET_BRANCH
-    echo -e "${GREEN}✓ Switched to $TARGET_BRANCH${NC}"
-    echo ""
-fi
+# Step 1: Deploy Backend Infrastructure
+echo -e "${BLUE}🏗️  Step 1/4: Deploying backend infrastructure (Lambda + API Gateway)...${NC}"
+echo -e "${YELLOW}   This may take 2-3 minutes...${NC}"
+echo ""
 
-# Step 1: Upload to S3
-echo -e "${BLUE}📤 Step 1/3: Uploading index.html to S3...${NC}"
+cd reta-cloud-infrastructure
+npx cdk deploy --require-approval never --profile $PROFILE 2>&1 | grep -E "(deployed|CREATE|UPDATE|Error|error)" || true
+cd ..
+
+echo -e "${GREEN}✓ Backend deployment complete${NC}"
+echo ""
+
+# Step 2: Upload Frontend to S3
+echo -e "${BLUE}📤 Step 2/4: Uploading frontend files to S3...${NC}"
+
+# Upload index.html
 aws s3 cp index.html s3://$BUCKET/ \
     --profile $PROFILE \
     --region $REGION
 
-echo -e "${GREEN}✓ Upload complete${NC}"
+# Upload manifest.json
+aws s3 cp manifest.json s3://$BUCKET/ \
+    --profile $PROFILE \
+    --region $REGION
+
+# Upload robots.txt
+aws s3 cp robots.txt s3://$BUCKET/ \
+    --profile $PROFILE \
+    --region $REGION
+
+# Sync js/ directory
+aws s3 sync js/ s3://$BUCKET/js/ \
+    --profile $PROFILE \
+    --region $REGION
+
+echo -e "${GREEN}✓ Frontend upload complete${NC}"
 echo ""
 
-# Step 2: Invalidate CloudFront cache
-echo -e "${BLUE}🔄 Step 2/3: Invalidating CloudFront cache...${NC}"
+# Step 3: Invalidate CloudFront cache
+echo -e "${BLUE}🔄 Step 3/4: Invalidating CloudFront cache...${NC}"
 INVALIDATION_OUTPUT=$(aws cloudfront create-invalidation \
     --distribution-id $DISTRIBUTION_ID \
     --paths "/*" \
@@ -55,8 +77,8 @@ echo -e "${GREEN}✓ Cache invalidation started${NC}"
 echo -e "   Invalidation ID: ${INVALIDATION_ID}"
 echo ""
 
-# Step 3: Wait for propagation
-echo -e "${BLUE}⏳ Step 3/3: Waiting for cache invalidation to complete...${NC}"
+# Step 4: Wait for propagation
+echo -e "${BLUE}⏳ Step 4/4: Waiting for cache invalidation to complete...${NC}"
 echo -e "   This usually takes 2-5 minutes"
 echo ""
 
@@ -89,11 +111,11 @@ echo ""
 echo "Your app is now live at:"
 echo -e "${BLUE}https://d13m7vzwjqe4pp.cloudfront.net${NC}"
 echo ""
-echo "Test on your iPhone 16 Pro:"
-echo "  1. Open the URL above in Chrome"
-echo "  2. Hard refresh (pull to refresh)"
-echo "  3. Look for SVG icons in bottom navigation"
-echo "  4. Check that chart is taller on Results tab"
-echo "  5. Try the blue FAB button (bottom-right)"
+echo "Test the delete fix:"
+echo "  1. Open the app and log in"
+echo "  2. Go to the Shots tab"
+echo "  3. Delete a shot by swiping left and tapping Delete"
+echo "  4. Reload the page"
+echo "  5. The deletion should persist! 🎉"
 echo ""
-echo -e "${YELLOW}Note: You may need to clear Safari cache if changes don't appear immediately${NC}"
+echo -e "${YELLOW}Note: You may need to clear browser cache if changes don't appear immediately${NC}"
