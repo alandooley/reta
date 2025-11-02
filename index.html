@@ -4913,36 +4913,23 @@
                         const chartWidth = xScale.right - xScale.left;
                         const avgSpacing = injectionsWithWeights.length > 1 ? chartWidth / injectionsWithWeights.length : chartWidth;
 
-                        // Adaptive sizing based on data density
-                        let fontSize, padding, pillHeight, yOffset, labelFormat;
-                        if (avgSpacing < 30) {
-                            // Very dense - ultra compact mode
-                            fontSize = isMobile ? 10 : 12;
-                            padding = isMobile ? 4 : 6;
-                            pillHeight = isMobile ? 16 : 18;
-                            yOffset = isMobile ? 20 : 24;
-                            labelFormat = 'minimal'; // Just number
-                        } else if (avgSpacing < 50) {
-                            // Dense - compact mode
-                            fontSize = isMobile ? 11 : 13;
-                            padding = isMobile ? 5 : 7;
-                            pillHeight = isMobile ? 18 : 20;
-                            yOffset = isMobile ? 24 : 28;
-                            labelFormat = 'short'; // Number without "mg"
-                        } else if (avgSpacing < 80) {
-                            // Medium density - normal mode
-                            fontSize = isMobile ? 12 : 14;
-                            padding = isMobile ? 6 : 8;
-                            pillHeight = isMobile ? 20 : 22;
-                            yOffset = isMobile ? 28 : 32;
-                            labelFormat = 'full'; // Full label with "mg"
+                        // Since we only show shots with weights (weekly), keep labels large and readable
+                        // Use consistent sizing with minimal density-based reduction
+                        let fontSize, padding, pillHeight, yOffset;
+                        const labelFormat = 'full'; // Always show "mg" suffix
+
+                        if (avgSpacing < 40) {
+                            // Dense mode (many data points)
+                            fontSize = isMobile ? 11 : 14;
+                            padding = isMobile ? 5 : 8;
+                            pillHeight = isMobile ? 18 : 22;
+                            yOffset = isMobile ? 24 : 30;
                         } else {
-                            // Low density - comfortable mode
-                            fontSize = isMobile ? 13 : 15;
-                            padding = isMobile ? 7 : 9;
-                            pillHeight = isMobile ? 22 : 24;
-                            yOffset = isMobile ? 32 : 36;
-                            labelFormat = 'full';
+                            // Normal mode (comfortable spacing)
+                            fontSize = isMobile ? 12 : 15;
+                            padding = isMobile ? 6 : 9;
+                            pillHeight = isMobile ? 20 : 24;
+                            yOffset = isMobile ? 28 : 36;
                         }
 
                         ctx.save();
@@ -4966,15 +4953,8 @@
                             // Position above the matching weight point
                             const y = yScale.getPixelForValue(matchingWeight.weight_kg);
 
-                            // Format label based on density
-                            let label;
-                            if (labelFormat === 'minimal') {
-                                label = `${injection.dose_mg}`;
-                            } else if (labelFormat === 'short') {
-                                label = `${injection.dose_mg}`;
-                            } else {
-                                label = `${injection.dose_mg}mg`;
-                            }
+                            // Always show full label with "mg" suffix for clarity
+                            const label = `${injection.dose_mg}mg`;
 
                             // No staggering needed since we only show shots with weights (naturally spaced)
                             const staggerOffset = 0;
