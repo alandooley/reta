@@ -5628,7 +5628,7 @@
 
                 const div = document.createElement('div');
                 div.className = 'weight-item';
-                div.setAttribute('data-item-id', weight.timestamp);
+                div.setAttribute('data-item-id', weight.id || weight.timestamp);
                 div.setAttribute('data-timestamp', weight.timestamp);
                 div.innerHTML = `
                     <div class="weight-content">
@@ -6839,7 +6839,7 @@
                                 e.stopPropagation();
                                 const itemId = item.getAttribute('data-item-id');
                                 const timestamp = item.getAttribute('data-timestamp');
-                                this.handleDeleteWeight(item, timestamp);
+                                this.handleDeleteWeight(item, itemId, timestamp);
                             };
                         }
 
@@ -6851,7 +6851,7 @@
                                 e.stopPropagation();
                                 const itemId = item.getAttribute('data-item-id');
                                 const timestamp = item.getAttribute('data-timestamp');
-                                this.handleDeleteWeight(item, timestamp);
+                                this.handleDeleteWeight(item, itemId, timestamp);
                             };
                         }
                     });
@@ -6879,6 +6879,10 @@
 
                 const deletedInjection = app.data.injections[index];
 
+                // Mark as pending deletion to prevent sync from re-adding
+                app._pendingDeletions.add(shotId);
+                console.log(`Added ${shotId} to pending deletions`);
+
                 // Add to undo stack
                 this.undoStack.push({
                     type: 'injection',
@@ -6897,6 +6901,29 @@
                 // Save and update UI
                 app.saveData();
                 app.updateUI();
+
+                // Sync deletion to cloud
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.deleteInjection(shotId);
+                        console.log('Injection deleted from cloud successfully');
+                        // Remove from pending deletions after successful cloud deletion
+                        app._pendingDeletions.delete(shotId);
+                        console.log(`Removed ${shotId} from pending deletions`);
+                    } catch (error) {
+                        console.error('Failed to delete injection from cloud:', error);
+                        // Keep in pending deletions for 30 seconds then remove
+                        setTimeout(() => {
+                            app._pendingDeletions.delete(shotId);
+                            console.log(`Removed ${shotId} from pending deletions after timeout`);
+                        }, 30000);
+                    }
+                } else {
+                    // Not authenticated, remove from pending after 5 seconds
+                    setTimeout(() => {
+                        app._pendingDeletions.delete(shotId);
+                    }, 5000);
+                }
 
                 // Animate out
                 element.style.opacity = '0';
@@ -6992,18 +7019,28 @@
                 this.showUndoButton();
             }
 
-            async handleDeleteWeight(element, timestamp) {
+            async handleDeleteWeight(element, weightId, timestamp) {
                 if (!confirm('Delete this weight entry?')) {
                     return;
                 }
 
-                const index = app.data.weights.findIndex(w => w.timestamp === timestamp);
+                // Try to find by ID first, fallback to timestamp for backwards compatibility
+                let index = app.data.weights.findIndex(w => w.id === weightId);
+                if (index === -1) {
+                    index = app.data.weights.findIndex(w => w.timestamp === timestamp);
+                }
+
                 if (index === -1) {
                     this.notificationManager.error('Weight entry not found');
                     return;
                 }
 
                 const deletedWeight = app.data.weights[index];
+                const actualWeightId = deletedWeight.id || weightId;
+
+                // Mark as pending deletion to prevent sync from re-adding
+                app._pendingDeletions.add(actualWeightId);
+                console.log(`Added ${actualWeightId} to pending deletions`);
 
                 // Add to undo stack
                 this.undoStack.push({
@@ -7023,6 +7060,29 @@
                 // Save and update UI
                 app.saveData();
                 app.updateUI();
+
+                // Sync deletion to cloud
+                if (authManager && authManager.isAuthenticated() && actualWeightId) {
+                    try {
+                        await apiClient.deleteWeight(actualWeightId);
+                        console.log('Weight deleted from cloud successfully');
+                        // Remove from pending deletions after successful cloud deletion
+                        app._pendingDeletions.delete(actualWeightId);
+                        console.log(`Removed ${actualWeightId} from pending deletions`);
+                    } catch (error) {
+                        console.error('Failed to delete weight from cloud:', error);
+                        // Keep in pending deletions for 30 seconds then remove
+                        setTimeout(() => {
+                            app._pendingDeletions.delete(actualWeightId);
+                            console.log(`Removed ${actualWeightId} from pending deletions after timeout`);
+                        }, 30000);
+                    }
+                } else {
+                    // Not authenticated, remove from pending after 5 seconds
+                    setTimeout(() => {
+                        app._pendingDeletions.delete(actualWeightId);
+                    }, 5000);
+                }
 
                 // Animate out
                 element.style.opacity = '0';

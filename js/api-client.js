@@ -84,6 +84,13 @@ class APIClient {
         return response.data;
     }
 
+    /**
+     * Delete injection
+     */
+    async deleteInjection(injectionId) {
+        await this.request('DELETE', `/v1/injections/${injectionId}`);
+    }
+
     // ========================================
     // VIALS
     // ========================================
@@ -129,6 +136,13 @@ class APIClient {
     async createWeight(weight) {
         const response = await this.request('POST', '/v1/weights', weight);
         return response.data;
+    }
+
+    /**
+     * Delete weight entry
+     */
+    async deleteWeight(weightId) {
+        await this.request('DELETE', `/v1/weights/${weightId}`);
     }
 
     // ========================================
