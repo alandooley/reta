@@ -182,6 +182,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'post.handler',
     });
 
+    const deleteInjectionFn = new lambda.Function(this, 'DeleteInjectionFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-delete-injection',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/injections')),
+      handler: 'delete.handler',
+    });
+
     const getVialsFn = new lambda.Function(this, 'GetVialsFunction', {
       ...commonLambdaProps,
       functionName: 'reta-get-vials',
@@ -215,6 +222,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       functionName: 'reta-create-weight',
       code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/weights')),
       handler: 'post.handler',
+    });
+
+    const deleteWeightFn = new lambda.Function(this, 'DeleteWeightFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-delete-weight',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/weights')),
+      handler: 'delete.handler',
     });
 
     const syncDataFn = new lambda.Function(this, 'SyncDataFunction', {
@@ -282,6 +296,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       authorizer,
     });
 
+    httpApi.addRoutes({
+      path: `${v1}/injections/{injectionId}`,
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration('DeleteInjectionIntegration', deleteInjectionFn),
+      authorizer,
+    });
+
     // Vials
     httpApi.addRoutes({
       path: `${v1}/vials`,
@@ -316,6 +337,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       path: `${v1}/weights`,
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration('CreateWeightIntegration', createWeightFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/weights/{weightId}`,
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration('DeleteWeightIntegration', deleteWeightFn),
       authorizer,
     });
 
