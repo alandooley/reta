@@ -62,6 +62,16 @@ response.json
 
 # Claude local settings
 .claude/settings.local.json
+.claude/Samples/
+.claude/plans/
+
+# Example/demo files (not needed for production)
+src/
+delete-example-desktop.html
+swipe-to-delete-example.html
+test-data-protection.html
+retatrutide_import_data.json
+migration-data.json
 
 # Cache
 .cache/
