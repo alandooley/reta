@@ -8,14 +8,16 @@ A comprehensive Progressive Web App (PWA) for tracking Retatrutide injections wi
 
 ### Core Functionality
 - **📊 Shot History & Tracking**: Complete injection logging with sites, doses, and notes
-- **📈 Medication Level Visualization**: Real-time half-life calculations and projections
-- **⚖️ Weight & Dose Correlation**: Dual-axis charts showing progress analysis
-- **📦 Vial & Inventory Management**: Comprehensive cost tracking and expiration alerts
+- **🗑️ Cloud-Synced Deletion**: Delete injections and weights with automatic cloud synchronization
+- **📈 Colorful Results Charts**: Multi-colored gradient weight chart with dose labels
+- **📊 6-Metric Dashboard**: Total change, BMI, weight, percent change, weekly avg, goal progress (all in kg)
+- **📦 Smart Supply Forecast**: Calculates remaining supply from all vials (dry + activated)
 - **⏰ Next Shot Countdown**: Live countdown with visual progress indicators
 - **☁️ Cloud Sync**: AWS-powered real-time synchronization across devices
 - **🔐 Firebase Authentication**: Secure Google Sign-In with user data isolation
 - **📱 PWA Support**: Install as a native app on any device
 - **💾 Automatic Backups**: Browser-based and cloud backups with retention policies
+- **🌐 GitHub Actions Deployment**: Deploy from anywhere without terminal access
 
 ## 🏗️ Architecture
 
@@ -49,25 +51,23 @@ All AWS resources optimized for ultra-low costs:
 - **Node.js** 18+ and npm
 - **AWS CDK** installed globally: `npm install -g aws-cdk`
 
-### Quick Deploy
+### Quick Deploy Options
 
-Use the automated deployment script:
-
+**Option 1: Automated Script** (With terminal access)
 ```bash
-# Deploy frontend only (fastest - ~2 minutes)
-./deploy.sh frontend
-
-# Deploy backend infrastructure (slower - ~5-10 minutes)
-./deploy.sh backend
-
-# Deploy everything
-./deploy.sh all
+./deploy.sh  # Deploys backend + frontend + invalidates cache
 ```
 
-The script:
-- ✅ Uploads frontend files to S3
+**Option 2: GitHub Actions** (No terminal needed - from web browser)
+1. Go to https://github.com/alandooley/reta/actions
+2. Click "Deploy to AWS" workflow
+3. Click "Run workflow" → Select `main` → Click "Run workflow"
+4. Automatic on PR merges to `main`
+
+The deployment:
+- ✅ Builds and deploys CDK infrastructure (Lambda + API Gateway)
+- ✅ Uploads frontend files to S3 (index.html, js/, manifest.json, robots.txt)
 - ✅ Invalidates CloudFront cache automatically
-- ✅ Builds and deploys CDK infrastructure
 - ✅ Color-coded output for easy monitoring
 
 ### Manual Deployment
@@ -105,11 +105,13 @@ Authorization: Bearer <firebase-id-token>
 ### Endpoints
 - `GET /v1/injections` - List user's injections
 - `POST /v1/injections` - Create injection
+- `DELETE /v1/injections/{id}` - Delete injection (with cloud sync)
 - `GET /v1/vials` - List user's vials
 - `POST /v1/vials` - Create vial
 - `DELETE /v1/vials/{id}` - Delete vial
 - `GET /v1/weights` - List user's weights
 - `POST /v1/weights` - Create weight entry
+- `DELETE /v1/weights/{id}` - Delete weight entry (with cloud sync)
 - `POST /v1/sync` - Full data sync (bidirectional merge)
 - `POST /v1/backup` - Create S3 backup (auto-cleanup)
 - `GET /v1/backup` - List available backups
@@ -361,8 +363,18 @@ All notification types can be toggled on/off in Settings.
 
 **Disclaimer**: This application is for personal tracking only. Always consult with healthcare providers for medical decisions. This tool does not provide medical advice.
 
-**Version**: 2.0.0
-**Last Updated**: 2025-10-24
+**Version**: 2.1.0
+**Last Updated**: 2025-11-04
 **Author**: Alan Dooley
 
 **🤖 Built with Claude Code**
+
+## 🆕 Recent Updates (v2.1.0)
+
+- ✅ **Results Page Redesign**: Colorful gradient chart with 6 metric cards (Nov 2025)
+- ✅ **All Units in kg**: Removed all lb references, consistent kg units throughout
+- ✅ **Cloud-Synced Deletion**: Delete injections and weights with backend sync
+- ✅ **Fixed Supply Forecast**: Accurate calculation including all vials (dry + activated)
+- ✅ **GitHub Actions Deployment**: Deploy from web browser without terminal
+- ✅ **Chart Visibility**: Added 2-day padding to prevent edge cutoff
+- ✅ **Dose Labels**: Colorful pills showing doses on chart points

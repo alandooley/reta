@@ -49,11 +49,13 @@ The application uses a **monolithic single-file architecture** with vanilla Java
 **API Routes** (API Gateway HTTP API):
 - `GET /v1/injections` - List user's injections
 - `POST /v1/injections` - Create injection
+- `DELETE /v1/injections/{id}` - Delete injection (with cloud sync)
 - `GET /v1/vials` - List user's vials
 - `POST /v1/vials` - Create vial
 - `DELETE /v1/vials/{id}` - Delete vial
 - `GET /v1/weights` - List user's weights
 - `POST /v1/weights` - Create weight entry
+- `DELETE /v1/weights/{id}` - Delete weight entry (with cloud sync)
 - `POST /v1/sync` - Full data sync (bidirectional merge)
 - `POST /v1/backup` - Create S3 backup (auto-cleanup to 4 most recent)
 - `GET /v1/backup` - List available backups
@@ -100,18 +102,30 @@ npx cdk deploy --profile reta-admin           # Deploy to AWS
 
 ### Deployment
 
+**Option 1: Automated Script** (Recommended - with terminal access)
 ```bash
+./deploy.sh  # Deploys backend + frontend + invalidates cache
+```
+
+**Option 2: GitHub Actions** (No terminal needed - from web browser)
+1. Go to https://github.com/alandooley/reta/actions
+2. Click "Deploy to AWS" workflow
+3. Click "Run workflow" → Select `main` → Click "Run workflow"
+4. Automatic on PR merges to `main`
+
+**Option 3: Manual Commands** (Individual steps)
+```bash
+# Deploy backend (infrastructure + Lambda functions)
+cd reta-cloud-infrastructure && npx cdk deploy --require-approval never --profile reta-admin && cd ..
+
 # Deploy frontend to S3 + CloudFront
-aws s3 cp index.html s3://retatrutide-frontend-{ACCOUNT_ID}/ --profile reta-admin --region eu-west-1
-aws s3 cp manifest.json s3://retatrutide-frontend-{ACCOUNT_ID}/ --profile reta-admin --region eu-west-1
-aws s3 cp robots.txt s3://retatrutide-frontend-{ACCOUNT_ID}/ --profile reta-admin --region eu-west-1
-aws s3 sync js/ s3://retatrutide-frontend-{ACCOUNT_ID}/js/ --profile reta-admin --region eu-west-1
+aws s3 cp index.html s3://retatrutide-frontend-372208783486/ --profile reta-admin --region eu-west-1
+aws s3 cp manifest.json s3://retatrutide-frontend-372208783486/ --profile reta-admin --region eu-west-1
+aws s3 cp robots.txt s3://retatrutide-frontend-372208783486/ --profile reta-admin --region eu-west-1
+aws s3 sync js/ s3://retatrutide-frontend-372208783486/js/ --profile reta-admin --region eu-west-1
 
 # Invalidate CloudFront cache
 aws cloudfront create-invalidation --distribution-id E2ZD0ACBBK8F5K --paths "/*" --profile reta-admin
-
-# Deploy backend (infrastructure + Lambda functions)
-cd reta-cloud-infrastructure && cdk deploy --require-approval never --profile reta-admin
 ```
 
 ## Important Implementation Details
@@ -133,14 +147,17 @@ cd reta-cloud-infrastructure && cdk deploy --require-approval never --profile re
 
 ### Chart Configuration
 
-The application uses **Chart.js with dual Y-axes** for weight tracking:
+The application uses **Chart.js** for weight tracking with custom styling:
 
-- **Left Y-axis (Weight)**: `beginAtZero: false`, `grace: '5%'`
-  - Prevents weight line compression when values are in high range (80-90kg)
-- **Right Y-axis (Dose)**: `beginAtZero: true`, `grace: '10%'`
-  - Dose bars anchored at zero for proper visualization
+**Results Page Chart** (Colorful gradient design):
+- **Multi-colored line**: Each point cycles through 6 colors (red, orange, green, cyan, blue, purple)
+- **Colorful segments**: Line segments match starting point color
+- **Dose labels**: Displayed as colored pills above weight points, matching point colors
+- **X-axis padding**: 2 days on each side for visibility
+- **Y-axis (Weight)**: `beginAtZero: false`, `grace: '5%'` to prevent compression
 - **Time Adapter**: Uses `chartjs-adapter-date-fns` for time-based X-axis
 - **Data Format**: Objects with `x: timestamp, y: value` format
+- **Units**: All measurements in **kg** (not lb)
 
 ### Data Property Naming
 
@@ -149,6 +166,28 @@ The application uses **Chart.js with dual Y-axes** for weight tracking:
 - ❌ NOT `weight_kg`, `dose_mg`, `vial_id`
 
 This is consistent across localStorage, API, and DynamoDB.
+
+### Key Metrics and Calculations
+
+**Results Page - 6 Metric Cards**:
+1. **Total change**: `lastWeight - firstWeight` (in kg)
+2. **Current BMI**: `weight / (height²)` (requires height in settings)
+3. **Weight**: Current weight (in kg)
+4. **Percent change**: `(weightChange / startWeight) × 100`
+5. **Weekly avg**: `weightChange / weeks` (in kg/wk)
+6. **Goal progress**: `(lostSoFar / totalToLose) × 100`
+
+**Supply Forecast Calculation**:
+- **Formula**: `Total capacity - Total used`
+- **Total capacity**: `All vials × 1ml × concentration` (assumes 1ml bac water per vial)
+- **Total used**: Sum of all injection doses
+- **Includes**: Both dry (unused) and activated vials
+- **Example**: 4 vials @ 10mg each = 40mg total; used 4mg = 36mg remaining
+
+**Level at Last Shot**:
+- Shows **remaining vial volume** (in ml), not body medication level
+- Calculates: `1.0ml - (total doses from vial / concentration)`
+- Example: If vial used 0.15ml total, shows `0.85 ml` remaining
 
 ### Lambda Budget Optimizations
 
