@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Get Firebase Token</title>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+</head>
+<body>
+    <h1>Firebase Token Extractor</h1>
+    <button id="getToken">Get Token</button>
+    <pre id="output"></pre>
+
+    <script>
+        // Load Firebase config
+        fetch('firebase-config.json')
+            .then(r => r.json())
+            .then(config => {
+                firebase.initializeApp(config);
+
+                document.getElementById('getToken').addEventListener('click', async () => {
+                    try {
+                        const user = firebase.auth().currentUser;
+                        if (!user) {
+                            document.getElementById('output').textContent = 'Not signed in. Please sign in first at the main app.';
+                            return;
+                        }
+                        const token = await user.getIdToken();
+                        document.getElementById('output').textContent = token;
+                        console.log('Token:', token);
+                    } catch (error) {
+                        document.getElementById('output').textContent = 'Error: ' + error.message;
+                    }
+                });
+            });
+    </script>
+</body>
+</html>
