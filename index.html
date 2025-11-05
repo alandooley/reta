@@ -2985,7 +2985,7 @@
 
                 this.data.injections.forEach(injection => {
                     // Create unique key based on content, not ID
-                    const key = `${injection.timestamp}|${injection.dose_mg}|${injection.injection_site}`;
+                    const key = `${injection.timestamp}|${injection.doseMg}|${injection.injectionSite}`;
 
                     if (!groups.has(key)) {
                         groups.set(key, []);
@@ -3003,8 +3003,8 @@
 
                         // Sort by completeness (prefer records with more fields filled)
                         group.sort((a, b) => {
-                            const scoreA = (a.notes ? 1 : 0) + (a.weight_kg ? 1 : 0) + (a.vial_id ? 1 : 0);
-                            const scoreB = (b.notes ? 1 : 0) + (b.weight_kg ? 1 : 0) + (b.vial_id ? 1 : 0);
+                            const scoreA = (a.notes ? 1 : 0) + (a.weightKg ? 1 : 0) + (a.vialId ? 1 : 0);
+                            const scoreB = (b.notes ? 1 : 0) + (b.weightKg ? 1 : 0) + (b.vialId ? 1 : 0);
                             return scoreB - scoreA; // Higher score first
                         });
 
