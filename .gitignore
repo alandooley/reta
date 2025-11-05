@@ -5,7 +5,9 @@
 
 # Dependencies
 node_modules/
-package-lock.json
+# Note: We need package-lock.json for CDK deployment in CI/CD
+# Only ignore it in root, not in subdirectories
+/package-lock.json
 yarn.lock
 
 # Build outputs
