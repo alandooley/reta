@@ -1,0 +1,57 @@
+name: Deploy Backend to AWS
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+    paths:
+      - 'reta-cloud-infrastructure/**'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy-backend:
+    name: Deploy Backend (Lambda + API Gateway + DynamoDB)
+    runs-on: ubuntu-latest
+    # Only run if PR was actually merged (not just closed)
+    if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-1
+
+      - name: Deploy Backend Infrastructure
+        run: |
+          echo "🏗️ Deploying backend infrastructure (Lambda + API Gateway + DynamoDB)..."
+          echo "This may take 2-3 minutes..."
+          cd reta-cloud-infrastructure
+          npm ci
+          npx cdk deploy --require-approval never
+          cd ..
+          echo "✅ Backend deployment complete"
+
+      - name: Deployment summary
+        run: |
+          echo "🎉 Backend deployment successful!"
+          echo ""
+          echo "Deployed components:"
+          echo "  - Lambda functions (ARM64, 256MB)"
+          echo "  - API Gateway (HTTP API)"
+          echo "  - DynamoDB table"
+          echo "  - Lambda Authorizer (Firebase)"
+          echo ""
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo "Triggered by: ${{ github.actor }}"
