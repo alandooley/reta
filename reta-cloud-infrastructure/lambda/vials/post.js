@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
 
     // Validate required fields
-    const { startDate, initialVolumeMl, concentrationMgPerMl } = body;
+    const { id, startDate, initialVolumeMl, concentrationMgPerMl } = body;
     if (!startDate || !initialVolumeMl || !concentrationMgPerMl) {
       return {
         statusCode: 400,
@@ -63,8 +63,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate vial ID
-    const vialId = randomUUID();
+    // Use provided ID or generate new one
+    const vialId = id || randomUUID();
     const now = new Date().toISOString();
 
     // Create vial item

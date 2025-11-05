@@ -3310,6 +3310,7 @@
 
             async addWeight(weight) {
                 const newWeight = {
+                    id: this.generateId(),
                     timestamp: weight.timestamp || new Date().toISOString(),
                     weight_kg: parseFloat(weight.weight_kg),
                     weight_lbs: this.kgToLbs(parseFloat(weight.weight_kg)),
@@ -3330,6 +3331,7 @@
                 if (authManager && authManager.isAuthenticated()) {
                     try {
                         await apiClient.createWeight({
+                            id: newWeight.id,
                             timestamp: newWeight.timestamp,
                             weightKg: newWeight.weight_kg,
                             source: newWeight.source,

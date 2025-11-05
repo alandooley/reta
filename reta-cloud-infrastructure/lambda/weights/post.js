@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
 
     // Validate required fields
-    const { timestamp, weightKg } = body;
+    const { id, timestamp, weightKg } = body;
     if (!timestamp || !weightKg) {
       return {
         statusCode: 400,
@@ -52,8 +52,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate weight ID
-    const weightId = randomUUID();
+    // Use provided ID or generate new one
+    const weightId = id || randomUUID();
     const now = new Date().toISOString();
 
     // Create weight item
