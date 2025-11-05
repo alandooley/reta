@@ -893,27 +893,6 @@
             animation: saveTextPulse 0.6s ease-in-out;
         }
 
-        .notification-toggle {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background-color: var(--secondary-bg);
-            border-radius: var(--border-radius-sm);
-            margin-bottom: 8px;
-        }
-
-        .notification-toggle label {
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .notification-toggle input[type="checkbox"] {
-            margin: 0;
-        }
-
         .sync-status {
             margin-top: var(--spacing-md);
             padding: var(--spacing-md);
@@ -2260,34 +2239,6 @@
                     </label>
                 </div>
                 <div class="settings-section">
-                    <h3>Notifications</h3>
-                    <div class="notification-toggle">
-                        <label>
-                            <input type="checkbox" id="notify-injection-due" checked>
-                            <span>Injection Due Reminder</span>
-                        </label>
-                    </div>
-                    <div class="notification-toggle">
-                        <label>
-                            <input type="checkbox" id="notify-vial-expiring" checked>
-                            <span>Vial Expiring Soon</span>
-                        </label>
-                    </div>
-                    <div class="notification-toggle">
-                        <label>
-                            <input type="checkbox" id="notify-low-stock" checked>
-                            <span>Low Stock Alert</span>
-                        </label>
-                    </div>
-                    <div class="notification-toggle">
-                        <label>
-                            <input type="checkbox" id="notify-weekly-summary" checked>
-                            <span>Weekly Progress Summary</span>
-                        </label>
-                    </div>
-                    <button type="button" id="test-notification-btn" class="btn-secondary" style="margin-top: 8px;">Test Notification</button>
-                </div>
-                <div class="settings-section">
                     <h3>Data Management</h3>
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
                     <button id="import-data-btn" class="btn-secondary">Import Data from File</button>
@@ -2520,12 +2471,6 @@
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
-                        notifications: {
-                            injectionDue: true,
-                            vialExpiring: true,
-                            lowStock: true,
-                            weeklySummary: true
-                        },
                         lastSync: null
                     }
                 };
@@ -2545,10 +2490,6 @@
                     this.setupUXEnhancements(); // NEW: Setup all UX improvements
                     this.updateUI();
                     this.startCountdownTimer();
-                    this.setupInjectionReminders();
-                    this.checkVialExpirations();
-                    this.checkLowStock();
-                    this.scheduleWeeklySummary();
                     this.validateDataIntegrity();
                     this.updateWeeklyInsights(); // NEW: Update insights on load
                 } catch (error) {
@@ -2892,16 +2833,6 @@
                     if (stored) {
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
-
-                        // Fix notification settings if they're in old format (boolean instead of object)
-                        if (typeof this.data.settings.notifications === 'boolean') {
-                            this.data.settings.notifications = {
-                                injectionDue: this.data.settings.notifications,
-                                vialExpiring: this.data.settings.notifications,
-                                lowStock: this.data.settings.notifications,
-                                weeklySummary: this.data.settings.notifications
-                            };
-                        }
                     } else {
                         // Check if we should load sample data (not in test mode)
                         const urlParams = new URLSearchParams(window.location.search);
@@ -3224,7 +3155,6 @@
                 this.updateVialUsage(injection.vial_id, injection.dose_mg);
                 this.saveData();
                 this.updateUI();
-                this.setupInjectionReminders();
 
                 // Check for milestones and celebrate
                 this.checkMilestones();
@@ -3633,14 +3563,6 @@
                 if (this.data.settings.goalWeightKg) {
                     document.getElementById('goal-weight').value = this.data.settings.goalWeightKg;
                 }
-
-                // Update granular notification settings
-                if (this.data.settings.notifications) {
-                    document.getElementById('notify-injection-due').checked = this.data.settings.notifications.injectionDue;
-                    document.getElementById('notify-vial-expiring').checked = this.data.settings.notifications.vialExpiring;
-                    document.getElementById('notify-low-stock').checked = this.data.settings.notifications.lowStock;
-                    document.getElementById('notify-weekly-summary').checked = this.data.settings.notifications.weeklySummary;
-                }
             }
 
 
@@ -3773,7 +3695,6 @@
                     this.data.settings.injectionFrequency = parseInt(e.target.value);
                     this.saveData();
                     this.updateUI();
-                    this.setupInjectionReminders(); // Reschedule with new frequency
                     this.showSettingSaveIndicator(e.target);
                 });
 
@@ -3808,37 +3729,6 @@
                     this.updateGoalProgress();
                     this.showSettingSaveIndicator(e.target);
                 });
-
-                // Individual notification toggles
-                document.getElementById('notify-injection-due').addEventListener('change', (e) => {
-                    this.data.settings.notifications.injectionDue = e.target.checked;
-                    this.saveData();
-                    this.setupInjectionReminders();
-                    this.showSettingsSavedNotification();
-                });
-
-                document.getElementById('notify-vial-expiring').addEventListener('change', (e) => {
-                    this.data.settings.notifications.vialExpiring = e.target.checked;
-                    this.saveData();
-                    this.checkVialExpirations();
-                    this.showSettingsSavedNotification();
-                });
-
-                document.getElementById('notify-low-stock').addEventListener('change', (e) => {
-                    this.data.settings.notifications.lowStock = e.target.checked;
-                    this.saveData();
-                    this.showSettingsSavedNotification();
-                });
-
-                document.getElementById('notify-weekly-summary').addEventListener('change', (e) => {
-                    this.data.settings.notifications.weeklySummary = e.target.checked;
-                    this.saveData();
-                    if (e.target.checked) {
-                        this.scheduleWeeklySummary();
-                    }
-                    this.showSettingsSavedNotification();
-                });
-
 
                 // Export data
                 document.getElementById('export-data-btn').addEventListener('click', () => {
@@ -3881,11 +3771,6 @@
                             btn.disabled = false;
                         }
                     }
-                });
-
-                // Test notification
-                document.getElementById('test-notification-btn').addEventListener('click', () => {
-                    this.testNotification();
                 });
 
                 // Cloud backup
@@ -3966,7 +3851,6 @@
                             this.data = importedData;
                             await this.saveData();
                             this.updateUI();
-                            this.setupInjectionReminders();
                             const issues = this.validateDataIntegrity();
                             if (issues.length > 0) {
                                 alert('Data imported successfully!\n\nNote: Some data integrity issues were found. Check the console for details.');
@@ -6314,280 +6198,6 @@
                 }
             }
 
-            requestNotificationPermission() {
-                if ('Notification' in window && navigator.serviceWorker) {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            console.log('Notification permission granted');
-                        }
-                    });
-                }
-            }
-
-            scheduleNotification(title, body, delayInMs) {
-                if ('serviceWorker' in navigator && 'PushManager' in window) {
-                    setTimeout(() => {
-                        navigator.serviceWorker.ready.then(registration => {
-                            registration.showNotification(title, {
-                                body: body,
-                                icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64"%3E%3Crect width="64" height="64" fill="%231a1a1a"/%3E%3Ctext x="50%25" y="50%25" font-family="sans-serif" font-size="16" fill="white" text-anchor="middle" dominant-baseline="central"%3ESR%3C/text%3E%3C/svg%3E',
-                                vibrate: [100, 50, 100],
-                                tag: 'injection-reminder',
-                                requireInteraction: true,
-                                actions: [
-                                    {
-                                        action: 'open-app',
-                                        title: 'Open App',
-                                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24"%3E%3Crect width="24" height="24" fill="%23007AFF"/%3E%3C/svg%3E'
-                                    },
-                                    {
-                                        action: 'dismiss',
-                                        title: 'Dismiss',
-                                        icon: 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="24" height="24"%3E%3Crect width="24" height="24" fill="%23888888"/%3E%3C/svg%3E'
-                                    }
-                                ]
-                            });
-                        });
-                    }, delayInMs);
-                }
-            }
-
-            setupInjectionReminders() {
-                if (!this.data.settings.notifications.injectionDue) return;
-
-                // Clear any existing reminders
-                this.clearScheduledReminders();
-
-                if (this.data.injections.length === 0) return;
-
-                const lastInjection = this.getMostRecentInjection();
-                const lastShot = new Date(lastInjection.timestamp);
-                const nextShot = new Date(lastShot);
-                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
-
-                const now = new Date();
-                const timeDiff = nextShot.getTime() - now.getTime();
-
-                // Schedule 24-hour reminder
-                const reminderTime = timeDiff - (24 * 60 * 60 * 1000); // 24 hours before
-                if (reminderTime > 0) {
-                    const reminderDate = new Date(now.getTime() + reminderTime);
-                    this.scheduleNotification(
-                        'Injection Reminder',
-                        `Your next injection is due tomorrow (${nextShot.toLocaleDateString()})`,
-                        reminderTime
-                    );
-                    console.log(`24-hour reminder scheduled for: ${reminderDate.toLocaleString()}`);
-                }
-
-                // Schedule injection due notification
-                if (timeDiff > 0) {
-                    this.scheduleNotification(
-                        'Injection Due Now!',
-                        `Time for your injection (${nextShot.toLocaleDateString()})`,
-                        timeDiff
-                    );
-                    console.log(`Injection due notification scheduled for: ${nextShot.toLocaleString()}`);
-                }
-
-                // Schedule overdue reminder (2 hours after due time)
-                const overdueTime = timeDiff + (2 * 60 * 60 * 1000); // 2 hours after due
-                if (overdueTime > 0) {
-                    this.scheduleNotification(
-                        'Injection Overdue',
-                        'Your injection was due 2 hours ago. Please take your injection.',
-                        overdueTime
-                    );
-                    console.log(`Overdue reminder scheduled for: ${new Date(now.getTime() + overdueTime).toLocaleString()}`);
-                }
-            }
-
-            checkVialExpirations() {
-                if (!this.data.settings.notifications.vialExpiring) return;
-
-                const now = new Date();
-                const activeVials = this.data.vials.filter(v => v.status === 'active');
-
-                activeVials.forEach(vial => {
-                    const reconDate = new Date(vial.startDate);
-                    const expiryDate = new Date(reconDate);
-                    expiryDate.setDate(expiryDate.getDate() + 28);
-                    const daysUntilExpiry = Math.ceil((expiryDate - now) / (1000 * 60 * 60 * 24));
-
-                    // Notify 3 days before expiration
-                    if (daysUntilExpiry === 3) {
-                        this.scheduleNotification(
-                            'Vial Expiring Soon',
-                            `Your active vial will expire in ${daysUntilExpiry} days (${expiryDate.toLocaleDateString()})`,
-                            100
-                        );
-                    }
-
-                    // Notify on expiration day
-                    if (daysUntilExpiry === 0) {
-                        this.scheduleNotification(
-                            'Vial Expired Today',
-                            'Your active vial expires today. Please prepare a new vial.',
-                            100
-                        );
-                    }
-                });
-            }
-
-            checkLowStock() {
-                if (!this.data.settings.notifications.lowStock) return;
-
-                const activeVials = this.data.vials.filter(v => v.status === 'active');
-                const totalDoses = activeVials.reduce((sum, vial) => {
-                    const dosesRemaining = (vial.currentVolumeMl / vial.initialVolumeMl) *
-                                         (vial.initialVolumeMl * vial.concentrationMgPerMl / (this.data.settings.defaultDose || 2.0));
-                    return sum + dosesRemaining;
-                }, 0);
-
-                // Alert if less than 2 doses remaining
-                if (totalDoses < 2 && totalDoses > 0) {
-                    this.scheduleNotification(
-                        'Low Stock Alert',
-                        `Only ${Math.floor(totalDoses)} doses remaining. Consider ordering more vials.`,
-                        100
-                    );
-                }
-            }
-
-            scheduleWeeklySummary() {
-                if (!this.data.settings.notifications.weeklySummary) return;
-
-                // Calculate next Monday at 9 AM
-                const now = new Date();
-                const dayOfWeek = now.getDay();
-                const daysUntilMonday = dayOfWeek === 0 ? 1 : (8 - dayOfWeek);
-                const nextMonday = new Date(now);
-                nextMonday.setDate(now.getDate() + daysUntilMonday);
-                nextMonday.setHours(9, 0, 0, 0);
-
-                const delay = nextMonday - now;
-
-                if (delay > 0) {
-                    setTimeout(() => {
-                        this.sendWeeklySummary();
-                        // Reschedule for next week
-                        this.scheduleWeeklySummary();
-                    }, delay);
-                }
-            }
-
-            sendWeeklySummary() {
-                const lastWeek = new Date();
-                lastWeek.setDate(lastWeek.getDate() - 7);
-
-                const recentInjections = this.data.injections.filter(inj =>
-                    new Date(inj.timestamp) > lastWeek
-                );
-
-                const recentWeights = this.data.weights.filter(w =>
-                    new Date(w.timestamp) > lastWeek
-                );
-
-                let summary = `Weekly Summary:\n`;
-                summary += `Injections: ${recentInjections.length}\n`;
-
-                if (recentWeights.length > 0) {
-                    const sortedWeights = [...recentWeights].sort((a, b) =>
-                        new Date(a.timestamp) - new Date(b.timestamp)
-                    );
-                    const weightChange = sortedWeights[sortedWeights.length - 1].weightKg - sortedWeights[0].weightKg;
-                    summary += `Weight change: ${weightChange >= 0 ? '+' : ''}${weightChange.toFixed(1)} kg`;
-                }
-
-                this.scheduleNotification(
-                    'Weekly Progress Summary',
-                    summary,
-                    100
-                );
-            }
-
-            clearScheduledReminders() {
-                // Clear all existing timeouts (simplified approach)
-                // In a production app, you'd store timeout IDs and clear them specifically
-                console.log('Clearing existing reminders...');
-            }
-
-            testNotification() {
-                if (!('Notification' in window)) {
-                    alert('Notifications are not supported in this browser.');
-                    return;
-                }
-
-                if (Notification.permission === 'denied') {
-                    alert('Notifications are blocked. Please enable notifications in your browser settings.');
-                    return;
-                }
-
-                if (Notification.permission === 'default') {
-                    Notification.requestPermission().then(permission => {
-                        if (permission === 'granted') {
-                            this.showTestNotification();
-                        }
-                    });
-                } else {
-                    this.showTestNotification();
-                }
-            }
-
-            showTestNotification() {
-                // Enhanced notification with actions
-                this.showEnhancedNotification({
-                    title: 'Test Notification',
-                    body: 'Your notification system is working correctly!',
-                    icon: '/icon-192.png',
-                    badge: '/badge-72.png',
-                    actions: [
-                        { action: 'open', title: '✓ Open App' },
-                        { action: 'dismiss', title: '✕ Dismiss' }
-                    ]
-                });
-            }
-
-            // Enhanced notification with actions (Android/Desktop)
-            showEnhancedNotification(options) {
-                if (!('Notification' in window) || Notification.permission !== 'granted') {
-                    return;
-                }
-
-                // Basic notification for browsers without action support
-                if (!('actions' in Notification.prototype)) {
-                    new Notification(options.title, {
-                        body: options.body,
-                        icon: options.icon,
-                        badge: options.badge
-                    });
-                    return;
-                }
-
-                // Enhanced notification with actions
-                if ('serviceWorker' in navigator) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification(options.title, {
-                            body: options.body,
-                            icon: options.icon || '/icon-192.png',
-                            badge: options.badge || '/badge-72.png',
-                            actions: options.actions || [],
-                            vibrate: options.vibrate || [200, 100, 200],
-                            tag: options.tag || 'default',
-                            requireInteraction: options.requireInteraction || false,
-                            data: options.data || {}
-                        });
-                    });
-                } else {
-                    // Fallback for browsers without service worker
-                    new Notification(options.title, {
-                        body: options.body,
-                        icon: options.icon,
-                        badge: options.badge
-                    });
-                }
-            }
-
             // Confetti animations
             triggerConfetti(type = 'default') {
                 if (typeof confetti === 'undefined') return;
@@ -7453,7 +7063,6 @@
         document.addEventListener('DOMContentLoaded', async function() {
             app = new InjectionTracker();
             app.registerServiceWorker();
-            app.requestNotificationPermission();
 
             // Initialize backup system
             backupManager = new ResilientBackupManager();
