@@ -2291,6 +2291,10 @@
                     <h3>Data Management</h3>
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
                     <button id="import-data-btn" class="btn-secondary">Import Data from File</button>
+                    <button id="deduplicate-data-btn" class="btn-secondary" style="margin-top: 16px; background: #ff6b6b; color: white;">🔧 Fix Duplicate Shots</button>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: 8px;">
+                        Use this if you see duplicate injections. This will clean up both local and cloud data.
+                    </p>
                 </div>
                 <div class="settings-section">
                     <h3>☁️ Cloud Backup</h3>
@@ -3038,6 +3042,82 @@
                 }
             }
 
+            /**
+             * Deduplicate injections based on content (timestamp, dose, site)
+             * This fixes data corruption from the ID mismatch bug
+             */
+            async deduplicateInjections() {
+                console.log('Starting deduplication process...');
+
+                // Group injections by unique key (timestamp + dose + site)
+                const groups = new Map();
+
+                this.data.injections.forEach(injection => {
+                    // Create unique key based on content, not ID
+                    const key = `${injection.timestamp}|${injection.dose_mg}|${injection.injection_site}`;
+
+                    if (!groups.has(key)) {
+                        groups.set(key, []);
+                    }
+                    groups.get(key).push(injection);
+                });
+
+                // Find duplicates and select best version
+                const duplicates = [];
+                const toDelete = [];
+
+                groups.forEach((group, key) => {
+                    if (group.length > 1) {
+                        duplicates.push({ key, count: group.length, injections: group });
+
+                        // Sort by completeness (prefer records with more fields filled)
+                        group.sort((a, b) => {
+                            const scoreA = (a.notes ? 1 : 0) + (a.weight_kg ? 1 : 0) + (a.vial_id ? 1 : 0);
+                            const scoreB = (b.notes ? 1 : 0) + (b.weight_kg ? 1 : 0) + (b.vial_id ? 1 : 0);
+                            return scoreB - scoreA; // Higher score first
+                        });
+
+                        // Keep first (most complete), delete rest
+                        for (let i = 1; i < group.length; i++) {
+                            toDelete.push(group[i].id);
+                        }
+                    }
+                });
+
+                if (duplicates.length === 0) {
+                    console.log('No duplicates found!');
+                    return { duplicatesFound: 0, deletedCount: 0 };
+                }
+
+                console.log(`Found ${duplicates.length} sets of duplicates (${toDelete.length} extra records)`);
+                duplicates.forEach(dup => {
+                    console.log(`  - ${dup.count} copies of injection on ${dup.injections[0].timestamp.substring(0, 10)}`);
+                });
+
+                // Delete locally
+                this.data.injections = this.data.injections.filter(inj => !toDelete.includes(inj.id));
+                this.saveData();
+                this.updateUI();
+
+                // Delete from cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    console.log('Deleting duplicates from cloud...');
+                    const deletePromises = toDelete.map(id =>
+                        apiClient.deleteInjection(id).catch(err => {
+                            console.log(`Could not delete ${id} from cloud (may not exist):`, err.message);
+                        })
+                    );
+                    await Promise.all(deletePromises);
+                    console.log('Cloud cleanup complete');
+                }
+
+                return {
+                    duplicatesFound: duplicates.length,
+                    deletedCount: toDelete.length,
+                    details: duplicates
+                };
+            }
+
             loadSampleData() {
                 const now = new Date();
 
@@ -3776,6 +3856,31 @@
                 // Import data
                 document.getElementById('import-data-btn').addEventListener('click', () => {
                     this.importData();
+                });
+
+                // Deduplicate data
+                document.getElementById('deduplicate-data-btn').addEventListener('click', async () => {
+                    if (confirm('This will remove duplicate injections from both local storage and cloud. Continue?')) {
+                        const btn = document.getElementById('deduplicate-data-btn');
+                        const originalText = btn.textContent;
+                        btn.textContent = '⏳ Processing...';
+                        btn.disabled = true;
+
+                        try {
+                            const result = await this.deduplicateInjections();
+                            if (result.deletedCount > 0) {
+                                alert(`✅ Cleanup complete!\n\nRemoved ${result.deletedCount} duplicate records.\nKept ${result.duplicatesFound} unique injections.`);
+                            } else {
+                                alert('✅ No duplicates found! Your data is clean.');
+                            }
+                        } catch (error) {
+                            console.error('Deduplication error:', error);
+                            alert('❌ Error during cleanup. Check console for details.');
+                        } finally {
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }
+                    }
                 });
 
                 // Test notification
