@@ -1,4 +1,4 @@
-name: Deploy to AWS
+name: Deploy Frontend to AWS
 
 on:
   pull_request:
@@ -8,20 +8,15 @@ on:
   workflow_dispatch:  # Allow manual trigger
 
 jobs:
-  deploy:
-    name: Deploy Backend + Frontend to AWS
+  deploy-frontend:
+    name: Deploy Frontend (S3 + CloudFront)
     runs-on: ubuntu-latest
     # Only run if PR was actually merged (not just closed)
     if: github.event.pull_request.merged == true || github.event_name == 'workflow_dispatch'
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -29,15 +24,6 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
-
-      - name: Deploy Backend Infrastructure
-        run: |
-          echo "🏗️ Deploying backend infrastructure (Lambda + API Gateway)..."
-          cd reta-cloud-infrastructure
-          npm ci
-          npx cdk deploy --require-approval never
-          cd ..
-          echo "✅ Backend deployment complete"
 
       - name: Upload Frontend to S3
         run: |
@@ -57,7 +43,7 @@ jobs:
             --delete
 
           echo "✅ Upload complete (index.html, manifest.json, robots.txt, js/)"
-          
+
       - name: Invalidate CloudFront cache
         run: |
           echo "🔄 Invalidating CloudFront cache..."
@@ -69,7 +55,7 @@ jobs:
           echo "✅ Invalidation started: $INVALIDATION_ID"
           echo "invalidation_id=$INVALIDATION_ID" >> $GITHUB_OUTPUT
         id: invalidate
-        
+
       - name: Wait for cache invalidation
         run: |
           echo "⏳ Waiting for cache invalidation to complete..."
@@ -78,10 +64,10 @@ jobs:
             --distribution-id E2ZD0ACBBK8F5K \
             --id ${{ steps.invalidate.outputs.invalidation_id }}
           echo "✅ Cache invalidation complete"
-          
+
       - name: Deployment summary
         run: |
-          echo "🎉 Deployment successful!"
+          echo "🎉 Frontend deployment successful!"
           echo ""
           echo "Your app is now live at:"
           echo "https://d13m7vzwjqe4pp.cloudfront.net"
