@@ -28,7 +28,7 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
 
     // Validate required fields
-    const { timestamp, doseMg, site } = body;
+    const { id, timestamp, doseMg, site } = body;
     if (!timestamp || !doseMg || !site) {
       return {
         statusCode: 400,
@@ -65,8 +65,8 @@ exports.handler = async (event) => {
       };
     }
 
-    // Generate injection ID
-    const injectionId = randomUUID();
+    // Use provided ID or generate new one
+    const injectionId = id || randomUUID();
     const now = new Date().toISOString();
 
     // Create injection item
