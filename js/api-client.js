@@ -10,6 +10,13 @@ class APIClient {
     }
 
     /**
+     * Get API base URL
+     */
+    get API_BASE_URL() {
+        return this.baseURL;
+    }
+
+    /**
      * Initialize with auth manager
      */
     initialize(authManager) {
