@@ -4367,7 +4367,7 @@
                     }
 
                     const injection = {
-                        timestamp: document.getElementById('shot-date').value,
+                        timestamp: new Date(document.getElementById('shot-date').value).toISOString(),
                         dose_mg: doseMg,
                         injection_site: document.getElementById('shot-site').value,
                         vial_id: vialId,
@@ -4468,9 +4468,9 @@
             async handleActivateVial() {
                 const vialId = document.getElementById('activate-vial-id').value;
                 const bacWaterMl = parseFloat(document.getElementById('activate-bac-water').value);
-                const reconstitutionDate = document.getElementById('activate-reconstitution-date').value;
+                const reconstitutionDateRaw = document.getElementById('activate-reconstitution-date').value;
 
-                if (!vialId || !bacWaterMl || !reconstitutionDate) {
+                if (!vialId || !bacWaterMl || !reconstitutionDateRaw) {
                     alert('Please fill in all required fields');
                     return;
                 }
@@ -4480,6 +4480,9 @@
                     alert('Invalid vial selected');
                     return;
                 }
+
+                // Convert to ISO string
+                const reconstitutionDate = new Date(reconstitutionDateRaw).toISOString();
 
                 // Calculate concentration and expiration
                 const concentrationMgMl = vial.total_mg / bacWaterMl;
@@ -4525,7 +4528,7 @@
             async handleAddWeight() {
                 try {
                     const weight = {
-                        timestamp: document.getElementById('weight-date').value,
+                        timestamp: new Date(document.getElementById('weight-date').value).toISOString(),
                         weight_kg: parseFloat(document.getElementById('weight-kg').value),
                         body_fat_percentage: document.getElementById('weight-body-fat').value ?
                             parseFloat(document.getElementById('weight-body-fat').value) : null,
