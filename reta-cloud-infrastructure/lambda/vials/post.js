@@ -29,7 +29,7 @@ exports.handler = async (event) => {
 
     // Validate required fields
     const { id, startDate, initialVolumeMl, concentrationMgPerMl } = body;
-    if (!startDate || !initialVolumeMl || !concentrationMgPerMl) {
+    if (!startDate || initialVolumeMl === undefined || concentrationMgPerMl === undefined) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -40,25 +40,25 @@ exports.handler = async (event) => {
       };
     }
 
-    // Validate numeric fields are positive
-    if (typeof initialVolumeMl !== 'number' || initialVolumeMl <= 0) {
+    // Validate numeric fields are non-negative (allow 0 for dry stock)
+    if (typeof initialVolumeMl !== 'number' || initialVolumeMl < 0) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'initialVolumeMl must be a positive number',
+          error: 'initialVolumeMl must be a non-negative number',
         }),
       };
     }
 
-    if (typeof concentrationMgPerMl !== 'number' || concentrationMgPerMl <= 0) {
+    if (typeof concentrationMgPerMl !== 'number' || concentrationMgPerMl < 0) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'concentrationMgPerMl must be a positive number',
+          error: 'concentrationMgPerMl must be a non-negative number',
         }),
       };
     }
