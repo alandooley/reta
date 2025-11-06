@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, DeleteCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
 const docClient = DynamoDBDocumentClient.from(dynamoClient);
@@ -37,31 +37,7 @@ exports.handler = async (event) => {
       };
     }
 
-    // Check if vial is referenced by any injections
-    const injectionsCheck = await docClient.send(new QueryCommand({
-      TableName: process.env.TABLE_NAME,
-      IndexName: 'GSI1',
-      KeyConditionExpression: 'GSI1PK = :pk',
-      FilterExpression: 'vialId = :vialId',
-      ExpressionAttributeValues: {
-        ':pk': `USER#${userId}`,
-        ':vialId': vialId,
-      },
-      Limit: 1,
-    }));
-
-    if (injectionsCheck.Items && injectionsCheck.Items.length > 0) {
-      return {
-        statusCode: 409,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: false,
-          error: 'Cannot delete vial: it is referenced by one or more injections',
-        }),
-      };
-    }
-
-    // Delete the vial
+    // Delete the vial (allow deletion even if referenced by injections - they'll keep the vialId for historical records)
     await docClient.send(new DeleteCommand({
       TableName: process.env.TABLE_NAME,
       Key: {
