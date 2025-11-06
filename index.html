@@ -3152,7 +3152,7 @@
 
                 this.data.injections.push(newInjection);
                 this.data.injections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                this.updateVialUsage(injection.vial_id, injection.dose_mg);
+                await this.updateVialUsage(injection.vial_id, injection.dose_mg);
                 this.saveData();
                 this.updateUI();
 
@@ -3178,7 +3178,7 @@
                 }
             }
 
-            updateVialUsage(vialId, doseMg) {
+            async updateVialUsage(vialId, doseMg) {
                 const vial = this.data.vials.find(v => v.vial_id === vialId);
                 if (vial) {
                     const doseVolumeML = doseMg / vial.concentration_mg_ml;
@@ -3195,6 +3195,51 @@
                         vial.remaining_ml = 0;
                     } else if (vial.remaining_ml <= 0) {
                         vial.status = 'empty';
+                    }
+
+                    // Sync vial update to cloud if authenticated
+                    if (authManager && authManager.isAuthenticated()) {
+                        try {
+                            await apiClient.updateVial(vialId, {
+                                currentVolumeMl: vial.remaining_ml,
+                                usedVolumeMl: vial.bac_water_ml - vial.remaining_ml,
+                                status: vial.status
+                            });
+                            console.log('Vial usage synced to cloud successfully');
+                        } catch (error) {
+                            console.error('Failed to sync vial usage to cloud:', error);
+                            // Still updated locally, so don't block the user
+                        }
+                    }
+                }
+            }
+
+            async reverseVialUsage(vialId, doseMg) {
+                const vial = this.data.vials.find(v => v.vial_id === vialId);
+                if (vial) {
+                    const doseVolumeML = doseMg / vial.concentration_mg_ml;
+                    // Add back the dose volume
+                    vial.remaining_ml = Math.min(vial.bac_water_ml, vial.remaining_ml + doseVolumeML);
+                    vial.doses_used = Math.max(0, vial.doses_used - 1);
+
+                    // Update status based on new remaining amount
+                    if (vial.remaining_ml > 0 && vial.status !== 'active') {
+                        vial.status = 'active';
+                    }
+
+                    // Sync vial update to cloud if authenticated
+                    if (authManager && authManager.isAuthenticated()) {
+                        try {
+                            await apiClient.updateVial(vialId, {
+                                currentVolumeMl: vial.remaining_ml,
+                                usedVolumeMl: vial.bac_water_ml - vial.remaining_ml,
+                                status: vial.status
+                            });
+                            console.log('Vial usage reversal synced to cloud successfully');
+                        } catch (error) {
+                            console.error('Failed to sync vial usage reversal to cloud:', error);
+                            // Still updated locally, so don't block the user
+                        }
                     }
                 }
             }
@@ -4237,34 +4282,39 @@
             }
 
             async handleAddShot() {
-                const form = document.getElementById('add-shot-form');
-                const formData = new FormData(form);
+                try {
+                    const form = document.getElementById('add-shot-form');
+                    const formData = new FormData(form);
 
-                const injection = {
-                    timestamp: document.getElementById('shot-date').value,
-                    dose_mg: parseFloat(document.getElementById('shot-dose').value),
-                    injection_site: document.getElementById('shot-site').value,
-                    vial_id: document.getElementById('shot-vial').value,
-                    weight_kg: document.getElementById('shot-weight').value ?
-                        parseFloat(document.getElementById('shot-weight').value) : null,
-                    notes: document.getElementById('shot-notes').value
-                };
+                    const injection = {
+                        timestamp: document.getElementById('shot-date').value,
+                        dose_mg: parseFloat(document.getElementById('shot-dose').value),
+                        injection_site: document.getElementById('shot-site').value,
+                        vial_id: document.getElementById('shot-vial').value,
+                        weight_kg: document.getElementById('shot-weight').value ?
+                            parseFloat(document.getElementById('shot-weight').value) : null,
+                        notes: document.getElementById('shot-notes').value
+                    };
 
-                // Add weight entry if provided
-                if (injection.weight_kg) {
-                    await this.addWeight({
-                        timestamp: injection.timestamp,
-                        weight_kg: injection.weight_kg,
-                        source: 'manual'
-                    });
+                    // Add weight entry if provided
+                    if (injection.weight_kg) {
+                        await this.addWeight({
+                            timestamp: injection.timestamp,
+                            weight_kg: injection.weight_kg,
+                            source: 'manual'
+                        });
+                    }
+
+                    await this.addInjection(injection);
+                } catch (error) {
+                    console.error('Error adding shot:', error);
+                    alert('Shot saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
                 }
-
-                await this.addInjection(injection);
-
-                // Delay modal close to show save indicator
-                setTimeout(() => {
-                    this.closeModal();
-                }, 300);
             }
 
             async handleAddVial() {
@@ -4389,20 +4439,25 @@
             }
 
             async handleAddWeight() {
-                const weight = {
-                    timestamp: document.getElementById('weight-date').value,
-                    weight_kg: parseFloat(document.getElementById('weight-kg').value),
-                    body_fat_percentage: document.getElementById('weight-body-fat').value ?
-                        parseFloat(document.getElementById('weight-body-fat').value) : null,
-                    source: 'manual'
-                };
+                try {
+                    const weight = {
+                        timestamp: document.getElementById('weight-date').value,
+                        weight_kg: parseFloat(document.getElementById('weight-kg').value),
+                        body_fat_percentage: document.getElementById('weight-body-fat').value ?
+                            parseFloat(document.getElementById('weight-body-fat').value) : null,
+                        source: 'manual'
+                    };
 
-                await this.addWeight(weight);
-
-                // Delay modal close to show save indicator
-                setTimeout(() => {
-                    this.closeModal();
-                }, 300);
+                    await this.addWeight(weight);
+                } catch (error) {
+                    console.error('Error adding weight:', error);
+                    alert('Weight saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
             }
 
             createShotListItem(injection) {
@@ -6610,6 +6665,11 @@
 
                 if (this.undoStack.length > this.maxUndoStack) {
                     this.undoStack.shift();
+                }
+
+                // Reverse vial usage if injection had a vial
+                if (deletedInjection.vial_id && deletedInjection.dose_mg) {
+                    await app.reverseVialUsage(deletedInjection.vial_id, deletedInjection.dose_mg);
                 }
 
                 // Remove from app data

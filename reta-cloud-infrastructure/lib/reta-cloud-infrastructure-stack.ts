@@ -210,6 +210,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'delete.handler',
     });
 
+    const updateVialFn = new lambda.Function(this, 'UpdateVialFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-update-vial',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/vials')),
+      handler: 'patch.handler',
+    });
+
     const getWeightsFn = new lambda.Function(this, 'GetWeightsFunction', {
       ...commonLambdaProps,
       functionName: 'reta-get-weights',
@@ -322,6 +329,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       path: `${v1}/vials/{vialId}`,
       methods: [HttpMethod.DELETE],
       integration: new HttpLambdaIntegration('DeleteVialIntegration', deleteVialFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/vials/{vialId}`,
+      methods: [HttpMethod.PATCH],
+      integration: new HttpLambdaIntegration('UpdateVialIntegration', updateVialFn),
       authorizer,
     });
 
