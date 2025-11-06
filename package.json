@@ -8,7 +8,12 @@
     "test:headed": "playwright test --headed",
     "test:debug": "playwright test --debug",
     "test:report": "playwright show-report",
-    "start": "node server.js"
+    "start": "node server.js",
+    "sync-version": "node scripts/sync-version.js",
+    "version": "npm run sync-version && git add index.html reta-cloud-infrastructure/lambda/version/version.ts",
+    "bump:patch": "npm version patch",
+    "bump:minor": "npm version minor",
+    "bump:major": "npm version major"
   },
   "repository": {
     "type": "git",

@@ -25,6 +25,12 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo -e "${BLUE}Current branch: $CURRENT_BRANCH${NC}"
 echo ""
 
+# Step 0: Sync version numbers
+echo -e "${BLUE}🔢 Step 0/4: Syncing version numbers from package.json...${NC}"
+npm run sync-version
+echo -e "${GREEN}✓ Version sync complete${NC}"
+echo ""
+
 # Step 1: Deploy Backend Infrastructure
 echo -e "${BLUE}🏗️  Step 1/4: Deploying backend infrastructure (Lambda + API Gateway)...${NC}"
 echo -e "${YELLOW}   This may take 2-3 minutes...${NC}"

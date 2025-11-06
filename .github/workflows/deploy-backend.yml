@@ -32,6 +32,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-1
 
+      - name: Sync version numbers
+        run: |
+          echo "🔢 Syncing version numbers from package.json..."
+          npm ci
+          npm run sync-version
+          echo "✅ Version sync complete"
+
       - name: Deploy Backend Infrastructure
         run: |
           echo "🏗️ Deploying backend infrastructure (Lambda + API Gateway + DynamoDB)..."
