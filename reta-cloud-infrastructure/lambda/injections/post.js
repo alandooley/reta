@@ -53,7 +53,11 @@ exports.handler = async (event) => {
     }
 
     // Validate site is valid injection site
-    const validSites = ['abdomen', 'thigh', 'arm'];
+    const validSites = [
+      'left_thigh', 'right_thigh',
+      'left_arm', 'right_arm',
+      'abdomen_left', 'abdomen_right'
+    ];
     if (!validSites.includes(site)) {
       return {
         statusCode: 400,
