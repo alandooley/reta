@@ -5,9 +5,7 @@
 
 # Dependencies
 node_modules/
-# Note: We need package-lock.json for CDK deployment in CI/CD
-# Only ignore it in root, not in subdirectories
-/package-lock.json
+# Note: We need package-lock.json for reproducible CI/CD builds
 # Ignore Lambda function package-lock.json (CDK bundles dependencies)
 reta-cloud-infrastructure/lambda/**/package-lock.json
 yarn.lock
