@@ -3647,9 +3647,9 @@
                 const backendVersionEl = document.getElementById('backend-version');
                 if (backendVersionEl) {
                     try {
-                        // Use apiClient if available, otherwise fetch directly
-                        if (window.apiClient && window.apiClient.API_BASE_URL) {
-                            const response = await fetch(`${window.apiClient.API_BASE_URL}/v1/version`, {
+                        // Use apiClient baseURL (apiClient is a global from api-client.js)
+                        if (typeof apiClient !== 'undefined' && apiClient.baseURL) {
+                            const response = await fetch(`${apiClient.baseURL}/v1/version`, {
                                 method: 'GET',
                                 headers: {
                                     'Content-Type': 'application/json'
