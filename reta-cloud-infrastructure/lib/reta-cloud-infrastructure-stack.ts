@@ -260,6 +260,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'create.handler',
     });
 
+    const getVersionFn = new lambda.Function(this, 'GetVersionFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-get-version',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/version')),
+      handler: 'version.handler',
+    });
+
     // HTTP API Gateway (Budget: 60% cheaper than REST API)
     const httpApi = new HttpApi(this, 'RetatrutideHttpApi', {
       apiName: 'retatrutide-tracker-api',
@@ -382,6 +389,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration('CreateBackupIntegration', createBackupFn),
       authorizer,
+    });
+
+    // Version endpoint (no auth required)
+    httpApi.addRoutes({
+      path: `${v1}/version`,
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetVersionIntegration', getVersionFn),
     });
 
     // Outputs
