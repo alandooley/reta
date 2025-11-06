@@ -118,6 +118,14 @@ class APIClient {
         await this.request('DELETE', `/v1/vials/${vialId}`);
     }
 
+    /**
+     * Update vial
+     */
+    async updateVial(vialId, updates) {
+        const response = await this.request('PATCH', `/v1/vials/${vialId}`, updates);
+        return response.data;
+    }
+
     // ========================================
     // WEIGHTS
     // ========================================
