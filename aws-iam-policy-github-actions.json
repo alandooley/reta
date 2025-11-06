@@ -1,0 +1,146 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CDKBootstrapVersionCheck",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter"
+      ],
+      "Resource": [
+        "arn:aws:ssm:eu-west-1:372208783486:parameter/cdk-bootstrap/hnb659fds/version"
+      ]
+    },
+    {
+      "Sid": "CDKDeploymentPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:CreateChangeSet",
+        "cloudformation:DescribeChangeSet",
+        "cloudformation:ExecuteChangeSet",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplate",
+        "cloudformation:DeleteStack"
+      ],
+      "Resource": [
+        "arn:aws:cloudformation:eu-west-1:372208783486:stack/CDKToolkit/*",
+        "arn:aws:cloudformation:eu-west-1:372208783486:stack/RetaCloudInfrastructureStack/*"
+      ]
+    },
+    {
+      "Sid": "CDKAssetPublishing",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdk-*-assets-372208783486-eu-west-1",
+        "arn:aws:s3:::cdk-*-assets-372208783486-eu-west-1/*"
+      ]
+    },
+    {
+      "Sid": "CDKECRAccess",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:BatchGetImage",
+        "ecr:PutImage",
+        "ecr:InitiateLayerUpload",
+        "ecr:UploadLayerPart",
+        "ecr:CompleteLayerUpload"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "LambdaDeploymentPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "lambda:CreateFunction",
+        "lambda:UpdateFunctionCode",
+        "lambda:UpdateFunctionConfiguration",
+        "lambda:GetFunction",
+        "lambda:DeleteFunction",
+        "lambda:TagResource",
+        "lambda:ListTags",
+        "lambda:UntagResource",
+        "lambda:AddPermission",
+        "lambda:RemovePermission"
+      ],
+      "Resource": [
+        "arn:aws:lambda:eu-west-1:372208783486:function:reta-*"
+      ]
+    },
+    {
+      "Sid": "IAMRoleManagement",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateRole",
+        "iam:GetRole",
+        "iam:UpdateRole",
+        "iam:DeleteRole",
+        "iam:PassRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:GetRolePolicy",
+        "iam:DeleteRolePolicy"
+      ],
+      "Resource": [
+        "arn:aws:iam::372208783486:role/RetaCloudInfrastructureStack-*",
+        "arn:aws:iam::372208783486:role/cdk-*"
+      ]
+    },
+    {
+      "Sid": "DynamoDBManagement",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:CreateTable",
+        "dynamodb:DescribeTable",
+        "dynamodb:UpdateTable",
+        "dynamodb:DeleteTable",
+        "dynamodb:TagResource",
+        "dynamodb:UntagResource",
+        "dynamodb:ListTagsOfResource"
+      ],
+      "Resource": [
+        "arn:aws:dynamodb:eu-west-1:372208783486:table/retatrutide-tracker-prod"
+      ]
+    },
+    {
+      "Sid": "APIGatewayManagement",
+      "Effect": "Allow",
+      "Action": [
+        "apigateway:GET",
+        "apigateway:POST",
+        "apigateway:PUT",
+        "apigateway:PATCH",
+        "apigateway:DELETE"
+      ],
+      "Resource": [
+        "arn:aws:apigateway:eu-west-1::/apis",
+        "arn:aws:apigateway:eu-west-1::/apis/*"
+      ]
+    },
+    {
+      "Sid": "CloudWatchLogsManagement",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:PutRetentionPolicy",
+        "logs:DeleteRetentionPolicy",
+        "logs:TagLogGroup",
+        "logs:UntagLogGroup"
+      ],
+      "Resource": [
+        "arn:aws:logs:eu-west-1:372208783486:log-group:/aws/lambda/reta-*"
+      ]
+    }
+  ]
+}
