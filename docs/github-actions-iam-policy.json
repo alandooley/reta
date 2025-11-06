@@ -1,0 +1,60 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3FrontendAccess",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::retatrutide-frontend-372208783486",
+        "arn:aws:s3:::retatrutide-frontend-372208783486/*"
+      ]
+    },
+    {
+      "Sid": "CloudFrontInvalidation",
+      "Effect": "Allow",
+      "Action": [
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation"
+      ],
+      "Resource": "arn:aws:cloudfront::372208783486:distribution/E2ZD0ACBBK8F5K"
+    },
+    {
+      "Sid": "CDKBootstrapSSMAccess",
+      "Effect": "Allow",
+      "Action": [
+        "ssm:GetParameter"
+      ],
+      "Resource": [
+        "arn:aws:ssm:eu-west-1:372208783486:parameter/cdk-bootstrap/*"
+      ]
+    },
+    {
+      "Sid": "CDKAssumeRole",
+      "Effect": "Allow",
+      "Action": [
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:iam::372208783486:role/cdk-hnb659fds-deploy-role-372208783486-eu-west-1",
+        "arn:aws:iam::372208783486:role/cdk-hnb659fds-file-publishing-role-372208783486-eu-west-1",
+        "arn:aws:iam::372208783486:role/cdk-hnb659fds-lookup-role-372208783486-eu-west-1"
+      ]
+    },
+    {
+      "Sid": "CloudFormationReadAccess",
+      "Effect": "Allow",
+      "Action": [
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplate"
+      ],
+      "Resource": "arn:aws:cloudformation:eu-west-1:372208783486:stack/RetaCloudInfrastructureStack/*"
+    }
+  ]
+}
