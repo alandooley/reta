@@ -2985,7 +2985,7 @@
 
                 this.data.injections.forEach(injection => {
                     // Create unique key based on content, not ID
-                    const key = `${injection.timestamp}|${injection.doseMg}|${injection.injectionSite}`;
+                    const key = `${injection.timestamp}|${injection.dose_mg}|${injection.injection_site}`;
 
                     if (!groups.has(key)) {
                         groups.set(key, []);
@@ -3003,8 +3003,8 @@
 
                         // Sort by completeness (prefer records with more fields filled)
                         group.sort((a, b) => {
-                            const scoreA = (a.notes ? 1 : 0) + (a.weightKg ? 1 : 0) + (a.vialId ? 1 : 0);
-                            const scoreB = (b.notes ? 1 : 0) + (b.weightKg ? 1 : 0) + (b.vialId ? 1 : 0);
+                            const scoreA = (a.notes ? 1 : 0) + (a.weight_kg ? 1 : 0) + (a.vial_id ? 1 : 0);
+                            const scoreB = (b.notes ? 1 : 0) + (b.weight_kg ? 1 : 0) + (b.vial_id ? 1 : 0);
                             return scoreB - scoreA; // Higher score first
                         });
 
@@ -4284,13 +4284,32 @@
             async handleAddShot() {
                 try {
                     const form = document.getElementById('add-shot-form');
-                    const formData = new FormData(form);
+
+                    // Validate form before processing
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    // Get and validate dose
+                    const doseMg = parseFloat(document.getElementById('shot-dose').value);
+                    if (isNaN(doseMg) || doseMg <= 0 || doseMg > 50) {
+                        alert('Please enter a valid dose between 0 and 50 mg');
+                        return;
+                    }
+
+                    // Validate vial selection
+                    const vialId = document.getElementById('shot-vial').value;
+                    if (!vialId) {
+                        alert('Please select a vial');
+                        return;
+                    }
 
                     const injection = {
                         timestamp: document.getElementById('shot-date').value,
-                        dose_mg: parseFloat(document.getElementById('shot-dose').value),
+                        dose_mg: doseMg,
                         injection_site: document.getElementById('shot-site').value,
-                        vial_id: document.getElementById('shot-vial').value,
+                        vial_id: vialId,
                         weight_kg: document.getElementById('shot-weight').value ?
                             parseFloat(document.getElementById('shot-weight').value) : null,
                         notes: document.getElementById('shot-notes').value
@@ -4306,6 +4325,10 @@
                     }
 
                     await this.addInjection(injection);
+
+                    // Reset form after successful submission
+                    form.reset();
+
                 } catch (error) {
                     console.error('Error adding shot:', error);
                     alert('Shot saved locally. Cloud sync will retry automatically.');
@@ -6684,22 +6707,24 @@
                     try {
                         await apiClient.deleteInjection(shotId);
                         console.log('Injection deleted from cloud successfully');
-                        // Remove from pending deletions after successful cloud deletion
-                        app._pendingDeletions.delete(shotId);
-                        console.log(`Removed ${shotId} from pending deletions`);
+                        // Keep in pending deletions for 60 seconds to prevent sync race condition
+                        setTimeout(() => {
+                            app._pendingDeletions.delete(shotId);
+                            console.log(`Removed ${shotId} from pending deletions after grace period`);
+                        }, 60000);
                     } catch (error) {
                         console.error('Failed to delete injection from cloud:', error);
-                        // Keep in pending deletions for 30 seconds then remove
+                        // Keep in pending deletions for 60 seconds then remove
                         setTimeout(() => {
                             app._pendingDeletions.delete(shotId);
                             console.log(`Removed ${shotId} from pending deletions after timeout`);
-                        }, 30000);
+                        }, 60000);
                     }
                 } else {
-                    // Not authenticated, remove from pending after 5 seconds
+                    // Not authenticated, remove from pending after 60 seconds
                     setTimeout(() => {
                         app._pendingDeletions.delete(shotId);
-                    }, 5000);
+                    }, 60000);
                 }
 
                 // Animate out
@@ -6843,22 +6868,24 @@
                     try {
                         await apiClient.deleteWeight(actualWeightId);
                         console.log('Weight deleted from cloud successfully');
-                        // Remove from pending deletions after successful cloud deletion
-                        app._pendingDeletions.delete(actualWeightId);
-                        console.log(`Removed ${actualWeightId} from pending deletions`);
+                        // Keep in pending deletions for 60 seconds to prevent sync race condition
+                        setTimeout(() => {
+                            app._pendingDeletions.delete(actualWeightId);
+                            console.log(`Removed ${actualWeightId} from pending deletions after grace period`);
+                        }, 60000);
                     } catch (error) {
                         console.error('Failed to delete weight from cloud:', error);
-                        // Keep in pending deletions for 30 seconds then remove
+                        // Keep in pending deletions for 60 seconds then remove
                         setTimeout(() => {
                             app._pendingDeletions.delete(actualWeightId);
                             console.log(`Removed ${actualWeightId} from pending deletions after timeout`);
-                        }, 30000);
+                        }, 60000);
                     }
                 } else {
-                    // Not authenticated, remove from pending after 5 seconds
+                    // Not authenticated, remove from pending after 60 seconds
                     setTimeout(() => {
                         app._pendingDeletions.delete(actualWeightId);
-                    }, 5000);
+                    }, 60000);
                 }
 
                 // Animate out
