@@ -3742,7 +3742,7 @@
                     weight_kg: injection.weight_kg ? parseFloat(injection.weight_kg) : null,
                     weight_source: injection.weight_source || 'manual',
                     notes: injection.notes || '',
-                    medication_level_at_injection: this.calculateCurrentMedicationLevel(injection.timestamp)
+                    medication_level_at_injection: this.calculateCurrentMedicationLevel(injection.timestamp).value || 0
                 };
 
                 this.data.injections.push(newInjection);
@@ -4018,20 +4018,77 @@
 
             calculateCurrentMedicationLevel(currentTime = new Date().toISOString()) {
                 const medicationHalfLife = 165; // 165 hours (about 7 days) - adjust as needed
-                const currentTimestamp = new Date(currentTime).getTime();
-                let totalLevel = 0;
 
-                this.data.injections.forEach(injection => {
+                // Phase 2: Validate input data
+                const injections = this.data.injections || [];
+                if (injections.length === 0) {
+                    return {
+                        success: false,
+                        error: 'No injection data available',
+                        value: 0,
+                        validCount: 0,
+                        totalCount: 0
+                    };
+                }
+
+                // Validate current time
+                const currentTimestamp = new Date(currentTime).getTime();
+                if (isNaN(currentTimestamp)) {
+                    return {
+                        success: false,
+                        error: 'Invalid current time',
+                        value: 0
+                    };
+                }
+
+                let totalLevel = 0;
+                let validCount = 0;
+                let invalidCount = 0;
+
+                injections.forEach(injection => {
+                    // Phase 2: Validate injection has required fields
+                    if (!injection.timestamp || !injection.dose_mg) {
+                        console.warn('[MedicationLevel] Invalid injection:', injection.id,
+                            'missing timestamp or dose_mg');
+                        invalidCount++;
+                        return; // Skip this injection
+                    }
+
                     const injectionTime = new Date(injection.timestamp).getTime();
+
+                    // Validate injection timestamp
+                    if (isNaN(injectionTime)) {
+                        console.warn('[MedicationLevel] Invalid timestamp for injection:', injection.id);
+                        invalidCount++;
+                        return;
+                    }
+
+                    // Validate dose is positive number
+                    const doseMg = parseFloat(injection.dose_mg);
+                    if (isNaN(doseMg) || doseMg <= 0) {
+                        console.warn('[MedicationLevel] Invalid dose for injection:', injection.id, doseMg);
+                        invalidCount++;
+                        return;
+                    }
+
                     const hoursElapsed = (currentTimestamp - injectionTime) / (1000 * 60 * 60);
 
                     if (hoursElapsed >= 0) {
-                        const remainingLevel = injection.dose_mg * Math.pow(0.5, hoursElapsed / medicationHalfLife);
+                        const remainingLevel = doseMg * Math.pow(0.5, hoursElapsed / medicationHalfLife);
                         totalLevel += remainingLevel;
+                        validCount++;
                     }
                 });
 
-                return totalLevel;
+                // Return structured result
+                return {
+                    success: validCount > 0,
+                    value: totalLevel,
+                    validCount,
+                    totalCount: injections.length,
+                    invalidCount,
+                    warning: invalidCount > 0 ? `${invalidCount} injection(s) skipped due to invalid data` : null
+                };
             }
 
             // ====================================
@@ -5292,50 +5349,126 @@
                 return div;
             }
 
-            updateSupplyForecast() {
-                // Calculate total remaining supply based on current_volume_ml in each vial
-                const now = new Date();
+            // Phase 2: Extract calculation logic with validation
+            calculateSupplyForecast(plannedWeeklyDose = 4.0) {
+                // Validate input data
+                const vials = this.data.vials || [];
+                if (vials.length === 0) {
+                    return {
+                        success: false,
+                        error: 'No vial data available',
+                        totalSupplyMg: 0,
+                        weeksRemaining: 0,
+                        daysRemaining: 0,
+                        activeVialCount: 0,
+                        dryStockCount: 0
+                    };
+                }
 
-                // Get all active vials that are in stock
-                const activeVials = this.data.vials.filter(v => {
-                    // Support both 'active' and 'activated' status
+                // Validate planned dose
+                const dose = parseFloat(plannedWeeklyDose);
+                if (isNaN(dose) || dose <= 0) {
+                    return {
+                        success: false,
+                        error: 'Invalid planned dose (must be > 0)',
+                        totalSupplyMg: 0
+                    };
+                }
+
+                let totalSupplyMg = 0;
+                let validActiveCount = 0;
+                let invalidActiveCount = 0;
+                let validDryStockCount = 0;
+                let invalidDryStockCount = 0;
+
+                // Process active vials
+                const activeVials = vials.filter(v => {
                     const isActive = v.status === 'active' || v.status === 'activated';
                     const isNotEmpty = v.status !== 'empty' && v.status !== 'finished';
-                    const hasVolume = (v.current_volume_ml || 0) > 0;
-                    const concentration = v.concentration_mg_per_ml || v.concentration_mg_ml || 0;
-                    return isActive && isNotEmpty && hasVolume && concentration > 0;
+                    return isActive && isNotEmpty;
                 });
 
-                // Get all dry stock vials (not yet activated)
-                const dryStockVials = this.data.vials.filter(v => {
-                    return v.status === 'dry_stock';
-                });
-
-                // Calculate total remaining supply from active vials
-                let totalSupplyMg = 0;
                 activeVials.forEach(vial => {
-                    const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml || 0;
-                    const volume = vial.current_volume_ml || vial.remaining_ml || 0;
+                    const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml;
+                    const volume = vial.current_volume_ml || vial.remaining_ml;
+
+                    // Phase 2: Validate vial data
+                    if (!concentration || concentration <= 0) {
+                        console.warn('[SupplyForecast] Invalid concentration for vial:', vial.vial_id || vial.id);
+                        invalidActiveCount++;
+                        return;
+                    }
+
+                    if (!volume || volume <= 0) {
+                        console.warn('[SupplyForecast] Invalid volume for vial:', vial.vial_id || vial.id);
+                        invalidActiveCount++;
+                        return;
+                    }
+
                     const remainingMg = volume * concentration;
                     totalSupplyMg += remainingMg;
-                    console.log(`Vial ${vial.vial_id} (active): ${remainingMg.toFixed(1)}mg remaining (${volume.toFixed(2)}ml @ ${concentration}mg/ml)`);
+                    validActiveCount++;
+                    console.log(`Vial ${vial.vial_id || vial.id} (active): ${remainingMg.toFixed(1)}mg remaining (${volume.toFixed(2)}ml @ ${concentration}mg/ml)`);
                 });
 
-                // Add dry stock vials (full amount)
+                // Process dry stock vials
+                const dryStockVials = vials.filter(v => v.status === 'dry_stock');
+
                 dryStockVials.forEach(vial => {
-                    totalSupplyMg += vial.total_mg;
-                    console.log(`Vial ${vial.vial_id} (dry_stock): ${vial.total_mg}mg available`);
+                    const totalMg = vial.total_mg;
+
+                    // Phase 2: Validate dry stock data
+                    if (!totalMg || totalMg <= 0) {
+                        console.warn('[SupplyForecast] Invalid total_mg for dry stock vial:', vial.vial_id || vial.id);
+                        invalidDryStockCount++;
+                        return;
+                    }
+
+                    totalSupplyMg += totalMg;
+                    validDryStockCount++;
+                    console.log(`Vial ${vial.vial_id || vial.id} (dry_stock): ${totalMg}mg available`);
                 });
 
-                console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg (${activeVials.length} active + ${dryStockVials.length} dry stock)`);
+                console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg (${validActiveCount} active + ${validDryStockCount} dry stock)`);
 
+                // Calculate duration
+                const weeksRemaining = dose > 0 ? Math.floor(totalSupplyMg / dose) : 0;
+                const daysRemaining = Math.floor((totalSupplyMg / dose) * 7);
+
+                // Return structured result
+                return {
+                    success: true,
+                    totalSupplyMg,
+                    weeksRemaining,
+                    daysRemaining,
+                    activeVialCount: validActiveCount,
+                    dryStockCount: validDryStockCount,
+                    invalidActiveCount,
+                    invalidDryStockCount,
+                    warning: (invalidActiveCount + invalidDryStockCount) > 0
+                        ? `${invalidActiveCount + invalidDryStockCount} vial(s) skipped due to invalid data`
+                        : null
+                };
+            }
+
+            updateSupplyForecast() {
                 // Get planned dose from input
                 const plannedDoseInput = document.getElementById('planned-dose');
                 const plannedWeeklyDose = parseFloat(plannedDoseInput?.value || 4.0);
 
-                // Calculate duration - use ceiling for conservative estimate
-                const weeksRemaining = plannedWeeklyDose > 0 ? Math.floor(totalSupplyMg / plannedWeeklyDose) : 0;
-                const daysRemaining = Math.floor((totalSupplyMg / plannedWeeklyDose) * 7);
+                // Phase 2: Use validated calculation
+                const forecast = this.calculateSupplyForecast(plannedWeeklyDose);
+
+                if (!forecast.success) {
+                    console.error('[SupplyForecast] Calculation failed:', forecast.error);
+                    document.getElementById('total-supply').textContent = '0 mg';
+                    document.getElementById('supply-duration').textContent = 'No data';
+                    document.getElementById('run-out-date').textContent = 'No supply';
+                    document.getElementById('reorder-days').textContent = 'N/A';
+                    return;
+                }
+
+                const { totalSupplyMg, weeksRemaining, daysRemaining } = forecast;
 
                 // Calculate run out date
                 const runOutDate = new Date();
@@ -5490,7 +5623,8 @@
 
                 // Generate data points every 6 hours
                 for (let date = new Date(startDate); date <= endDate; date = new Date(date.getTime() + 6 * 60 * 60 * 1000)) {
-                    const level = this.calculateCurrentMedicationLevel(date.toISOString());
+                    const levelResult = this.calculateCurrentMedicationLevel(date.toISOString());
+                    const level = levelResult.value || 0; // Phase 2: Extract value from result
                     const isProjected = date > now;
 
                     labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
@@ -6160,22 +6294,92 @@
                 }
             }
 
+            // Phase 2: Extract BMI calculation with validation
+            calculateBMI() {
+                // Validate input data
+                const weights = this.data.weights || [];
+                if (weights.length === 0) {
+                    return {
+                        success: false,
+                        error: 'No weight data available',
+                        value: 0
+                    };
+                }
+
+                const heightCm = this.data.settings?.heightCm;
+                if (!heightCm) {
+                    return {
+                        success: false,
+                        error: 'Height not set in settings',
+                        value: 0
+                    };
+                }
+
+                // Phase 2: Validate height is reasonable (100-250cm)
+                const height = parseFloat(heightCm);
+                if (isNaN(height) || height < 100 || height > 250) {
+                    return {
+                        success: false,
+                        error: `Invalid height: ${heightCm}cm (must be 100-250cm)`,
+                        value: 0
+                    };
+                }
+
+                // Get last weight
+                const sortedWeights = [...weights].sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+                const lastWeight = sortedWeights[sortedWeights.length - 1];
+
+                // Phase 2: Validate weight is reasonable (20-300kg)
+                const weightKg = parseFloat(lastWeight.weight_kg);
+                if (isNaN(weightKg) || weightKg < 20 || weightKg > 300) {
+                    return {
+                        success: false,
+                        error: `Invalid weight: ${lastWeight.weight_kg}kg (must be 20-300kg)`,
+                        value: 0
+                    };
+                }
+
+                // Calculate BMI
+                const heightM = height / 100;
+                const bmi = weightKg / (heightM * heightM);
+
+                // Phase 2: Validate BMI is reasonable (10-60)
+                if (bmi < 10 || bmi > 60) {
+                    return {
+                        success: false,
+                        error: `Calculated BMI ${bmi.toFixed(1)} is out of reasonable range (10-60)`,
+                        value: bmi,
+                        warning: 'BMI calculation may be incorrect - check height and weight settings'
+                    };
+                }
+
+                return {
+                    success: true,
+                    value: bmi,
+                    weightKg,
+                    heightCm: height,
+                    category: bmi < 18.5 ? 'underweight' :
+                             bmi < 25 ? 'normal' :
+                             bmi < 30 ? 'overweight' : 'obese'
+                };
+            }
+
             updateBMI() {
                 const bmiElement = document.getElementById('current-bmi');
 
-                if (this.data.weights.length === 0 || !this.data.settings.heightCm) {
+                // Phase 2: Use validated calculation
+                const bmiResult = this.calculateBMI();
+
+                if (!bmiResult.success) {
+                    console.warn('[BMI] Calculation failed:', bmiResult.error);
                     bmiElement.textContent = '--';
                     bmiElement.style.color = 'var(--text-primary)';
                     return;
                 }
 
-                const sortedWeights = [...this.data.weights].sort((a, b) =>
-                    new Date(a.timestamp) - new Date(b.timestamp)
-                );
-                const lastWeight = sortedWeights[sortedWeights.length - 1];
-                const heightM = this.data.settings.heightCm / 100;
-                const bmi = lastWeight.weight_kg / (heightM * heightM);
-
+                const bmi = bmiResult.value;
                 bmiElement.textContent = bmi.toFixed(1);
 
                 // Color code BMI
@@ -7119,7 +7323,7 @@
                 this.data.injections.forEach(injection => {
                     // Only validate vial reference if injection has a vial_id (null is valid)
                     if (injection.vial_id && injection.vial_id !== 'null') {
-                        const vial = this.data.vials.find(v => v.vial_id === injection.vial_id);
+                        const vial = this.findVialById(injection.vial_id); // Phase 2: Use helper method
                         if (!vial) {
                             issues.push(`Injection ${injection.id}: References non-existent vial ${injection.vial_id}`);
                         }
