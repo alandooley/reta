@@ -4736,29 +4736,32 @@
             }
 
             updateSupplyForecast() {
-                // Calculate total remaining supply based on remaining_ml in each vial
+                // Calculate total remaining supply based on current_volume_ml in each vial
                 const now = new Date();
 
                 // Get all active vials that are in stock
                 const activeVials = this.data.vials.filter(v => {
-                    const isNotExpired = new Date(v.expiration_date) > now;
+                    // Support both 'active' and 'activated' status
+                    const isActive = v.status === 'active' || v.status === 'activated';
                     const isNotEmpty = v.status !== 'empty' && v.status !== 'finished';
-                    const hasConcentration = v.concentration_mg_ml > 0;
-                    return v.status === 'active' && isNotExpired && isNotEmpty && hasConcentration;
+                    const hasVolume = (v.current_volume_ml || 0) > 0;
+                    const concentration = v.concentration_mg_per_ml || v.concentration_mg_ml || 0;
+                    return isActive && isNotEmpty && hasVolume && concentration > 0;
                 });
 
-                // Get all dry stock vials
+                // Get all dry stock vials (not yet activated)
                 const dryStockVials = this.data.vials.filter(v => {
-                    const isNotExpired = new Date(v.expiration_date) > now;
-                    return v.status === 'dry_stock' && isNotExpired;
+                    return v.status === 'dry_stock';
                 });
 
                 // Calculate total remaining supply from active vials
                 let totalSupplyMg = 0;
                 activeVials.forEach(vial => {
-                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+                    const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml || 0;
+                    const volume = vial.current_volume_ml || vial.remaining_ml || 0;
+                    const remainingMg = volume * concentration;
                     totalSupplyMg += remainingMg;
-                    console.log(`Vial ${vial.vial_id} (active): ${remainingMg.toFixed(1)}mg remaining (${vial.remaining_ml.toFixed(2)}ml @ ${vial.concentration_mg_ml}mg/ml)`);
+                    console.log(`Vial ${vial.vial_id} (active): ${remainingMg.toFixed(1)}mg remaining (${volume.toFixed(2)}ml @ ${concentration}mg/ml)`);
                 });
 
                 // Add dry stock vials (full amount)
