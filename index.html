@@ -416,6 +416,121 @@
             color: white;
         }
 
+        /* Phase 3: Validation Status Indicators */
+        .validation-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+
+        .validation-icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        .validation-success .validation-icon {
+            color: var(--success-color);
+        }
+
+        .validation-warning .validation-icon {
+            color: var(--warning-color);
+        }
+
+        .validation-error .validation-icon {
+            color: var(--danger-color);
+        }
+
+        /* Validation tooltip */
+        .validation-tooltip {
+            position: relative;
+            cursor: help;
+        }
+
+        .validation-tooltip .tooltip-content {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            z-index: 1000;
+            bottom: 125%;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            transition: opacity 0.2s;
+            pointer-events: none;
+        }
+
+        .validation-tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .validation-tooltip .tooltip-content::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 5px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+        }
+
+        /* Stat card validation enhancement */
+        .stat-card .stat-value-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .stat-card.has-validation-issue {
+            border-left: 3px solid var(--warning-color);
+        }
+
+        .stat-card.has-validation-error {
+            border-left: 3px solid var(--danger-color);
+        }
+
+        /* Validation summary in sync status modal */
+        .validation-summary {
+            padding: 12px;
+            background-color: rgba(255, 204, 0, 0.1);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .validation-summary.show {
+            display: block;
+        }
+
+        .validation-summary-title {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--warning-color);
+        }
+
+        .validation-summary-list {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .validation-summary-list li {
+            margin-left: 20px;
+            margin-bottom: 4px;
+        }
+
         /* Main Content */
         #main-content {
             margin-top: 60px;
@@ -2255,15 +2370,24 @@
                         </div>
                         <div class="forecast-row">
                             <span class="forecast-label">Supply Will Last:</span>
-                            <span class="forecast-value" id="supply-duration">0 weeks</span>
+                            <div class="stat-value-container">
+                                <span class="forecast-value" id="supply-duration">0 weeks</span>
+                                <span id="supply-duration-validation-indicator"></span>
+                            </div>
                         </div>
                         <div class="forecast-row">
                             <span class="forecast-label">Estimated Run Out Date:</span>
-                            <span class="forecast-value" id="run-out-date">--</span>
+                            <div class="stat-value-container">
+                                <span class="forecast-value" id="run-out-date">--</span>
+                                <span id="run-out-date-validation-indicator"></span>
+                            </div>
                         </div>
                         <div class="forecast-row">
                             <span class="forecast-label">Days Until Reorder:</span>
-                            <span class="forecast-value" id="reorder-days">--</span>
+                            <div class="stat-value-container">
+                                <span class="forecast-value" id="reorder-days">--</span>
+                                <span id="reorder-days-validation-indicator"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2342,7 +2466,10 @@
                                 </svg>
                                 Total change
                             </div>
-                            <div class="result-value" id="total-change">-11.3 kg</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="total-change">-11.3 kg</div>
+                                <span id="total-change-validation-indicator"></span>
+                            </div>
                         </div>
 
                         <div class="result-card">
@@ -2353,7 +2480,10 @@
                                 </svg>
                                 Current BMI
                             </div>
-                            <div class="result-value" id="current-bmi">--</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="current-bmi">--</div>
+                                <span id="bmi-validation-indicator"></span>
+                            </div>
                         </div>
 
                         <div class="result-card">
@@ -2364,7 +2494,10 @@
                                 </svg>
                                 Weight
                             </div>
-                            <div class="result-value" id="current-weight">94.5 kg</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="current-weight">94.5 kg</div>
+                                <span id="current-weight-validation-indicator"></span>
+                            </div>
                         </div>
 
                         <div class="result-card">
@@ -2375,7 +2508,10 @@
                                 </svg>
                                 Percent
                             </div>
-                            <div class="result-value" id="percent-change">-11%</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="percent-change">-11%</div>
+                                <span id="percent-change-validation-indicator"></span>
+                            </div>
                         </div>
 
                         <div class="result-card">
@@ -2385,7 +2521,10 @@
                                 </svg>
                                 Weekly avg
                             </div>
-                            <div class="result-value" id="weekly-avg">-2.5 kg/wk</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="weekly-avg">-2.5 kg/wk</div>
+                                <span id="weekly-avg-validation-indicator"></span>
+                            </div>
                         </div>
 
                         <div class="result-card">
@@ -2395,7 +2534,10 @@
                                 </svg>
                                 Progress
                             </div>
-                            <div class="result-value" id="goal-progress">52%</div>
+                            <div class="stat-value-container">
+                                <div class="result-value" id="goal-progress">52%</div>
+                                <span id="goal-progress-validation-indicator"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5465,6 +5607,17 @@
                     document.getElementById('supply-duration').textContent = 'No data';
                     document.getElementById('run-out-date').textContent = 'No supply';
                     document.getElementById('reorder-days').textContent = 'N/A';
+
+                    // Phase 3: Add validation indicators for error state
+                    const errorIndicator = `
+                        <span class="validation-indicator validation-error validation-tooltip">
+                            <span class="validation-icon">⚠️</span>
+                            <span class="tooltip-content">${forecast.error}</span>
+                        </span>
+                    `;
+                    document.getElementById('supply-duration-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('run-out-date-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('reorder-days-validation-indicator').innerHTML = errorIndicator;
                     return;
                 }
 
@@ -5482,6 +5635,21 @@
                 document.getElementById('supply-duration').textContent = `${weeksRemaining} weeks (${daysRemaining} days)`;
                 document.getElementById('run-out-date').textContent = daysRemaining > 0 ? runOutDate.toLocaleDateString() : 'No supply';
                 document.getElementById('reorder-days').textContent = reorderDays > 0 ? `${reorderDays} days` : 'Order now!';
+
+                // Phase 3: Determine validation status
+                const hasWarning = forecast.warning;
+                const validationHTML = hasWarning
+                    ? `<span class="validation-indicator validation-warning validation-tooltip">
+                           <span class="validation-icon">⚠️</span>
+                           <span class="tooltip-content">${forecast.warning}</span>
+                       </span>`
+                    : `<span class="validation-indicator validation-success">
+                           <span class="validation-icon">✓</span>
+                       </span>`;
+
+                document.getElementById('supply-duration-validation-indicator').innerHTML = validationHTML;
+                document.getElementById('run-out-date-validation-indicator').innerHTML = validationHTML;
+                document.getElementById('reorder-days-validation-indicator').innerHTML = validationHTML;
 
                 // Update colors based on supply levels
                 const supplyDurationElement = document.getElementById('supply-duration');
@@ -6334,19 +6502,45 @@
                     document.getElementById('percent-change').textContent = '0%';
                     document.getElementById('weekly-avg').textContent = '0 kg/wk';
                     document.getElementById('goal-progress').textContent = '--';
+
+                    // Phase 3: Add validation indicators for error state
+                    const errorIndicator = `
+                        <span class="validation-indicator validation-error validation-tooltip">
+                            <span class="validation-icon">⚠️</span>
+                            <span class="tooltip-content">${statsResult.error}</span>
+                        </span>
+                    `;
+                    document.getElementById('total-change-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('current-weight-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('percent-change-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('weekly-avg-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('goal-progress-validation-indicator').innerHTML = errorIndicator;
                     return;
                 }
 
                 const { weightChangeKg, currentWeightKg, percentChange, weeklyAvgKg, goalProgress } = statsResult.metrics;
+
+                // Phase 3: Determine validation status
+                const hasWarning = statsResult.warning;
+                const validationHTML = hasWarning
+                    ? `<span class="validation-indicator validation-warning validation-tooltip">
+                           <span class="validation-icon">⚠️</span>
+                           <span class="tooltip-content">${statsResult.warning}</span>
+                       </span>`
+                    : `<span class="validation-indicator validation-success">
+                           <span class="validation-icon">✓</span>
+                       </span>`;
 
                 // 1. Total change (in kg)
                 const totalChangeText = weightChangeKg >= 0 ?
                     `+${Math.abs(weightChangeKg).toFixed(1)} kg` :
                     `${weightChangeKg.toFixed(1)} kg`;
                 document.getElementById('total-change').textContent = totalChangeText;
+                document.getElementById('total-change-validation-indicator').innerHTML = validationHTML;
 
                 // 2. Current weight (in kg)
                 document.getElementById('current-weight').textContent = `${currentWeightKg.toFixed(1)} kg`;
+                document.getElementById('current-weight-validation-indicator').innerHTML = validationHTML;
 
                 // 3. Current BMI
                 this.updateBMI();
@@ -6356,19 +6550,23 @@
                     `+${percentChange.toFixed(0)}%` :
                     `${percentChange.toFixed(0)}%`;
                 document.getElementById('percent-change').textContent = percentText;
+                document.getElementById('percent-change-validation-indicator').innerHTML = validationHTML;
 
                 // 5. Weekly average (kg/wk)
                 const weeklyText = weeklyAvgKg >= 0 ?
                     `+${weeklyAvgKg.toFixed(1)} kg/wk` :
                     `${weeklyAvgKg.toFixed(1)} kg/wk`;
                 document.getElementById('weekly-avg').textContent = weeklyText;
+                document.getElementById('weekly-avg-validation-indicator').innerHTML = validationHTML;
 
                 // 6. Goal progress (%)
                 if (goalProgress !== null) {
                     document.getElementById('goal-progress').textContent =
                         `${Math.max(0, Math.min(100, goalProgress)).toFixed(0)}%`;
+                    document.getElementById('goal-progress-validation-indicator').innerHTML = validationHTML;
                 } else {
                     document.getElementById('goal-progress').textContent = '--';
+                    document.getElementById('goal-progress-validation-indicator').innerHTML = '';
                 }
 
                 // Color coding for total change
@@ -6476,6 +6674,7 @@
 
             updateBMI() {
                 const bmiElement = document.getElementById('current-bmi');
+                const validationIndicator = document.getElementById('bmi-validation-indicator');
 
                 // Phase 2: Use validated calculation
                 const bmiResult = this.calculateBMI();
@@ -6484,6 +6683,14 @@
                     console.warn('[BMI] Calculation failed:', bmiResult.error);
                     bmiElement.textContent = '--';
                     bmiElement.style.color = 'var(--text-primary)';
+
+                    // Phase 3: Add validation indicator
+                    validationIndicator.innerHTML = `
+                        <span class="validation-indicator validation-error validation-tooltip">
+                            <span class="validation-icon">⚠️</span>
+                            <span class="tooltip-content">${bmiResult.error}</span>
+                        </span>
+                    `;
                     return;
                 }
 
@@ -6499,6 +6706,22 @@
                     bmiElement.style.color = '#FF9500'; // Orange - overweight
                 } else {
                     bmiElement.style.color = '#FF3B30'; // Red - obese
+                }
+
+                // Phase 3: Add validation indicator for warnings
+                if (bmiResult.warning) {
+                    validationIndicator.innerHTML = `
+                        <span class="validation-indicator validation-warning validation-tooltip">
+                            <span class="validation-icon">⚠️</span>
+                            <span class="tooltip-content">${bmiResult.warning}</span>
+                        </span>
+                    `;
+                } else {
+                    validationIndicator.innerHTML = `
+                        <span class="validation-indicator validation-success">
+                            <span class="validation-icon">✓</span>
+                        </span>
+                    `;
                 }
             }
 
