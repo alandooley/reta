@@ -2501,8 +2501,55 @@
                 this.timeRange = 30; // Default to 30 days
                 this._isSyncing = false;  // Guard against concurrent syncs
                 this._lastSyncTime = 0;    // Debounce rapid syncs
-                this._pendingDeletions = new Set();  // Track items being deleted to prevent re-sync
+                // Phase 1 Fix: Use persistent pending deletions manager instead of in-memory Set
+                this._pendingDeletions = this.initPendingDeletions();
                 this.init();
+            }
+
+            // Initialize pending deletions manager
+            initPendingDeletions() {
+                const stored = localStorage.getItem('pending_deletions');
+                const deletions = stored ? JSON.parse(stored) : {};
+
+                // Cleanup expired deletions
+                const now = Date.now();
+                for (const [id, expiryTime] of Object.entries(deletions)) {
+                    if (now > expiryTime) {
+                        delete deletions[id];
+                    }
+                }
+                localStorage.setItem('pending_deletions', JSON.stringify(deletions));
+
+                // Return object with Set-like interface
+                return {
+                    deletions,
+                    add: (id, ttlMs = 120000) => {
+                        deletions[id] = Date.now() + ttlMs;
+                        localStorage.setItem('pending_deletions', JSON.stringify(deletions));
+                        console.log(`[PendingDeletions] Added ${id} (expires in ${ttlMs/1000}s)`);
+                    },
+                    has: (id) => {
+                        if (!(id in deletions)) return false;
+                        if (Date.now() > deletions[id]) {
+                            delete deletions[id];
+                            localStorage.setItem('pending_deletions', JSON.stringify(deletions));
+                            return false;
+                        }
+                        return true;
+                    },
+                    delete: (id) => {
+                        if (id in deletions) {
+                            delete deletions[id];
+                            localStorage.setItem('pending_deletions', JSON.stringify(deletions));
+                            console.log(`[PendingDeletions] Removed ${id}`);
+                        }
+                    },
+                    clear: () => {
+                        Object.keys(deletions).forEach(k => delete deletions[k]);
+                        localStorage.setItem('pending_deletions', JSON.stringify(deletions));
+                    },
+                    size: () => Object.keys(deletions).length
+                };
             }
 
             // Initialize the application
@@ -2910,6 +2957,26 @@
             }
 
             // ====================================
+            // VIAL HELPER METHODS (Phase 1 Fix)
+            // ====================================
+
+            /**
+             * Get vial ID consistently regardless of format
+             * Handles both vial_id (frontend) and id (API) formats
+             */
+            getVialId(vial) {
+                return vial.vial_id || vial.id;
+            }
+
+            /**
+             * Find vial by ID, handling both frontend and API formats
+             */
+            findVialById(vialId) {
+                if (!vialId) return null;
+                return this.data.vials.find(v => this.getVialId(v) === vialId);
+            }
+
+            // ====================================
             // DATA MERGE HELPER
             // ====================================
 
@@ -3237,7 +3304,7 @@
             }
 
             async updateVialUsage(vialId, doseMg) {
-                const vial = this.data.vials.find(v => v.vial_id === vialId);
+                const vial = this.findVialById(vialId);
                 if (vial) {
                     const doseVolumeML = doseMg / vial.concentration_mg_ml;
                     vial.remaining_ml = Math.max(0, vial.remaining_ml - doseVolumeML);
@@ -3273,7 +3340,7 @@
             }
 
             async reverseVialUsage(vialId, doseMg) {
-                const vial = this.data.vials.find(v => v.vial_id === vialId);
+                const vial = this.findVialById(vialId);
                 if (!vial) {
                     console.log(`Vial ${vialId} not found for usage reversal`);
                     return;
@@ -4529,7 +4596,7 @@
                     return;
                 }
 
-                const vial = this.data.vials.find(v => v.vial_id === vialId);
+                const vial = this.findVialById(vialId);
                 if (!vial || vial.status !== 'dry_stock') {
                     alert('Invalid vial selected');
                     return;
@@ -6833,29 +6900,18 @@
                 app.updateUI();
 
                 // Sync deletion to cloud
+                // Note: Pending deletion will auto-expire after 2 minutes (set in add() call above)
                 if (authManager && authManager.isAuthenticated()) {
                     try {
                         await apiClient.deleteInjection(shotId);
                         console.log('Injection deleted from cloud successfully');
-                        // Keep in pending deletions for 60 seconds to prevent sync race condition
-                        setTimeout(() => {
-                            app._pendingDeletions.delete(shotId);
-                            console.log(`Removed ${shotId} from pending deletions after grace period`);
-                        }, 60000);
+                        // Pending deletion will auto-expire, no manual cleanup needed
                     } catch (error) {
                         console.error('Failed to delete injection from cloud:', error);
-                        // Keep in pending deletions for 60 seconds then remove
-                        setTimeout(() => {
-                            app._pendingDeletions.delete(shotId);
-                            console.log(`Removed ${shotId} from pending deletions after timeout`);
-                        }, 60000);
+                        // Pending deletion will auto-expire, allowing retry on next sync
                     }
-                } else {
-                    // Not authenticated, remove from pending after 60 seconds
-                    setTimeout(() => {
-                        app._pendingDeletions.delete(shotId);
-                    }, 60000);
                 }
+                // If offline, pending deletion persists until sync succeeds or expires
 
                 // Animate out
                 element.style.opacity = '0';
@@ -6884,7 +6940,7 @@
                     return;
                 }
 
-                const index = app.data.vials.findIndex(v => v.vial_id === vialId);
+                const index = app.data.vials.findIndex(v => app.getVialId(v) === vialId);
                 if (index === -1) {
                     this.notificationManager.error('Vial not found');
                     return;
@@ -6916,27 +6972,18 @@
                 app.updateUI();
 
                 // Sync deletion to cloud
+                // Note: Pending deletion will auto-expire after 2 minutes (set in add() call above)
                 if (authManager && authManager.isAuthenticated()) {
                     try {
                         await apiClient.deleteVial(vialId);
                         console.log('Vial deleted from cloud successfully');
-                        // Remove from pending deletions after successful cloud deletion
-                        app._pendingDeletions.delete(vialId);
-                        console.log(`Removed ${vialId} from pending deletions`);
+                        // Pending deletion will auto-expire, no manual cleanup needed
                     } catch (error) {
                         console.error('Failed to delete vial from cloud:', error);
-                        // Keep in pending deletions for 30 seconds then remove
-                        setTimeout(() => {
-                            app._pendingDeletions.delete(vialId);
-                            console.log(`Removed ${vialId} from pending deletions after timeout`);
-                        }, 30000);
+                        // Pending deletion will auto-expire, allowing retry on next sync
                     }
-                } else {
-                    // Not authenticated, remove from pending after 5 seconds
-                    setTimeout(() => {
-                        app._pendingDeletions.delete(vialId);
-                    }, 5000);
                 }
+                // If offline, pending deletion persists until sync succeeds or expires
 
                 // Animate out
                 element.style.opacity = '0';
@@ -6994,29 +7041,18 @@
                 app.updateUI();
 
                 // Sync deletion to cloud
+                // Note: Pending deletion will auto-expire after 2 minutes (set in add() call above)
                 if (authManager && authManager.isAuthenticated() && actualWeightId) {
                     try {
                         await apiClient.deleteWeight(actualWeightId);
                         console.log('Weight deleted from cloud successfully');
-                        // Keep in pending deletions for 60 seconds to prevent sync race condition
-                        setTimeout(() => {
-                            app._pendingDeletions.delete(actualWeightId);
-                            console.log(`Removed ${actualWeightId} from pending deletions after grace period`);
-                        }, 60000);
+                        // Pending deletion will auto-expire, no manual cleanup needed
                     } catch (error) {
                         console.error('Failed to delete weight from cloud:', error);
-                        // Keep in pending deletions for 60 seconds then remove
-                        setTimeout(() => {
-                            app._pendingDeletions.delete(actualWeightId);
-                            console.log(`Removed ${actualWeightId} from pending deletions after timeout`);
-                        }, 60000);
+                        // Pending deletion will auto-expire, allowing retry on next sync
                     }
-                } else {
-                    // Not authenticated, remove from pending after 60 seconds
-                    setTimeout(() => {
-                        app._pendingDeletions.delete(actualWeightId);
-                    }, 60000);
                 }
+                // If offline, pending deletion persists until sync succeeds or expires
 
                 // Animate out
                 element.style.opacity = '0';
