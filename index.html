@@ -6175,22 +6175,158 @@
                 return `${start.toLocaleDateString('en-US', formatOptions)} - ${end.toLocaleDateString('en-US', formatOptions)}`;
             }
 
+            // Phase 2: Extract weight statistics calculation with validation
+            calculateWeightStats(timeRangeDays = null) {
+                // Validate input data
+                const weights = this.data.weights || [];
+                if (weights.length === 0) {
+                    return {
+                        success: false,
+                        error: 'No weight data available',
+                        metrics: this.getDefaultWeightMetrics()
+                    };
+                }
+
+                // Filter by time range if specified
+                let filteredWeights = weights;
+                if (timeRangeDays && timeRangeDays !== 'all') {
+                    const cutoffDate = new Date(Date.now() - timeRangeDays * 24 * 60 * 60 * 1000);
+                    filteredWeights = weights.filter(w => new Date(w.timestamp) >= cutoffDate);
+                }
+
+                // Phase 2: Validate minimum data requirement
+                if (filteredWeights.length < 2) {
+                    return {
+                        success: false,
+                        error: 'Need at least 2 weight entries to calculate statistics',
+                        metrics: this.getDefaultWeightMetrics(),
+                        dataCount: filteredWeights.length
+                    };
+                }
+
+                // Sort and validate weight entries
+                let validCount = 0;
+                let invalidCount = 0;
+                const validWeights = [];
+
+                filteredWeights.forEach(w => {
+                    // Phase 2: Validate each weight entry
+                    if (!w.timestamp || !w.weight_kg) {
+                        console.warn('[WeightStats] Invalid weight entry:', w.id, 'missing timestamp or weight_kg');
+                        invalidCount++;
+                        return;
+                    }
+
+                    const timestamp = new Date(w.timestamp).getTime();
+                    if (isNaN(timestamp)) {
+                        console.warn('[WeightStats] Invalid timestamp for weight:', w.id);
+                        invalidCount++;
+                        return;
+                    }
+
+                    const weightKg = parseFloat(w.weight_kg);
+                    if (isNaN(weightKg) || weightKg < 20 || weightKg > 300) {
+                        console.warn('[WeightStats] Invalid weight value:', w.id, weightKg);
+                        invalidCount++;
+                        return;
+                    }
+
+                    validWeights.push({ ...w, weight_kg: weightKg, timestamp: new Date(w.timestamp) });
+                    validCount++;
+                });
+
+                // Check if we still have enough valid data
+                if (validWeights.length < 2) {
+                    return {
+                        success: false,
+                        error: `Only ${validWeights.length} valid weight entries (need at least 2)`,
+                        metrics: this.getDefaultWeightMetrics(),
+                        validCount,
+                        invalidCount
+                    };
+                }
+
+                // Sort by timestamp
+                const sortedWeights = validWeights.sort((a, b) => a.timestamp - b.timestamp);
+                const firstWeight = sortedWeights[0];
+                const lastWeight = sortedWeights[sortedWeights.length - 1];
+
+                // Calculate metrics
+                const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
+                const currentWeightKg = lastWeight.weight_kg;
+                const startWeightKg = firstWeight.weight_kg;
+
+                // Calculate percent change
+                const percentChange = (weightChangeKg / startWeightKg) * 100;
+
+                // Calculate weekly average
+                const daysDiff = (lastWeight.timestamp - firstWeight.timestamp) / (1000 * 60 * 60 * 24);
+                const weeks = daysDiff / 7;
+                const weeklyAvgKg = weeks > 0 ? (weightChangeKg / weeks) : 0;
+
+                // Calculate goal progress
+                let goalProgress = null;
+                if (this.data.settings.goalWeightKg) {
+                    const goalWeightKg = this.data.settings.goalWeightKg;
+                    const totalToLose = startWeightKg - goalWeightKg;
+                    const lostSoFar = startWeightKg - currentWeightKg;
+                    goalProgress = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 0;
+                }
+
+                return {
+                    success: true,
+                    metrics: {
+                        weightChangeKg,
+                        currentWeightKg,
+                        startWeightKg,
+                        percentChange,
+                        weeklyAvgKg,
+                        goalProgress,
+                        daysDiff,
+                        weeks
+                    },
+                    validCount,
+                    invalidCount,
+                    totalCount: filteredWeights.length,
+                    warning: invalidCount > 0 ? `${invalidCount} weight entries skipped due to invalid data` : null
+                };
+            }
+
+            // Phase 2: Helper method for default metrics
+            getDefaultWeightMetrics() {
+                return {
+                    weightChangeKg: 0,
+                    currentWeightKg: 0,
+                    startWeightKg: 0,
+                    percentChange: 0,
+                    weeklyAvgKg: 0,
+                    goalProgress: null,
+                    daysDiff: 0,
+                    weeks: 0
+                };
+            }
+
             updateWeightStats() {
                 // Get weights for current time range
-                const cutoffDate = this.timeRange === 'all' ? new Date(0) :
-                    new Date(Date.now() - this.timeRange * 24 * 60 * 60 * 1000);
-
-                const filteredWeights = this.data.weights.filter(w =>
-                    this.timeRange === 'all' || new Date(w.timestamp) >= cutoffDate
-                );
+                const timeRangeDays = this.timeRange === 'all' ? 'all' : this.timeRange;
 
                 // Update date range display
+                const cutoffDate = timeRangeDays === 'all' ? new Date(0) :
+                    new Date(Date.now() - timeRangeDays * 24 * 60 * 60 * 1000);
+                const filteredWeights = this.data.weights.filter(w =>
+                    timeRangeDays === 'all' || new Date(w.timestamp) >= cutoffDate
+                );
+
                 const dateRangeEl = document.getElementById('date-range-display');
                 if (dateRangeEl) {
                     dateRangeEl.textContent = this.getDateRangeText(filteredWeights);
                 }
 
-                if (filteredWeights.length < 2) {
+                // Phase 2: Use validated calculation
+                const statsResult = this.calculateWeightStats(timeRangeDays);
+
+                if (!statsResult.success) {
+                    console.warn('[WeightStats] Calculation failed:', statsResult.error);
                     // Set defaults if not enough data
                     document.getElementById('total-change').textContent = '0 kg';
                     document.getElementById('current-weight').textContent = '0 kg';
@@ -6201,28 +6337,7 @@
                     return;
                 }
 
-                const sortedWeights = [...filteredWeights].sort((a, b) =>
-                    new Date(a.timestamp) - new Date(b.timestamp)
-                );
-
-                const firstWeight = sortedWeights[0];
-                const lastWeight = sortedWeights[sortedWeights.length - 1];
-
-                // Safety check for undefined weights
-                if (!firstWeight || !lastWeight || !lastWeight.weight_kg || !firstWeight.weight_kg) {
-                    document.getElementById('total-change').textContent = '0 kg';
-                    document.getElementById('current-weight').textContent = '0 kg';
-                    document.getElementById('current-bmi').textContent = '--';
-                    document.getElementById('percent-change').textContent = '0%';
-                    document.getElementById('weekly-avg').textContent = '0 kg/wk';
-                    document.getElementById('goal-progress').textContent = '--';
-                    return;
-                }
-
-                // Calculate metrics in kg
-                const weightChangeKg = lastWeight.weight_kg - firstWeight.weight_kg;
-                const currentWeightKg = lastWeight.weight_kg;
-                const startWeightKg = firstWeight.weight_kg;
+                const { weightChangeKg, currentWeightKg, percentChange, weeklyAvgKg, goalProgress } = statsResult.metrics;
 
                 // 1. Total change (in kg)
                 const totalChangeText = weightChangeKg >= 0 ?
@@ -6237,28 +6352,21 @@
                 this.updateBMI();
 
                 // 4. Percent change
-                const percentChange = (weightChangeKg / startWeightKg) * 100;
                 const percentText = percentChange >= 0 ?
                     `+${percentChange.toFixed(0)}%` :
                     `${percentChange.toFixed(0)}%`;
                 document.getElementById('percent-change').textContent = percentText;
 
                 // 5. Weekly average (kg/wk)
-                const daysDiff = (new Date(lastWeight.timestamp) - new Date(firstWeight.timestamp)) / (1000 * 60 * 60 * 24);
-                const weeks = daysDiff / 7;
-                const weeklyAvgKg = weeks > 0 ? (weightChangeKg / weeks) : 0;
                 const weeklyText = weeklyAvgKg >= 0 ?
                     `+${weeklyAvgKg.toFixed(1)} kg/wk` :
                     `${weeklyAvgKg.toFixed(1)} kg/wk`;
                 document.getElementById('weekly-avg').textContent = weeklyText;
 
                 // 6. Goal progress (%)
-                if (this.data.settings.goalWeight) {
-                    const goalWeightKg = this.data.settings.goalWeight;
-                    const totalToLose = startWeightKg - goalWeightKg;
-                    const lostSoFar = startWeightKg - currentWeightKg;
-                    const progress = totalToLose > 0 ? (lostSoFar / totalToLose) * 100 : 0;
-                    document.getElementById('goal-progress').textContent = `${Math.max(0, Math.min(100, progress)).toFixed(0)}%`;
+                if (goalProgress !== null) {
+                    document.getElementById('goal-progress').textContent =
+                        `${Math.max(0, Math.min(100, goalProgress)).toFixed(0)}%`;
                 } else {
                     document.getElementById('goal-progress').textContent = '--';
                 }
