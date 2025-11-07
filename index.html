@@ -2856,6 +2856,9 @@
                     if (stored) {
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
+
+                        // Normalize vial data formats (fix mixed camelCase/snake_case)
+                        this.normalizeVialData();
                     } else {
                         // Check if we should load sample data (not in test mode)
                         const urlParams = new URLSearchParams(window.location.search);
@@ -2872,6 +2875,38 @@
                         this.loadSampleData();
                     }
                 }
+            }
+
+            /**
+             * Normalize vial data to consistent snake_case format
+             * Fixes mixed API format (camelCase) and app format (snake_case)
+             */
+            normalizeVialData() {
+                if (!this.data.vials || this.data.vials.length === 0) return;
+
+                this.data.vials = this.data.vials.map(vial => {
+                    // If vial is in API format (has 'id' instead of 'vial_id'), convert it
+                    if (vial.id && !vial.vial_id) {
+                        console.log('Converting vial from API format to app format:', vial.id);
+                        return {
+                            vial_id: vial.id,
+                            order_date: vial.startDate,
+                            total_mg: vial.initialVolumeMl * vial.concentrationMgPerMl,
+                            bac_water_ml: vial.initialVolumeMl,
+                            concentration_mg_per_ml: vial.concentrationMgPerMl,
+                            current_volume_ml: vial.currentVolumeMl,
+                            used_volume_ml: vial.usedVolumeMl,
+                            status: vial.status,
+                            supplier: vial.source || '',
+                            notes: vial.notes || '',
+                            reconstitution_date: vial.startDate
+                        };
+                    }
+                    // Already in correct format
+                    return vial;
+                });
+
+                console.log('Vial data normalized');
             }
 
             // ====================================
