@@ -5867,8 +5867,10 @@
                 }
 
                 const reorderElement = document.getElementById('reorder-alert');
-                reorderElement.textContent = reorderAlert;
-                reorderElement.style.color = reorderColor;
+                if (reorderElement) {
+                    reorderElement.textContent = reorderAlert;
+                    reorderElement.style.color = reorderColor;
+                }
 
                 // Usage Rate - calculated from default dose and injection frequency
                 const defaultDose = this.data.settings.defaultDose || 2.0;
@@ -5876,7 +5878,10 @@
                 const dosesPerWeek = 7 / injectionFrequency;
                 const mgPerWeek = defaultDose * dosesPerWeek;
                 const usageRate = `${mgPerWeek.toFixed(1)} mg/week`;
-                document.getElementById('usage-rate').textContent = usageRate;
+                const usageRateElement = document.getElementById('usage-rate');
+                if (usageRateElement) {
+                    usageRateElement.textContent = usageRate;
+                }
 
                 // Waste Tracking
                 let wasteText = "No expired vials";
@@ -5891,8 +5896,10 @@
                 }
 
                 const wasteElement = document.getElementById('waste-tracking');
-                wasteElement.textContent = wasteText;
-                wasteElement.style.color = wasteColor;
+                if (wasteElement) {
+                    wasteElement.textContent = wasteText;
+                    wasteElement.style.color = wasteColor;
+                }
 
                 // Next Order Suggestion
                 let nextOrderText = "Order in 30+ days";
@@ -5910,8 +5917,10 @@
                 }
 
                 const nextOrderElement = document.getElementById('next-order');
-                nextOrderElement.textContent = nextOrderText;
-                nextOrderElement.style.color = nextOrderColor;
+                if (nextOrderElement) {
+                    nextOrderElement.textContent = nextOrderText;
+                    nextOrderElement.style.color = nextOrderColor;
+                }
             }
 
             // ====================================
