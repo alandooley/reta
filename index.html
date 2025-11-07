@@ -2949,7 +2949,22 @@
                             reconstitution_date: vial.startDate
                         };
                     }
-                    // Already in correct format
+                    // Already in correct format, but sync property names (Hotfix)
+                    // Ensure both current_volume_ml and remaining_ml are synced
+                    if (vial.remaining_ml !== undefined && vial.current_volume_ml === undefined) {
+                        vial.current_volume_ml = vial.remaining_ml;
+                        console.log(`Synced current_volume_ml for vial ${vial.vial_id || vial.id}`);
+                    } else if (vial.current_volume_ml !== undefined && vial.remaining_ml === undefined) {
+                        vial.remaining_ml = vial.current_volume_ml;
+                        console.log(`Synced remaining_ml for vial ${vial.vial_id || vial.id}`);
+                    }
+
+                    // Fix missing expiration dates for dry stock vials
+                    if (vial.status === 'dry_stock' && !vial.expiration_date && vial.order_date) {
+                        vial.expiration_date = this.calculateExpirationDate(null, vial.order_date);
+                        console.log(`Fixed expiration for dry stock vial ${vial.vial_id || vial.id}`);
+                    }
+
                     return vial;
                 });
 
@@ -3308,6 +3323,7 @@
                 if (vial) {
                     const doseVolumeML = doseMg / vial.concentration_mg_ml;
                     vial.remaining_ml = Math.max(0, vial.remaining_ml - doseVolumeML);
+                    vial.current_volume_ml = vial.remaining_ml; // Sync property for consistency (Hotfix)
                     vial.doses_used++;
 
                     // Check if vial has less than next required dose
@@ -3318,6 +3334,7 @@
                         // Mark vial as empty if it can't provide the next dose
                         vial.status = 'insufficient';
                         vial.remaining_ml = 0;
+                        vial.current_volume_ml = 0; // Sync property (Hotfix)
                     } else if (vial.remaining_ml <= 0) {
                         vial.status = 'empty';
                     }
@@ -4440,7 +4457,8 @@
                 const activeVials = this.data.vials.filter(v => {
                     // Support both 'active' and 'activated' status
                     const isActive = v.status === 'active' || v.status === 'activated';
-                    const hasVolume = (v.current_volume_ml || 0) > 0;
+                    // Check both property names for backwards compatibility (Hotfix)
+                    const hasVolume = (v.current_volume_ml || v.remaining_ml || 0) > 0;
 
                     return isActive && hasVolume;
                 });
@@ -4615,6 +4633,7 @@
                 vial.reconstitution_date = reconstitutionDate;
                 vial.expiration_date = expirationDate;
                 vial.remaining_ml = bacWaterMl; // Start with full volume
+                vial.current_volume_ml = bacWaterMl; // Sync property for consistency (Hotfix)
                 vial.status = 'active';
 
                 this.saveData();
@@ -4723,7 +4742,7 @@
                                 </div>
                                 <div class="vial-detail-row">
                                     <span>Powder Expires:</span>
-                                    <span>${this.formatDate(vial.expiration_date)}</span>
+                                    <span>${vial.expiration_date ? this.formatDate(vial.expiration_date) : 'Not set'}</span>
                                 </div>
                             </div>
                         </div>
@@ -4795,7 +4814,7 @@
                             `}
                             <div class="vial-detail-row">
                                 <span>Expires:</span>
-                                <span>${this.formatDate(vial.expiration_date)}</span>
+                                <span>${vial.expiration_date ? this.formatDate(vial.expiration_date) : 'Not set'}</span>
                             </div>
                             ${vial.concentration_mg_ml ? `
                             <div class="vial-detail-row">
