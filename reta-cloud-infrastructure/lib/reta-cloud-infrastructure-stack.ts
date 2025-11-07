@@ -276,6 +276,7 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
         allowMethods: [
           CorsHttpMethod.GET,
           CorsHttpMethod.POST,
+          CorsHttpMethod.PATCH,
           CorsHttpMethod.DELETE,
           CorsHttpMethod.OPTIONS,
         ],
