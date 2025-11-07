@@ -3274,30 +3274,43 @@
 
             async reverseVialUsage(vialId, doseMg) {
                 const vial = this.data.vials.find(v => v.vial_id === vialId);
-                if (vial) {
-                    const doseVolumeML = doseMg / vial.concentration_mg_ml;
-                    // Add back the dose volume
-                    vial.remaining_ml = Math.min(vial.bac_water_ml, vial.remaining_ml + doseVolumeML);
-                    vial.doses_used = Math.max(0, vial.doses_used - 1);
+                if (!vial) {
+                    console.log(`Vial ${vialId} not found for usage reversal`);
+                    return;
+                }
 
-                    // Update status based on new remaining amount
-                    if (vial.remaining_ml > 0 && vial.status !== 'active') {
-                        vial.status = 'active';
-                    }
+                const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml;
+                const doseVolumeML = doseMg / concentration;
 
-                    // Sync vial update to cloud if authenticated
-                    if (authManager && authManager.isAuthenticated()) {
-                        try {
-                            await apiClient.updateVial(vialId, {
-                                currentVolumeMl: vial.remaining_ml,
-                                usedVolumeMl: vial.bac_water_ml - vial.remaining_ml,
-                                status: vial.status
-                            });
-                            console.log('Vial usage reversal synced to cloud successfully');
-                        } catch (error) {
-                            console.error('Failed to sync vial usage reversal to cloud:', error);
-                            // Still updated locally, so don't block the user
-                        }
+                // Add back the dose volume to current_volume_ml
+                const newVolume = Math.min(vial.bac_water_ml, vial.current_volume_ml + doseVolumeML);
+                vial.current_volume_ml = newVolume;
+
+                // Update used_volume_ml
+                vial.used_volume_ml = vial.bac_water_ml - newVolume;
+
+                // Update status based on new remaining amount
+                if (vial.current_volume_ml > 0 && (vial.status === 'empty' || vial.status === 'finished')) {
+                    vial.status = 'active';
+                }
+
+                console.log(`Reversed ${doseMg}mg (${doseVolumeML.toFixed(2)}ml) from vial ${vialId}. New volume: ${newVolume.toFixed(2)}ml`);
+
+                // Save locally
+                this.saveData();
+
+                // Sync vial update to cloud if authenticated
+                if (authManager && authManager.isAuthenticated()) {
+                    try {
+                        await apiClient.updateVial(vialId, {
+                            currentVolumeMl: vial.current_volume_ml,
+                            usedVolumeMl: vial.used_volume_ml,
+                            status: vial.status
+                        });
+                        console.log('Vial usage reversal synced to cloud successfully');
+                    } catch (error) {
+                        console.error('Failed to sync vial usage reversal to cloud:', error);
+                        // Still updated locally, so don't block the user
                     }
                 }
             }
