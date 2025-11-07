@@ -4356,16 +4356,21 @@
                 const select = document.getElementById('shot-vial');
                 select.innerHTML = '<option value="">Select vial</option>';
 
-                const activeVials = this.data.vials.filter(v =>
-                    v.status === 'active' &&
-                    v.remaining_ml > 0 &&
-                    new Date(v.expiration_date) > new Date()
-                );
+                // Filter for active vials with remaining volume
+                const activeVials = this.data.vials.filter(v => {
+                    // Support both 'active' and 'activated' status
+                    const isActive = v.status === 'active' || v.status === 'activated';
+                    const hasVolume = (v.current_volume_ml || 0) > 0;
+
+                    return isActive && hasVolume;
+                });
 
                 activeVials.forEach(vial => {
                     const option = document.createElement('option');
                     option.value = vial.vial_id;
-                    option.textContent = `${vial.total_mg}mg (${vial.concentration_mg_ml.toFixed(1)} mg/ml) - ${vial.remaining_ml.toFixed(1)}ml left`;
+                    const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml || 0;
+                    const remaining = vial.current_volume_ml || vial.remaining_ml || 0;
+                    option.textContent = `${vial.total_mg}mg (${concentration.toFixed(1)} mg/ml) - ${remaining.toFixed(2)}ml left`;
                     select.appendChild(option);
                 });
 
