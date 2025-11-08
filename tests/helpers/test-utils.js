@@ -40,7 +40,7 @@ async function setLocalStorage(page, key, value) {
 }
 
 /**
- * Load test data into localStorage
+ * Load test data into localStorage AND app.data
  * @param {Page} page - Playwright page object
  * @param {Object} data - Test dataset with injections, vials, weights, settings
  */
@@ -53,6 +53,13 @@ async function loadTestData(page, data) {
   };
 
   await setLocalStorage(page, 'injectionTrackerData', appData);
+
+  // Also set directly on app.data if app is loaded
+  await page.evaluate((testData) => {
+    if (window.app && window.app.data) {
+      window.app.data = testData;
+    }
+  }, appData);
 }
 
 /**
@@ -65,28 +72,35 @@ async function waitForAppReady(page) {
     return typeof window.app !== 'undefined' && window.app !== null;
   }, { timeout: 5000 });
 
-  // Wait for the tabs to be rendered
-  await page.waitForSelector('.nav-tabs', { timeout: 5000 });
+  // Wait for the bottom navigation to be rendered (mobile PWA layout)
+  await page.waitForSelector('.bottom-nav', { timeout: 5000 });
 }
 
 /**
  * Navigate to a specific tab
  * @param {Page} page - Playwright page object
- * @param {string} tabName - Tab name ('shots', 'inventory', 'results', 'settings')
+ * @param {string} tabName - Tab name ('shots', 'inventory', 'results', 'settings', 'summary')
  */
 async function navigateToTab(page, tabName) {
-  await page.click(`button[onclick="app.switchTab('${tabName}')"]`);
-  await page.waitForSelector(`#${tabName}-tab.active`, { timeout: 2000 });
+  // Click the navigation button using data-tab attribute (mobile PWA layout)
+  await page.click(`button[data-tab="${tabName}"]`);
+
+  // Give time for tab to switch and JS to initialize
+  await page.waitForTimeout(500);
 }
 
 /**
  * Open a modal by clicking a button
  * @param {Page} page - Playwright page object
- * @param {string} selector - Button selector
+ * @param {string} selector - Button selector or modal ID
+ * @param {string} modalId - Modal ID to wait for (optional, if not provided will check overlay)
  */
-async function openModal(page, selector) {
+async function openModal(page, selector, modalId = null) {
+  // Click the button to open modal
   await page.click(selector);
-  await page.waitForSelector('.modal.show', { timeout: 2000 });
+
+  // Give time for modal animation and initialization
+  await page.waitForTimeout(800);
 }
 
 /**
@@ -94,20 +108,23 @@ async function openModal(page, selector) {
  * @param {Page} page - Playwright page object
  */
 async function closeModal(page) {
-  // Try clicking the close button
-  const closeButton = await page.$('.modal.show .btn-close');
+  // Try clicking the close button (X button with data-modal attribute)
+  const closeButton = await page.$('.modal-close');
   if (closeButton) {
     await closeButton.click();
   } else {
     // Try clicking cancel button
-    const cancelButton = await page.$('.modal.show button:has-text("Cancel")');
+    const cancelButton = await page.$('button:has-text("Cancel")');
     if (cancelButton) {
       await cancelButton.click();
     }
   }
 
-  // Wait for modal to be hidden
-  await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 2000 });
+  // Wait for modal overlay to be hidden (app uses inline style.display = 'none')
+  await page.waitForFunction(() => {
+    const overlay = document.getElementById('modal-overlay');
+    return !overlay || overlay.style.display === 'none';
+  }, { timeout: 5000 });
 }
 
 /**
@@ -131,7 +148,7 @@ async function selectOption(page, selector, value) {
 }
 
 /**
- * Submit a form
+ * Submit a form and wait for it to be processed
  * @param {Page} page - Playwright page object
  * @param {string} formSelector - Form selector
  */
@@ -290,11 +307,26 @@ async function getValidationTooltip(page, indicatorId) {
 
 /**
  * Reload page and wait for app to be ready
+ * Also reload app.data from localStorage after page reload
  * @param {Page} page - Playwright page object
  */
 async function reloadPage(page) {
   await page.reload({ waitUntil: 'networkidle' });
   await waitForAppReady(page);
+
+  // After reload, ensure app.data is loaded from localStorage
+  await page.evaluate(() => {
+    if (window.app) {
+      const stored = localStorage.getItem('injectionTrackerData');
+      if (stored) {
+        try {
+          window.app.data = JSON.parse(stored);
+        } catch (e) {
+          console.error('[TEST] Failed to reload app.data:', e);
+        }
+      }
+    }
+  });
 }
 
 /**

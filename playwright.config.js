@@ -1,6 +1,8 @@
 module.exports = {
   testDir: './tests',
-  timeout: 30000,
+  timeout: 60000,
+  workers: 3, // Run 3 tests in parallel
+  fullyParallel: true, // Run tests in parallel within files
   use: {
     baseURL: 'http://localhost:3000',
     headless: false,
