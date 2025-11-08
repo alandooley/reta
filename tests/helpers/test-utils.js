@@ -78,6 +78,47 @@ async function waitForAppReady(page) {
 }
 
 /**
+ * Bypass authentication for tests
+ * Sets up mock auth state and hides login screen to allow tests to run
+ * @param {Page} page - Playwright page object
+ */
+async function bypassAuth(page) {
+  await page.evaluate(() => {
+    // Mock authenticated state
+    if (window.app) {
+      // Hide login screen
+      const loginScreen = document.getElementById('login-screen');
+      if (loginScreen) {
+        loginScreen.style.display = 'none';
+      }
+
+      // Show app container
+      const appContainer = document.getElementById('app-container');
+      if (appContainer) {
+        appContainer.style.display = 'block';
+      }
+
+      // Show bottom navigation
+      const bottomNav = document.querySelector('.bottom-nav');
+      if (bottomNav) {
+        bottomNav.style.display = 'flex';
+      }
+
+      // Set mock user state (don't actually authenticate with Firebase)
+      window.testMode = true;
+      window.mockAuthUser = {
+        uid: 'test-user-id',
+        email: 'test@example.com',
+        displayName: 'Test User'
+      };
+    }
+  });
+
+  // Wait a moment for UI to update
+  await page.waitForTimeout(300);
+}
+
+/**
  * Navigate to a specific tab
  * @param {Page} page - Playwright page object
  * @param {string} tabName - Tab name ('shots', 'inventory', 'results', 'settings', 'summary')
@@ -383,6 +424,7 @@ module.exports = {
   setLocalStorage,
   loadTestData,
   waitForAppReady,
+  bypassAuth,
   navigateToTab,
   openModal,
   closeModal,

@@ -12,13 +12,14 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { navigateToTab, waitForAppReady, fillInput, openModal, submitForm } = require('../helpers/test-utils');
+const { navigateToTab, waitForAppReady, bypassAuth, fillInput, openModal, submitForm } = require('../helpers/test-utils');
 
 test.describe('Validation Indicators - Phase 3', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
+    await bypassAuth(page);
 
     // Clear any existing data
     await page.evaluate(() => {
@@ -40,6 +41,7 @@ test.describe('Validation Indicators - Phase 3', () => {
 
     await page.reload();
     await waitForAppReady(page);
+    await bypassAuth(page);
   });
 
   test.describe('BMI Validation Indicator', () => {

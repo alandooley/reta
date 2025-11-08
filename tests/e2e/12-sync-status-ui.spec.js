@@ -13,13 +13,14 @@
  */
 
 const { test, expect } = require('@playwright/test');
-const { navigateToTab, waitForAppReady } = require('../helpers/test-utils');
+const { navigateToTab, waitForAppReady, bypassAuth } = require('../helpers/test-utils');
 
 test.describe('Sync Status UI - Phase 1B', () => {
 
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
+    await bypassAuth(page);
   });
 
   test.describe('Sync Status Indicator Visibility', () => {
