@@ -279,7 +279,11 @@ const authManager = new AuthManager();
 // Auto-initialize when DOM is ready (unless in test mode)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        if (window.SKIP_AUTH_INIT) {
+        // Only skip if BOTH test mode URL param AND flag are set
+        const urlParams = new URLSearchParams(window.location.search);
+        const isTestMode = urlParams.get('test') === 'true';
+
+        if (isTestMode && window.SKIP_AUTH_INIT) {
             console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
             return;
         }
@@ -287,7 +291,11 @@ if (document.readyState === 'loading') {
         authManager.initialize().catch(console.error);
     });
 } else {
-    if (window.SKIP_AUTH_INIT) {
+    // Only skip if BOTH test mode URL param AND flag are set
+    const urlParams = new URLSearchParams(window.location.search);
+    const isTestMode = urlParams.get('test') === 'true';
+
+    if (isTestMode && window.SKIP_AUTH_INIT) {
         console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
     } else {
         console.log('[AUTH] Auto-initializing Firebase auth (DOM already loaded)');
