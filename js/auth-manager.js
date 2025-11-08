@@ -105,19 +105,19 @@ class AuthManager {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
 
-            // Use popup for CloudFront domain to avoid redirect issues
-            // Use redirect for Firebase hosting domains
-            const isCloudFront = window.location.hostname.includes('cloudfront.net');
+            // Use redirect on mobile for better compatibility
+            // Use popup on desktop for better UX
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            if (isCloudFront) {
-                console.log('Starting Google sign-in via popup (CloudFront domain)...');
-                const result = await firebase.auth().signInWithPopup(provider);
-                console.log('✅ Popup sign-in successful:', result.user.email);
-            } else {
-                console.log('Starting Google sign-in via redirect (Firebase hosting)...');
+            if (isMobile) {
+                console.log('Starting Google sign-in via redirect (mobile device)...');
                 await firebase.auth().signInWithRedirect(provider);
                 // Note: After redirect, the page will reload and initialize()
                 // will call getRedirectResult() to complete the sign-in
+            } else {
+                console.log('Starting Google sign-in via popup (desktop)...');
+                const result = await firebase.auth().signInWithPopup(provider);
+                console.log('✅ Popup sign-in successful:', result.user.email);
             }
         } catch (error) {
             console.error('Sign in error:', error);
