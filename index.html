@@ -48,11 +48,17 @@
 
     <!-- Test mode detection BEFORE loading auth-manager -->
     <script>
-        // Set flag IMMEDIATELY if in test mode, before any modules load
+        // Set flag IMMEDIATELY if in test mode on localhost, before any modules load
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('test') === 'true') {
-            console.log('[EARLY INIT] Test mode detected - setting SKIP_AUTH_INIT flag');
+        const isTestMode = urlParams.get('test') === 'true';
+        const isLocalhost = window.location.hostname === 'localhost' ||
+                            window.location.hostname === '127.0.0.1';
+
+        if (isTestMode && isLocalhost) {
+            console.log('[EARLY INIT] Test mode detected on localhost - setting SKIP_AUTH_INIT flag');
             window.SKIP_AUTH_INIT = true;
+        } else if (isTestMode && !isLocalhost) {
+            console.warn('[EARLY INIT] Test mode parameter detected on production - IGNORING for security');
         }
     </script>
 
@@ -2239,7 +2245,12 @@
             <p style="color: #888888; margin-bottom: 32px; font-size: 16px;">
                 Please sign in to access your tracking data
             </p>
-            <button id="auth-gate-button" style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px;">
+            <button id="auth-gate-button"
+                    onclick="console.log('INLINE ONCLICK FIRED'); handleAuthButtonClick();"
+                    ontouchstart="console.log('TOUCH START'); this.style.opacity='0.7';"
+                    ontouchend="console.log('TOUCH END'); this.style.opacity='1';"
+                    onmousedown="console.log('MOUSE DOWN');"
+                    style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px; -webkit-tap-highlight-color: rgba(0,122,255,0.3);">
                 Sign In with Google
             </button>
             <p style="color: #666666; margin-top: 32px; font-size: 12px;">
@@ -8224,6 +8235,34 @@
         // INITIALIZE APPLICATION
         // ====================================
 
+        // Global handler for inline onclick - most direct attachment method
+        function handleAuthButtonClick() {
+            console.log('[INLINE] Auth button clicked via inline onclick');
+            const btn = document.getElementById('auth-gate-button');
+            if (btn) {
+                btn.textContent = 'Redirecting...';
+                btn.disabled = true;
+            }
+
+            if (typeof authManager !== 'undefined' && authManager.signInWithGoogle) {
+                authManager.signInWithGoogle().catch(error => {
+                    console.error('[INLINE] Error:', error);
+                    if (btn) {
+                        btn.textContent = 'Sign In with Google';
+                        btn.disabled = false;
+                    }
+                    alert(error.message || 'Sign in failed. Please try again.');
+                });
+            } else {
+                console.error('[INLINE] authManager not available');
+                alert('Authentication system not loaded. Please refresh the page.');
+                if (btn) {
+                    btn.textContent = 'Sign In with Google';
+                    btn.disabled = false;
+                }
+            }
+        }
+
         let app;
         let deleteManager;
         let backupManager;
@@ -8254,12 +8293,14 @@
                 };
             }
 
-            // CRITICAL: Check test mode FIRST before any async operations
+            // CRITICAL: Check test mode FIRST before any async operations (localhost only!)
             const urlParams = new URLSearchParams(window.location.search);
             const isTestMode = urlParams.get('test') === 'true';
+            const isLocalhost = window.location.hostname === 'localhost' ||
+                                window.location.hostname === '127.0.0.1';
 
-            if (isTestMode) {
-                console.log('[INIT] Test mode detected - setting SKIP_AUTH_INIT flag');
+            if (isTestMode && isLocalhost) {
+                console.log('[INIT] Test mode detected on localhost - setting SKIP_AUTH_INIT flag');
                 window.SKIP_AUTH_INIT = true;
 
                 // Immediately hide auth gate and show app content
@@ -8274,6 +8315,8 @@
                 if (bottomNav) bottomNav.style.display = 'flex';
 
                 console.log('[INIT] Test mode UI elements configured');
+            } else if (isTestMode && !isLocalhost) {
+                console.warn('[INIT] Test mode parameter detected on production - IGNORING for security');
             }
 
             console.log('[INIT] Creating InjectionTracker instance');
@@ -8364,12 +8407,14 @@
             const appContent = document.getElementById('app-content');
             let lastAuthUserId = null;  // Track last known user to prevent duplicate syncs
 
-            // Test mode bypass: skip authentication ONLY if explicitly in test mode via URL
+            // Test mode bypass: skip authentication ONLY if on localhost with test param
             const urlParams = new URLSearchParams(window.location.search);
             const isTestMode = urlParams.get('test') === 'true';
+            const isLocalhost = window.location.hostname === 'localhost' ||
+                                window.location.hostname === '127.0.0.1';
 
-            if (isTestMode && window.SKIP_AUTH_INIT) {
-                console.log('[INIT] Test mode active - skipping auth setup');
+            if (isTestMode && isLocalhost && window.SKIP_AUTH_INIT) {
+                console.log('[INIT] Test mode active on localhost - skipping auth setup');
                 // Disable cloud backup button in test mode
                 const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
                 if (cloudBackupBtn) {
@@ -8381,6 +8426,8 @@
                     syncQueueModal.style.display = 'none';
                 }
                 return; // Skip auth setup entirely in test mode
+            } else if (isTestMode && !isLocalhost) {
+                console.warn('[INIT] Test mode parameter detected on production - IGNORING for security');
             }
 
             // Sign in handler for auth gate

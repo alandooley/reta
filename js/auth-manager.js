@@ -279,25 +279,34 @@ const authManager = new AuthManager();
 // Auto-initialize when DOM is ready (unless in test mode)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
-        // Only skip if BOTH test mode URL param AND flag are set
+        // Only skip if test mode on localhost with flag set
         const urlParams = new URLSearchParams(window.location.search);
         const isTestMode = urlParams.get('test') === 'true';
+        const isLocalhost = window.location.hostname === 'localhost' ||
+                            window.location.hostname === '127.0.0.1';
 
-        if (isTestMode && window.SKIP_AUTH_INIT) {
-            console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
+        if (isTestMode && isLocalhost && window.SKIP_AUTH_INIT) {
+            console.log('[AUTH] Skipping Firebase auth initialization (test mode on localhost)');
             return;
+        } else if (isTestMode && !isLocalhost) {
+            console.warn('[AUTH] Test mode parameter detected on production - IGNORING for security');
         }
         console.log('[AUTH] Auto-initializing Firebase auth');
         authManager.initialize().catch(console.error);
     });
 } else {
-    // Only skip if BOTH test mode URL param AND flag are set
+    // Only skip if test mode on localhost with flag set
     const urlParams = new URLSearchParams(window.location.search);
     const isTestMode = urlParams.get('test') === 'true';
+    const isLocalhost = window.location.hostname === 'localhost' ||
+                        window.location.hostname === '127.0.0.1';
 
-    if (isTestMode && window.SKIP_AUTH_INIT) {
-        console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
+    if (isTestMode && isLocalhost && window.SKIP_AUTH_INIT) {
+        console.log('[AUTH] Skipping Firebase auth initialization (test mode on localhost)');
     } else {
+        if (isTestMode && !isLocalhost) {
+            console.warn('[AUTH] Test mode parameter detected on production - IGNORING for security');
+        }
         console.log('[AUTH] Auto-initializing Firebase auth (DOM already loaded)');
         authManager.initialize().catch(console.error);
     }

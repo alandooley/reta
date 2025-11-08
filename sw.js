@@ -1,5 +1,5 @@
 // Service Worker for Injection Tracker PWA
-const VERSION = '1.1.1';
+const VERSION = '1.1.2';
 const CACHE_NAME = `injection-tracker-v${VERSION}`;
 const CACHE_ASSETS = [
   './',
