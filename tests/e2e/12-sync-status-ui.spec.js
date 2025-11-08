@@ -18,7 +18,7 @@ const { navigateToTab, waitForAppReady, bypassAuth } = require('../helpers/test-
 test.describe('Sync Status UI - Phase 1B', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('http://localhost:3000/?test=true');
     await waitForAppReady(page);
     await bypassAuth(page);
   });

@@ -17,7 +17,7 @@ const { navigateToTab, waitForAppReady, bypassAuth, fillInput, openModal, submit
 test.describe('Validation Indicators - Phase 3', () => {
 
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto('http://localhost:3000/?test=true');
     await waitForAppReady(page);
     await bypassAuth(page);
 
