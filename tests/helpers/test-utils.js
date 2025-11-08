@@ -365,7 +365,9 @@ async function getValidationTooltip(page, indicatorId) {
  * @param {Page} page - Playwright page object
  */
 async function reloadPage(page) {
-  await page.reload({ waitUntil: 'networkidle' });
+  // Get current URL to preserve query parameters (especially ?test=true for CI)
+  const currentUrl = page.url();
+  await page.goto(currentUrl, { waitUntil: 'networkidle' });
   await waitForAppReady(page);
 
   // After reload, ensure app.data is loaded from localStorage

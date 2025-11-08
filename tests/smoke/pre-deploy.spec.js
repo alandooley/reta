@@ -33,7 +33,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/?test=true');
     await clearAllStorage(page);
-    await page.goto('http://localhost:3000/?test=true');  // Reload with test param preserved
+    await reloadPage(page);  // Now preserves query parameters via page.url()
   });
 
   test('APP LOADS: Application loads without JavaScript errors', async ({ page }) => {
