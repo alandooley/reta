@@ -73,7 +73,8 @@ async function waitForAppReady(page) {
   }, { timeout: 5000 });
 
   // Wait for the bottom navigation to be rendered (mobile PWA layout)
-  await page.waitForSelector('.bottom-nav', { timeout: 5000 });
+  // Use state: 'attached' to accept hidden elements (e.g., when login screen is shown)
+  await page.waitForSelector('.bottom-nav', { timeout: 5000, state: 'attached' });
 }
 
 /**
