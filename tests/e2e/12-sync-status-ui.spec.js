@@ -79,113 +79,132 @@ test.describe('Sync Status UI - Phase 1B', () => {
     });
 
     test('should show synced state with checkmark icon', async ({ page }) => {
-      // Mock synced state
+      // Mock synced state (correct object format)
       await page.evaluate(() => {
         if (window.app && window.app.updateSyncStatus) {
-          window.app.updateSyncStatus('synced');
+          window.app.updateSyncStatus({
+            pending: 0,
+            failed: 0,
+            isProcessing: false
+          });
         }
       });
 
       await page.waitForTimeout(500);
 
       const hasSyncedState = await page.evaluate(() => {
-        const indicator = document.querySelector('#sync-status, .sync-status, [data-sync-status]');
+        const indicator = document.getElementById('sync-status');
         if (!indicator) return false;
 
-        return indicator.getAttribute('data-sync-status') === 'synced' ||
-               indicator.className.includes('synced') ||
-               indicator.textContent.includes('synced') ||
-               indicator.textContent.includes('✓');
+        // Check if element has 'synced' class
+        return indicator.classList.contains('synced');
       });
 
       expect(hasSyncedState).toBe(true);
     });
 
     test('should show syncing state with spinner', async ({ page }) => {
-      // Mock syncing state
+      // Mock syncing state (correct object format)
       await page.evaluate(() => {
         if (window.app && window.app.updateSyncStatus) {
-          window.app.updateSyncStatus('syncing');
+          window.app.updateSyncStatus({
+            pending: 1,
+            failed: 0,
+            isProcessing: true
+          });
         }
       });
 
       await page.waitForTimeout(500);
 
       const hasSyncingState = await page.evaluate(() => {
-        const indicator = document.querySelector('#sync-status, .sync-status, [data-sync-status]');
+        const indicator = document.getElementById('sync-status');
         if (!indicator) return false;
 
-        // Check for syncing state indicators
-        const isSyncing = indicator.getAttribute('data-sync-status') === 'syncing' ||
-                         indicator.className.includes('syncing') ||
-                         indicator.querySelector('.spinner') ||
-                         indicator.querySelector('[class*="spin"]');
-
-        return !!isSyncing;
+        // Check if element has 'syncing' class
+        return indicator.classList.contains('syncing');
       });
 
       expect(hasSyncingState).toBe(true);
     });
 
     test('should show pending state', async ({ page }) => {
-      // Mock pending state
+      // Mock pending state (correct object format)
       await page.evaluate(() => {
         if (window.app && window.app.updateSyncStatus) {
-          window.app.updateSyncStatus('pending');
+          window.app.updateSyncStatus({
+            pending: 3,
+            failed: 0,
+            isProcessing: false
+          });
         }
       });
 
       await page.waitForTimeout(500);
 
       const hasPendingState = await page.evaluate(() => {
-        const indicator = document.querySelector('#sync-status, .sync-status, [data-sync-status]');
+        const indicator = document.getElementById('sync-status');
         if (!indicator) return false;
 
-        return indicator.getAttribute('data-sync-status') === 'pending' ||
-               indicator.className.includes('pending');
+        // Check if element has 'pending' class
+        return indicator.classList.contains('pending');
       });
 
       expect(hasPendingState).toBe(true);
     });
 
     test('should show error state', async ({ page }) => {
-      // Mock error state
+      // Mock error state (correct object format)
       await page.evaluate(() => {
         if (window.app && window.app.updateSyncStatus) {
-          window.app.updateSyncStatus('error');
+          window.app.updateSyncStatus({
+            pending: 0,
+            failed: 2,
+            isProcessing: false
+          });
         }
       });
 
       await page.waitForTimeout(500);
 
       const hasErrorState = await page.evaluate(() => {
-        const indicator = document.querySelector('#sync-status, .sync-status, [data-sync-status]');
+        const indicator = document.getElementById('sync-status');
         if (!indicator) return false;
 
-        return indicator.getAttribute('data-sync-status') === 'error' ||
-               indicator.className.includes('error') ||
-               indicator.className.includes('danger');
+        // Check if element has 'error' class
+        return indicator.classList.contains('error');
       });
 
       expect(hasErrorState).toBe(true);
     });
 
     test('should show offline state', async ({ page }) => {
-      // Mock offline state
+      // Mock offline state by setting navigator.onLine to false
       await page.evaluate(() => {
+        // Override navigator.onLine
+        Object.defineProperty(navigator, 'onLine', {
+          writable: true,
+          value: false
+        });
+
+        // Then trigger sync status update
         if (window.app && window.app.updateSyncStatus) {
-          window.app.updateSyncStatus('offline');
+          window.app.updateSyncStatus({
+            pending: 0,
+            failed: 0,
+            isProcessing: false
+          });
         }
       });
 
       await page.waitForTimeout(500);
 
       const hasOfflineState = await page.evaluate(() => {
-        const indicator = document.querySelector('#sync-status, .sync-status, [data-sync-status]');
+        const indicator = document.getElementById('sync-status');
         if (!indicator) return false;
 
-        return indicator.getAttribute('data-sync-status') === 'offline' ||
-               indicator.className.includes('offline');
+        // Check if element has 'offline' class
+        return indicator.classList.contains('offline');
       });
 
       expect(hasOfflineState).toBe(true);

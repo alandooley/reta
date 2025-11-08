@@ -86,20 +86,26 @@ async function bypassAuth(page) {
   await page.evaluate(() => {
     // Mock authenticated state
     if (window.app) {
-      // Hide login screen
-      const loginScreen = document.getElementById('login-screen');
-      if (loginScreen) {
-        loginScreen.style.display = 'none';
+      // Hide auth gate (correct ID: auth-gate, NOT login-screen)
+      const authGate = document.getElementById('auth-gate');
+      if (authGate) {
+        authGate.style.display = 'none';
       }
 
-      // Show app container
-      const appContainer = document.getElementById('app-container');
-      if (appContainer) {
-        appContainer.style.display = 'block';
+      // Show app content (correct ID: app-content, NOT app-container)
+      const appContent = document.getElementById('app-content');
+      if (appContent) {
+        appContent.style.display = 'block';
       }
 
-      // Show bottom navigation
-      const bottomNav = document.querySelector('.bottom-nav');
+      // Show header (was missing in previous implementation)
+      const header = document.getElementById('app-header');
+      if (header) {
+        header.style.display = 'block';
+      }
+
+      // Show bottom navigation (use ID selector - it's outside app-content)
+      const bottomNav = document.getElementById('bottom-nav');
       if (bottomNav) {
         bottomNav.style.display = 'flex';
       }
@@ -116,6 +122,12 @@ async function bypassAuth(page) {
 
   // Wait a moment for UI to update
   await page.waitForTimeout(300);
+
+  // Wait for bottom-nav buttons to be visible and clickable
+  await page.waitForSelector('#bottom-nav button[data-tab="shots"]', {
+    state: 'visible',
+    timeout: 5000
+  });
 }
 
 /**
