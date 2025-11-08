@@ -45,7 +45,7 @@ Thumbs.db
 credentials.json
 *.pem
 *.key
-firebase-config.json
+# firebase-config.json - Now committed for CI (contains public client config)
 firebase-service-account.json
 
 # Personal health data
