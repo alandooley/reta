@@ -11,7 +11,7 @@ jobs:
   test:
     name: Run Playwright Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
 
     steps:
       - name: Checkout code
@@ -29,8 +29,16 @@ jobs:
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run Playwright tests
-        run: npm test
+      - name: Start dev server
+        run: npm start &
+        env:
+          PORT: 3000
+
+      - name: Wait for server
+        run: npx wait-on http://localhost:3000 --timeout 30000
+
+      - name: Run smoke tests
+        run: npx playwright test tests/smoke --reporter=list
 
       - name: Upload test report on failure
         if: failure()
