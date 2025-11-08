@@ -21,44 +21,45 @@ test.describe('Validation Indicators - Phase 3', () => {
     await waitForAppReady(page);
     await bypassAuth(page);
 
-    // Clear any existing data
+    // Clear any existing data (no reload needed - just update in memory and localStorage)
     await page.evaluate(() => {
-      localStorage.setItem('injectionTrackerData', JSON.stringify({
+      const emptyData = {
         injections: [],
         vials: [],
         weights: [],
         settings: {}
-      }));
-      if (window.app) {
-        window.app.data = {
-          injections: [],
-          vials: [],
-          weights: [],
-          settings: {}
-        };
+      };
+
+      localStorage.setItem('injectionTrackerData', JSON.stringify(emptyData));
+
+      if (window.app && window.app.data) {
+        window.app.data = emptyData;
       }
     });
 
-    await page.reload();
-    await waitForAppReady(page);
-    await bypassAuth(page);
+    // Wait a moment for any UI updates
+    await page.waitForTimeout(200);
   });
 
   test.describe('BMI Validation Indicator', () => {
 
     test('should show error indicator when height not set', async ({ page }) => {
+      // Add a weight directly without setting height
+      await page.evaluate(() => {
+        if (window.app && window.app.data) {
+          window.app.data.weights = [{
+            weight_id: 'w1',
+            timestamp: new Date('2025-11-01').toISOString(),
+            weight_kg: 85,
+            weight_lbs: 187.4,
+            source: 'manual'
+          }];
+          window.app.saveData();
+          window.app.updateUI();
+        }
+      });
+
       // Navigate to results tab
-      await navigateToTab(page, 'results');
-
-      // Add a weight without setting height
-      await navigateToTab(page, 'weights');
-      await openModal(page, '#add-weight-btn, button[data-modal="add-weight-modal"]');
-      await fillInput(page, '#weight-date', '2025-11-01');
-      await fillInput(page, '#weight-kg', '85');
-      await submitForm(page, '#add-weight-form');
-      await page.waitForTimeout(1000);
-
-      // Check results tab for BMI indicator
       await navigateToTab(page, 'results');
       await page.waitForTimeout(500);
 
@@ -90,24 +91,23 @@ test.describe('Validation Indicators - Phase 3', () => {
     });
 
     test('should show success indicator when height is set and BMI calculated', async ({ page }) => {
-      // Set height in settings
-      await navigateToTab(page, 'settings');
+      // Set height and add weight directly
       await page.evaluate(() => {
-        if (window.app) {
+        if (window.app && window.app.data) {
           window.app.data.settings.heightCm = 175;
+          window.app.data.weights = [{
+            weight_id: 'w1',
+            timestamp: new Date('2025-11-01').toISOString(),
+            weight_kg: 75,
+            weight_lbs: 165.3,
+            source: 'manual'
+          }];
           window.app.saveData();
+          window.app.updateUI();
         }
       });
 
-      // Add weight
-      await navigateToTab(page, 'weights');
-      await openModal(page, '#add-weight-btn, button[data-modal="add-weight-modal"]');
-      await fillInput(page, '#weight-date', '2025-11-01');
-      await fillInput(page, '#weight-kg', '75');
-      await submitForm(page, '#add-weight-form');
-      await page.waitForTimeout(1000);
-
-      // Check results tab
+      // Navigate to results tab
       await navigateToTab(page, 'results');
       await page.waitForTimeout(500);
 
@@ -188,24 +188,33 @@ test.describe('Validation Indicators - Phase 3', () => {
 
     test('should show error indicator when no vials available', async ({ page }) => {
       await navigateToTab(page, 'inventory');
-      await page.waitForTimeout(500);
+
+      // Clear vials and trigger UI update while on inventory tab
+      await page.evaluate(() => {
+        if (window.app && window.app.data) {
+          window.app.data.vials = [];
+          window.app.saveData();
+          window.app.updateUI(); // Force recalculation
+        }
+      });
+
+      await page.waitForTimeout(1000); // Give time for UI update to complete
 
       const hasErrorIndicator = await page.evaluate(() => {
-        // Look for supply forecast with error indicator
-        const supplyElements = Array.from(document.querySelectorAll('[class*="supply"], [class*="forecast"]'));
+        // Check the specific supply forecast validation indicator elements by ID
+        const supplyDurationIndicator = document.getElementById('supply-duration-validation-indicator');
+        const runOutDateIndicator = document.getElementById('run-out-date-validation-indicator');
+        const reorderDaysIndicator = document.getElementById('reorder-days-validation-indicator');
 
-        for (const el of supplyElements) {
-          const indicator = el.querySelector('.validation-indicator, [class*="indicator"]');
-          if (indicator) {
-            const classes = indicator.className;
-            if (classes.includes('error') || classes.includes('danger')) {
+        // Check if any of these indicators contain validation-error class
+        const indicators = [supplyDurationIndicator, runOutDateIndicator, reorderDaysIndicator];
+
+        for (const indicator of indicators) {
+          if (indicator && indicator.innerHTML) {
+            // Check if the indicator's inner HTML contains validation-error class
+            if (indicator.innerHTML.includes('validation-error')) {
               return true;
             }
-          }
-
-          // Check for error state on parent
-          if (el.className.includes('error') || el.className.includes('danger')) {
-            return true;
           }
         }
 
