@@ -28,8 +28,7 @@
   "homepage": "https://github.com/alandooley/reta#readme",
   "devDependencies": {
     "@playwright/test": "^1.55.1",
-    "playwright": "^1.55.1",
-    "wait-on": "^9.0.3"
+    "playwright": "^1.55.1"
   },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.916.0",
