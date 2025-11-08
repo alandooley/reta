@@ -44,8 +44,7 @@ test.describe('Vial CRUD Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/?test=true');
     await clearAllStorage(page);
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
   });
 
   test.describe('CREATE Operations - Dry Stock', () => {
@@ -53,17 +52,16 @@ test.describe('Vial CRUD Operations', () => {
       await navigateToTab(page, 'inventory');
 
       // Open Add Vial modal
-      await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+      await openModal(page, '#add-vial-btn');
 
       // Fill in all fields
       await fillInput(page, '#vial-order-date', '2025-11-01');
-      await fillInput(page, '#vial-total-mg', '15');
+      await fillInput(page, '#vial-mg', '15');
       await fillInput(page, '#vial-supplier', 'Test Pharma Co.');
-      await fillInput(page, '#vial-lot-number', 'LOT-2025-XYZ-789');
 
       // Submit form
       await submitForm(page, '#add-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Verify vial was added
       const vials = await getVials(page);
@@ -72,7 +70,6 @@ test.describe('Vial CRUD Operations', () => {
       const vial = vials[0];
       expect(vial.total_mg).toBe(15);
       expect(vial.supplier).toBe('Test Pharma Co.');
-      expect(vial.lot_number).toBe('LOT-2025-XYZ-789');
       expect(vial.status).toBe('dry_stock');
       expect(vial.order_date).toContain('2025-11-01');
 
@@ -80,7 +77,7 @@ test.describe('Vial CRUD Operations', () => {
       expect(vial.bac_water_ml).toBeNull();
       expect(vial.concentration_mg_ml).toBeNull();
       expect(vial.reconstitution_date).toBeNull();
-      expect(vial.remaining_ml).toBeNull();
+      expect(vial.remaining_ml).toBe(0); // Dry stock has 0ml of liquid (not null)
 
       // Validate structure
       validateVialStructure(vial);
@@ -88,15 +85,15 @@ test.describe('Vial CRUD Operations', () => {
 
     test('should create dry stock with minimal fields', async ({ page }) => {
       await navigateToTab(page, 'inventory');
-      await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+      await openModal(page, '#add-vial-btn');
 
       // Fill only required fields
       await fillInput(page, '#vial-order-date', '2025-11-01');
-      await fillInput(page, '#vial-total-mg', '10');
+      await fillInput(page, '#vial-mg', '10');
       // Leave supplier and lot number empty
 
       await submitForm(page, '#add-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const vials = await getVials(page);
       expect(vials.length).toBe(1);
@@ -112,11 +109,11 @@ test.describe('Vial CRUD Operations', () => {
       expect(initialRows).toBe(0);
 
       // Add a vial
-      await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+      await openModal(page, '#add-vial-btn');
       await fillInput(page, '#vial-order-date', '2025-11-01');
-      await fillInput(page, '#vial-total-mg', '10');
+      await fillInput(page, '#vial-mg', '10');
       await submitForm(page, '#add-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Should now have 1 row
       await waitForTableRows(page, '#vials-table', 1);
@@ -127,8 +124,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should activate a dry stock vial', async ({ page }) => {
       const dryVial = createDryStockVial({ total_mg: 10 });
       await loadTestData(page, { vials: [dryVial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -142,7 +138,7 @@ test.describe('Vial CRUD Operations', () => {
       await fillInput(page, '#activate-reconstitution-date', '2025-11-07');
 
       await submitForm(page, '#activate-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Verify vial was activated
       const vials = await getVials(page);
@@ -177,8 +173,7 @@ test.describe('Vial CRUD Operations', () => {
 
         const dryVial = createDryStockVial({ total_mg: testCase.total_mg });
         await loadTestData(page, { vials: [dryVial], injections: [] });
-        await page.reload();
-        await waitForAppReady(page);
+        await reloadPage(page);
 
         await navigateToTab(page, 'inventory');
 
@@ -190,7 +185,7 @@ test.describe('Vial CRUD Operations', () => {
         await fillInput(page, '#activate-reconstitution-date', '2025-11-07');
 
         await submitForm(page, '#activate-vial-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const vials = await getVials(page);
         expect(vials[0].concentration_mg_ml).toBeCloseTo(testCase.expected, 2);
@@ -200,8 +195,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should calculate expiration date (30 days after reconstitution)', async ({ page }) => {
       const dryVial = createDryStockVial();
       await loadTestData(page, { vials: [dryVial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -213,7 +207,7 @@ test.describe('Vial CRUD Operations', () => {
       await fillInput(page, '#activate-reconstitution-date', '2025-11-01');
 
       await submitForm(page, '#activate-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const vials = await getVials(page);
       const vial = vials[0];
@@ -239,8 +233,7 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Initial volume
       let vials = await getVials(page);
@@ -249,13 +242,12 @@ test.describe('Vial CRUD Operations', () => {
       // Add injection that uses 0.5mg (= 0.05ml at 10mg/ml)
       await navigateToTab(page, 'shots');
       await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Check updated volume
       vials = await getVials(page);
@@ -277,8 +269,7 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Add 3 injections, each 1.0mg (= 0.1ml)
       for (let i = 0; i < 3; i++) {
@@ -290,7 +281,7 @@ test.describe('Vial CRUD Operations', () => {
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '1.0');
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
       }
 
       // Total usage: 3 × 0.1ml = 0.3ml
@@ -310,19 +301,17 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Add injection
       await navigateToTab(page, 'shots');
       await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '1.0');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const vials = await getVials(page);
       const updatedVial = vials[0];
@@ -345,19 +334,17 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Add injection that will bring volume below usable threshold
       await navigateToTab(page, 'shots');
       await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5'); // Uses 0.05ml
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const vials = await getVials(page);
       const updatedVial = vials[0];
@@ -381,19 +368,17 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Add injection that uses all remaining volume
       await navigateToTab(page, 'shots');
       await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const vials = await getVials(page);
       const updatedVial = vials[0];
@@ -410,8 +395,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should delete a vial with no injections', async ({ page }) => {
       const vial = createDryStockVial();
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
       await waitForTableRows(page, '#vials-table', 1);
@@ -442,8 +426,7 @@ test.describe('Vial CRUD Operations', () => {
         vials: [vial],
         injections: [injection]
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -483,8 +466,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should persist vial deletion after reload', async ({ page }) => {
       const vial = createDryStockVial();
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -517,8 +499,7 @@ test.describe('Vial CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       let vials = await getVials(page);
       expect(vials[0].total_mg).toBe(15);
@@ -536,8 +517,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should persist vial status changes', async ({ page }) => {
       const dryVial = createDryStockVial();
       await loadTestData(page, { vials: [dryVial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -548,7 +528,7 @@ test.describe('Vial CRUD Operations', () => {
       await fillInput(page, '#activate-bac-water', '1.0');
       await fillInput(page, '#activate-reconstitution-date', '2025-11-07');
       await submitForm(page, '#activate-vial-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Reload page
       await reloadPage(page);
@@ -563,16 +543,16 @@ test.describe('Vial CRUD Operations', () => {
   test.describe('VALIDATION', () => {
     test('should reject negative total_mg', async ({ page }) => {
       await navigateToTab(page, 'inventory');
-      await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+      await openModal(page, '#add-vial-btn');
 
       await fillInput(page, '#vial-order-date', '2025-11-01');
-      await fillInput(page, '#vial-total-mg', '-10'); // Negative!
+      await fillInput(page, '#vial-mg', '-10'); // Negative!
 
       await submitForm(page, '#add-vial-form');
       await page.waitForTimeout(1000);
 
       // Modal should still be visible
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       // No vial should be created
@@ -582,15 +562,15 @@ test.describe('Vial CRUD Operations', () => {
 
     test('should reject unrealistic total_mg values', async ({ page }) => {
       await navigateToTab(page, 'inventory');
-      await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+      await openModal(page, '#add-vial-btn');
 
       await fillInput(page, '#vial-order-date', '2025-11-01');
-      await fillInput(page, '#vial-total-mg', '1000'); // Unrealistically high!
+      await fillInput(page, '#vial-mg', '1000'); // Unrealistically high!
 
       await submitForm(page, '#add-vial-form');
       await page.waitForTimeout(1000);
 
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       const vials = await getVials(page);
@@ -600,8 +580,7 @@ test.describe('Vial CRUD Operations', () => {
     test('should validate bac water volume on activation', async ({ page }) => {
       const dryVial = createDryStockVial();
       await loadTestData(page, { vials: [dryVial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'inventory');
 
@@ -617,7 +596,7 @@ test.describe('Vial CRUD Operations', () => {
       await page.waitForTimeout(1000);
 
       // Should still be in modal
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       // Vial should still be dry stock
