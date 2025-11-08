@@ -367,7 +367,8 @@ async function getValidationTooltip(page, indicatorId) {
 async function reloadPage(page) {
   // Get current URL to preserve query parameters (especially ?test=true for CI)
   const currentUrl = page.url();
-  await page.goto(currentUrl, { waitUntil: 'networkidle' });
+  // Use domcontentloaded instead of networkidle to avoid waiting for Firebase requests
+  await page.goto(currentUrl, { waitUntil: 'domcontentloaded' });
   await waitForAppReady(page);
 
   // After reload, ensure app.data is loaded from localStorage
