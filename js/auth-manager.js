@@ -276,11 +276,21 @@ class AuthManager {
 // Export singleton instance
 const authManager = new AuthManager();
 
-// Auto-initialize when DOM is ready
+// Auto-initialize when DOM is ready (unless in test mode)
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
+        if (window.SKIP_AUTH_INIT) {
+            console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
+            return;
+        }
+        console.log('[AUTH] Auto-initializing Firebase auth');
         authManager.initialize().catch(console.error);
     });
 } else {
-    authManager.initialize().catch(console.error);
+    if (window.SKIP_AUTH_INIT) {
+        console.log('[AUTH] Skipping Firebase auth initialization (test mode)');
+    } else {
+        console.log('[AUTH] Auto-initializing Firebase auth (DOM already loaded)');
+        authManager.initialize().catch(console.error);
+    }
 }

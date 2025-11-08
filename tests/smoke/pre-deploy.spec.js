@@ -32,6 +32,17 @@ const {
 test.describe('Pre-Deployment Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/?test=true');
+
+    // CRITICAL: Hide auth gate IMMEDIATELY before it blocks initialization
+    await page.evaluate(() => {
+      const authGate = document.getElementById('auth-gate');
+      if (authGate) authGate.style.display = 'none';
+    });
+
+    // Wait for app to initialize
+    await waitForAppReady(page);
+    // Full bypass after app is ready
+    await bypassAuth(page);
     await clearAllStorage(page);
     await reloadPage(page);  // Now preserves query parameters via page.url()
   });

@@ -46,6 +46,16 @@
         firebase.initializeApp(firebaseConfig);
     </script>
 
+    <!-- Test mode detection BEFORE loading auth-manager -->
+    <script>
+        // Set flag IMMEDIATELY if in test mode, before any modules load
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('test') === 'true') {
+            console.log('[EARLY INIT] Test mode detected - setting SKIP_AUTH_INIT flag');
+            window.SKIP_AUTH_INIT = true;
+        }
+    </script>
+
     <!-- Cloud Integration Modules -->
     <script src="js/auth-manager.js"></script>
     <script src="js/api-client.js"></script>
@@ -3496,7 +3506,7 @@
 
             async loadData() {
                 try {
-                    const stored = localStorage.getItem('injection_data');
+                    const stored = localStorage.getItem('injectionTrackerData');
                     if (stored) {
                         const data = JSON.parse(stored);
                         this.data = { ...this.data, ...data };
@@ -3844,7 +3854,7 @@
                         await backupManager.saveData(this.data);
                     } else {
                         // Fallback to simple localStorage if backup manager not ready
-                        localStorage.setItem('injection_data', JSON.stringify(this.data));
+                        localStorage.setItem('injectionTrackerData', JSON.stringify(this.data));
                     }
                     if (showIndicator) {
                         this.showSaveIndicator();
@@ -8183,7 +8193,7 @@
 
         class ResilientBackupManager {
             constructor() {
-                this.storageKey = 'injection_data';
+                this.storageKey = 'injectionTrackerData';
                 this.dbName = 'RetatrutideDB';
                 this.dbVersion = 1;
                 this.storeName = 'appData';
@@ -8324,12 +8334,41 @@
         let backupManager;
 
         document.addEventListener('DOMContentLoaded', async function() {
+            console.log('[INIT] DOMContentLoaded event fired');
+
+            // CRITICAL: Check test mode FIRST before any async operations
+            const urlParams = new URLSearchParams(window.location.search);
+            const isTestMode = urlParams.get('test') === 'true';
+
+            if (isTestMode) {
+                console.log('[INIT] Test mode detected - setting SKIP_AUTH_INIT flag');
+                window.SKIP_AUTH_INIT = true;
+
+                // Immediately hide auth gate and show app content
+                const authGate = document.getElementById('auth-gate');
+                const appContent = document.getElementById('app-content');
+                const appHeader = document.getElementById('app-header');
+                const bottomNav = document.getElementById('bottom-nav');
+
+                if (authGate) authGate.style.display = 'none';
+                if (appContent) appContent.style.display = 'block';
+                if (appHeader) appHeader.style.display = 'block';
+                if (bottomNav) bottomNav.style.display = 'flex';
+
+                console.log('[INIT] Test mode UI elements configured');
+            }
+
+            console.log('[INIT] Creating InjectionTracker instance');
             app = new InjectionTracker();
+            window.app = app; // Expose globally for tests
+            console.log('[INIT] window.app set, registering service worker');
             app.registerServiceWorker();
 
             // Initialize backup system
+            console.log('[INIT] Initializing backup manager');
             backupManager = new ResilientBackupManager();
             await backupManager.initialize();
+            console.log('[INIT] Backup manager initialized');
 
             // Initialize delete functionality
             deleteManager = new SimpleDeleteManager();
@@ -8400,10 +8439,28 @@
 
         // Auth state listener setup function
         function setupAuthStateListener() {
+            console.log('[INIT] Setting up auth state listener');
+
             const authGate = document.getElementById('auth-gate');
             const authGateButton = document.getElementById('auth-gate-button');
             const appContent = document.getElementById('app-content');
             let lastAuthUserId = null;  // Track last known user to prevent duplicate syncs
+
+            // Test mode bypass: skip authentication for automated tests
+            if (window.SKIP_AUTH_INIT) {
+                console.log('[INIT] Test mode active - skipping auth setup');
+                // Disable cloud backup button in test mode
+                const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
+                if (cloudBackupBtn) {
+                    cloudBackupBtn.disabled = true;
+                }
+                // Hide sync queue modal in test mode (prevents UI interference)
+                const syncQueueModal = document.getElementById('sync-queue-modal');
+                if (syncQueueModal) {
+                    syncQueueModal.style.display = 'none';
+                }
+                return; // Skip auth setup entirely in test mode
+            }
 
             // Sign in handler for auth gate
             if (authGateButton) {
