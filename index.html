@@ -2239,7 +2239,7 @@
             <p style="color: #888888; margin-bottom: 32px; font-size: 16px;">
                 Please sign in to access your tracking data
             </p>
-            <button id="auth-gate-button" style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px;">
+            <button id="auth-gate-button" style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0, 122, 255, 0.3);">
                 Sign In with Google
             </button>
             <p style="color: #666666; margin-top: 32px; font-size: 12px;">
@@ -8231,27 +8231,49 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('[INIT] DOMContentLoaded event fired');
 
-            // CRITICAL: Set up auth button IMMEDIATELY as fallback
-            const authGateButtonFallback = document.getElementById('auth-gate-button');
-            if (authGateButtonFallback && !authGateButtonFallback.onclick) {
-                console.log('[INIT] Setting up fallback auth button handler');
-                authGateButtonFallback.onclick = async () => {
-                    console.log('[FALLBACK] Auth button clicked via fallback handler');
-                    authGateButtonFallback.textContent = 'Redirecting...';
-                    authGateButtonFallback.disabled = true;
+            // CRITICAL: Set up auth button IMMEDIATELY for mobile compatibility
+            const authGateButtonEarly = document.getElementById('auth-gate-button');
+            if (authGateButtonEarly) {
+                console.log('[INIT] Setting up mobile-optimized auth button handler');
+
+                // Create a single handler function to avoid duplication
+                const handleSignIn = async (event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    console.log('[AUTH-CLICK] Sign in button activated (event type:', event.type + ')');
+
+                    // Prevent multiple clicks
+                    if (authGateButtonEarly.disabled) {
+                        console.log('[AUTH-CLICK] Button already disabled, ignoring click');
+                        return;
+                    }
+
+                    authGateButtonEarly.textContent = 'Redirecting to Google...';
+                    authGateButtonEarly.disabled = true;
+
                     try {
+                        console.log('[AUTH-CLICK] Calling authManager.signInWithGoogle()');
                         if (typeof authManager !== 'undefined') {
                             await authManager.signInWithGoogle();
+                            console.log('[AUTH-CLICK] Sign in completed (should redirect)');
                         } else {
-                            alert('Authentication system not ready. Please refresh the page.');
+                            throw new Error('Authentication system not ready. Please refresh the page.');
                         }
                     } catch (error) {
-                        console.error('[FALLBACK] Error:', error);
-                        authGateButtonFallback.textContent = 'Sign In with Google';
-                        authGateButtonFallback.disabled = false;
+                        console.error('[AUTH-ERROR] Sign in error:', error);
+                        authGateButtonEarly.textContent = 'Sign In with Google';
+                        authGateButtonEarly.disabled = false;
                         alert(error.message || 'Sign in failed. Please try again.');
                     }
                 };
+
+                // Add both click and touchend for maximum mobile compatibility
+                authGateButtonEarly.addEventListener('click', handleSignIn, { passive: false });
+                authGateButtonEarly.addEventListener('touchend', handleSignIn, { passive: false, once: false });
+                console.log('[INIT] Auth button handlers attached (click + touchend)');
+            } else {
+                console.error('[INIT] Auth gate button not found at initialization!');
             }
 
             // CRITICAL: Check test mode FIRST before any async operations
@@ -8383,27 +8405,10 @@
                 return; // Skip auth setup entirely in test mode
             }
 
-            // Sign in handler for auth gate
+            // Auth button handler is now set up early in DOMContentLoaded for mobile compatibility
+            // No need to set it up again here - just verify it exists
             if (authGateButton) {
-                console.log('[AUTH-SETUP] Setting up auth gate button handler');
-                authGateButton.addEventListener('click', async () => {
-                    console.log('[AUTH-CLICK] Sign in button clicked');
-                    authGateButton.textContent = 'Redirecting to Google...';
-                    authGateButton.disabled = true;
-                    try {
-                        console.log('[AUTH-CLICK] Calling authManager.signInWithGoogle()');
-                        await authManager.signInWithGoogle();
-                        console.log('[AUTH-CLICK] Sign in completed (should redirect)');
-                        // Note: Page will redirect, so code after this won't execute
-                    } catch (error) {
-                        console.error('[AUTH-ERROR] Sign in error:', error);
-                        authGateButton.textContent = 'Sign In with Google';
-                        authGateButton.disabled = false;
-                        // Show the detailed error message
-                        alert(error.message || 'Failed to sign in. Please try again.');
-                    }
-                });
-                console.log('[AUTH-SETUP] Auth gate button handler set up successfully');
+                console.log('[AUTH-SETUP] Auth gate button found (handler already attached during init)');
             } else {
                 console.error('[AUTH-SETUP] Auth gate button not found!');
             }
