@@ -60,7 +60,10 @@
       "Bash(npm uninstall:*)",
       "Bash(timeout:*)",
       "Bash(start:*)",
-      "Bash(gh run download:*)"
+      "Bash(gh run download:*)",
+      "Bash(aws s3 sync:*)",
+      "Bash(NUL)",
+      "Bash(dir:*)"
     ],
     "deny": [],
     "ask": []
