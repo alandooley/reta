@@ -8341,8 +8341,11 @@
             const appContent = document.getElementById('app-content');
             let lastAuthUserId = null;  // Track last known user to prevent duplicate syncs
 
-            // Test mode bypass: skip authentication for automated tests
-            if (window.SKIP_AUTH_INIT) {
+            // Test mode bypass: skip authentication ONLY if explicitly in test mode via URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const isTestMode = urlParams.get('test') === 'true';
+
+            if (isTestMode && window.SKIP_AUTH_INIT) {
                 console.log('[INIT] Test mode active - skipping auth setup');
                 // Disable cloud backup button in test mode
                 const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
