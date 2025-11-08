@@ -90,14 +90,13 @@ test.describe('Sync Status UI - Phase 1B', () => {
         }
       });
 
-      await page.waitForTimeout(500);
+      // Wait for UI to update
+      await page.waitForTimeout(100);
 
+      // Check if the synced class was applied
       const hasSyncedState = await page.evaluate(() => {
         const indicator = document.getElementById('sync-status');
-        if (!indicator) return false;
-
-        // Check if element has 'synced' class
-        return indicator.classList.contains('synced');
+        return indicator ? indicator.classList.contains('synced') : false;
       });
 
       expect(hasSyncedState).toBe(true);
