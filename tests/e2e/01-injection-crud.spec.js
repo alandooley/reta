@@ -44,8 +44,7 @@ test.describe('Injection CRUD Operations', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/?test=true');
     await clearAllStorage(page);
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
   });
 
   test.describe('CREATE Operations', () => {
@@ -53,35 +52,36 @@ test.describe('Injection CRUD Operations', () => {
       // Setup: Create a vial to reference
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Navigate to Shots tab
       await navigateToTab(page, 'shots');
 
       // Open Add Shot modal
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Fill in all fields
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '14:30');
+      await fillInput(page, '#shot-date', '2025-11-07T14:30');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
-      await fillInput(page, '#shot-dose', '0.75');
+      await fillInput(page, '#shot-dose', '0.8');
       await fillInput(page, '#shot-notes', 'Test injection note');
 
       // Submit form
       await submitForm(page, '#add-shot-form');
 
       // Wait for modal to close
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
+
+      // Wait for data to be saved to localStorage
+      await page.waitForTimeout(500);
 
       // Verify injection was added to localStorage
       const injections = await getInjections(page);
       expect(injections.length).toBe(1);
 
       const injection = injections[0];
-      expect(injection.dose_mg).toBe(0.75);
+      expect(injection.dose_mg).toBe(0.8);
       expect(injection.injection_site).toBe('left_thigh');
       expect(injection.vial_id).toBe(vial.vial_id);
       expect(injection.notes).toBe('Test injection note');
@@ -96,33 +96,30 @@ test.describe('Injection CRUD Operations', () => {
     test('should create injection without optional fields', async ({ page }) => {
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Fill only required fields
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
-      await selectOption(page, '#shot-site', 'right_abdomen');
+      await selectOption(page, '#shot-site', 'abdomen_right');
       await fillInput(page, '#shot-dose', '0.5');
       // Don't fill notes
 
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       const injections = await getInjections(page);
       expect(injections.length).toBe(1);
-      expect(injections[0].notes).toBeTruthy(); // Should have empty string or null
+      expect(injections[0].notes).toBeDefined(); // Should have empty string, not undefined
     });
 
     test('should show injection in table after creation', async ({ page }) => {
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
 
@@ -131,14 +128,13 @@ test.describe('Injection CRUD Operations', () => {
       expect(initialRows).toBe(0);
 
       // Add a shot
-      await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await openModal(page, '#add-shot-modal-btn');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Should now have 1 row
       await waitForTableRows(page, '#shots-table', 1);
@@ -150,24 +146,22 @@ test.describe('Injection CRUD Operations', () => {
       // This tests the fix from FIX_SUMMARY.md
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Fill and submit first injection
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await fillInput(page, '#shot-notes', 'First injection');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Open modal again
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Form should be reset (empty)
       const dateValue = await page.inputValue('#shot-date');
@@ -185,15 +179,13 @@ test.describe('Injection CRUD Operations', () => {
     test('should reject injection with dose too high', async ({ page }) => {
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Try to submit with invalid dose (> 50mg)
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '100'); // Invalid!
@@ -202,7 +194,7 @@ test.describe('Injection CRUD Operations', () => {
 
       // Modal should still be visible (submission prevented)
       await page.waitForTimeout(1000);
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       // No injection should be created
@@ -213,14 +205,12 @@ test.describe('Injection CRUD Operations', () => {
     test('should reject injection with negative dose', async ({ page }) => {
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '-0.5'); // Negative!
@@ -228,7 +218,7 @@ test.describe('Injection CRUD Operations', () => {
       await submitForm(page, '#add-shot-form');
       await page.waitForTimeout(1000);
 
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       const injections = await getInjections(page);
@@ -237,11 +227,10 @@ test.describe('Injection CRUD Operations', () => {
 
     test('should reject injection without vial selected', async ({ page }) => {
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Fill everything except vial
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       // Don't select vial!
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
@@ -249,7 +238,7 @@ test.describe('Injection CRUD Operations', () => {
       await submitForm(page, '#add-shot-form');
       await page.waitForTimeout(1000);
 
-      const modalVisible = await page.locator('.modal.show').isVisible();
+      const modalVisible = await page.locator('#modal-overlay').isVisible();
       expect(modalVisible).toBe(true);
 
       const injections = await getInjections(page);
@@ -283,11 +272,10 @@ test.describe('Injection CRUD Operations', () => {
         vials: [activeVial, emptyVial, dryStockVial],
         injections: []
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Get all options in the vial dropdown
       const vialOptions = await page.$$('#shot-vial option');
@@ -304,23 +292,21 @@ test.describe('Injection CRUD Operations', () => {
     test('should validate all injection site values', async ({ page }) => {
       const vial = createValidVial({ status: 'active' });
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
 
       // Test each valid injection site
       for (const site of INJECTION_SITES) {
-        await openModal(page, 'button:has-text("+ Add Shot")');
+        await openModal(page, '#add-shot-modal-btn');
 
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', site);
         await fillInput(page, '#shot-dose', '0.5');
 
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
       }
 
       // Should have created one injection per site
@@ -344,8 +330,7 @@ test.describe('Injection CRUD Operations', () => {
         vials: [vial],
         injections: [injection]
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
 
@@ -378,8 +363,7 @@ test.describe('Injection CRUD Operations', () => {
         vials: [vial],
         injections: [injection]
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
 
@@ -409,8 +393,8 @@ test.describe('Injection CRUD Operations', () => {
       const vial = createValidVial();
       const injection = createValidInjection({
         vial_id: vial.vial_id,
-        dose_mg: 0.75,
-        injection_site: 'left_abdomen'
+        dose_mg: 0.8,
+        injection_site: 'abdomen_left'
       });
 
       await loadTestData(page, {
@@ -419,20 +403,19 @@ test.describe('Injection CRUD Operations', () => {
       });
 
       // First load
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       let injections = await getInjections(page);
       expect(injections.length).toBe(1);
-      expect(injections[0].dose_mg).toBe(0.75);
+      expect(injections[0].dose_mg).toBe(0.8);
 
       // Second reload
       await reloadPage(page);
 
       injections = await getInjections(page);
       expect(injections.length).toBe(1);
-      expect(injections[0].dose_mg).toBe(0.75);
-      expect(injections[0].injection_site).toBe('left_abdomen');
+      expect(injections[0].dose_mg).toBe(0.8);
+      expect(injections[0].injection_site).toBe('abdomen_left');
     });
 
     test('should maintain injection order by timestamp', async ({ page }) => {
@@ -454,8 +437,7 @@ test.describe('Injection CRUD Operations', () => {
         vials: [vial],
         injections: [injection1, injection2, injection3] // Out of order
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
 
@@ -477,21 +459,19 @@ test.describe('Injection CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
+      await openModal(page, '#add-shot-modal-btn');
 
       // Add injection with 0.5mg dose
       // With 10mg/ml concentration, this uses 0.05ml
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       // Check vial volume was updated
       const vials = await getVials(page);
@@ -512,32 +492,29 @@ test.describe('Injection CRUD Operations', () => {
       });
 
       await loadTestData(page, { vials: [vial], injections: [] });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Add first injection
       await navigateToTab(page, 'shots');
-      await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '10:00');
+      await openModal(page, '#add-shot-modal-btn');
+      await fillInput(page, '#shot-date', '2025-11-07T10:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'left_thigh');
       await fillInput(page, '#shot-dose', '0.5');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       let vials = await getVials(page);
       expect(vials[0].doses_used).toBe(1);
 
       // Add second injection
-      await openModal(page, 'button:has-text("+ Add Shot")');
-      await fillInput(page, '#shot-date', '2025-11-07');
-      await fillInput(page, '#shot-time', '14:00');
+      await openModal(page, '#add-shot-modal-btn');
+      await fillInput(page, '#shot-date', '2025-11-07T14:00');
       await selectOption(page, '#shot-vial', vial.vial_id);
       await selectOption(page, '#shot-site', 'right_thigh');
-      await fillInput(page, '#shot-dose', '0.75');
+      await fillInput(page, '#shot-dose', '0.8');
       await submitForm(page, '#add-shot-form');
-      await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+      await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
       vials = await getVials(page);
       expect(vials[0].doses_used).toBe(2);
@@ -567,8 +544,7 @@ test.describe('Injection CRUD Operations', () => {
         vials: [vial],
         injections: [injection, duplicate]
       });
-      await page.reload();
-      await waitForAppReady(page);
+      await reloadPage(page);
 
       // Navigate to Settings and run deduplication
       await navigateToTab(page, 'settings');

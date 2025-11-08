@@ -1,0 +1,1385 @@
+{
+    "Items": [
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "2"
+            },
+            "timestamp": {
+                "S": "2025-08-30T10:12:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.357Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-30T10:12:00.000Z"
+            },
+            "vialId": {
+                "NULL": true
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.357Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First 2.0 mg dose (20 units). Mild appetite suppression."
+            },
+            "SK": {
+                "S": "INJECTION#1a3693d8-eb69-496d-9348-89c79cfb2503"
+            },
+            "weightKg": {
+                "N": "93.6"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "timestamp": {
+                "S": "2025-09-13T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.822Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-13T09:00:00.000Z"
+            },
+            "vialId": {
+                "S": "25eaa9d1-676f-47c8-ad0b-6e5783bb912e"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.822Z"
+            },
+            "notes": {
+                "S": "Right abdomen. New vial reconstituted (10 mg + 1 mL BAC). First 4.0 mg dose (40 units)."
+            },
+            "SK": {
+                "S": "INJECTION#1b1a6472-d35c-47ac-b664-caabf10f7eb6"
+            },
+            "weightKg": {
+                "N": "93"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.5"
+            },
+            "timestamp": {
+                "S": "2025-08-12T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.741Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-12T09:00:00.000Z"
+            },
+            "vialId": {
+                "NULL": true
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.741Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second dose (5 units). No major side effects."
+            },
+            "SK": {
+                "S": "INJECTION#484c5af1-2e3c-425d-b43c-4422495b61c8"
+            },
+            "weightKg": {
+                "N": "95"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "timestamp": {
+                "S": "2025-11-05T11:45:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T11:59:27.369Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-11-05T11:45:00.000Z"
+            },
+            "vialId": {
+                "S": "vial-1"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:59:27.369Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "SK": {
+                "S": "INJECTION#4f205636-2e59-47ef-b667-85ecc1eb403d"
+            },
+            "weightKg": {
+                "N": "90.2"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "1"
+            },
+            "timestamp": {
+                "S": "2025-08-19T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.540Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-19T09:00:00.000Z"
+            },
+            "vialId": {
+                "NULL": true
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.540Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First 1.0 mg (10 units). Mild nausea only."
+            },
+            "SK": {
+                "S": "INJECTION#73f393a6-90c3-4d29-978f-e439d97cfb3d"
+            },
+            "weightKg": {
+                "N": "96"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "3"
+            },
+            "timestamp": {
+                "S": "2025-09-06T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.152Z"
+            },
+            "site": {
+                "S": "abdomen_right"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-06T08:00:00.000Z"
+            },
+            "vialId": {
+                "NULL": true
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.152Z"
+            },
+            "notes": {
+                "S": "3.0 mg (30 units). Tolerated well, little nausea."
+            },
+            "SK": {
+                "S": "INJECTION#8636ecd9-c977-40b3-970b-ff37322825d2"
+            },
+            "weightKg": {
+                "N": "93"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.25"
+            },
+            "timestamp": {
+                "S": "2025-08-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.957Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T09:00:00.000Z"
+            },
+            "vialId": {
+                "NULL": true
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.957Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First micro-dose (2.5 units) to start titration."
+            },
+            "SK": {
+                "S": "INJECTION#86e74c36-01db-430e-83b5-14b80c4db8e5"
+            },
+            "weightKg": {
+                "N": "95"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4.2"
+            },
+            "timestamp": {
+                "S": "2025-09-27T10:51:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.438Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-27T10:51:00.000Z"
+            },
+            "vialId": {
+                "S": "c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.438Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Only 42 units left in vial. Finished it. Suppression moderate."
+            },
+            "SK": {
+                "S": "INJECTION#8a333164-3ee4-4475-8021-cf8005ae031c"
+            },
+            "weightKg": {
+                "N": "89.7"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "timestamp": {
+                "S": "2025-09-20T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.623Z"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T09:00:00.000Z"
+            },
+            "vialId": {
+                "S": "c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.623Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second 4.0 mg dose. Mild suppression noticed."
+            },
+            "SK": {
+                "S": "INJECTION#c966224f-5593-42be-aaf4-fc684fe15052"
+            },
+            "weightKg": {
+                "N": "90.9"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T13:23:39.169Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-11-07T13:25:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T13:23:39.169Z"
+            },
+            "SK": {
+                "S": "INJECTION#id_opibpsn96_1762521930198"
+            },
+            "site": {
+                "S": "right_thigh"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-11-07T13:25:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "vial-1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "N": "0"
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "finished"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:42.765Z"
+            },
+            "source": {
+                "S": ""
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-09-13"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:15:00.000Z"
+            },
+            "notes": {
+                "S": "Reconstituted 10mg with 1mL BAC water"
+            },
+            "startDate": {
+                "S": "2025-09-13"
+            },
+            "SK": {
+                "S": "VIAL#25eaa9d1-676f-47c8-ad0b-6e5783bb912e"
+            },
+            "usedVolumeMl": {
+                "N": "1"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "N": "0"
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "dry"
+            },
+            "createdAt": {
+                "S": "2025-10-29T00:00:00.000Z"
+            },
+            "source": {
+                "S": "Peptides"
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-10-29"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:20:00.000Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "startDate": {
+                "S": "2025-10-29"
+            },
+            "SK": {
+                "S": "VIAL#9f55def6-7411-447b-9a9c-ef64136a878d"
+            },
+            "usedVolumeMl": {
+                "N": "0"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "N": "0"
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "finished"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "source": {
+                "S": ""
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-09-13"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:15:00.000Z"
+            },
+            "notes": {
+                "S": "Reconstituted 10mg with 1mL BAC water"
+            },
+            "startDate": {
+                "S": "2025-09-13"
+            },
+            "SK": {
+                "S": "VIAL#c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            },
+            "usedVolumeMl": {
+                "N": "1"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "N": "0"
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "dry"
+            },
+            "createdAt": {
+                "S": "2025-10-29T00:00:00.000Z"
+            },
+            "source": {
+                "S": "Peptides"
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-10-29"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:20:00.000Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "startDate": {
+                "S": "2025-10-29"
+            },
+            "SK": {
+                "S": "VIAL#e371c038-4e86-428b-ad40-9f67ba89761f"
+            },
+            "usedVolumeMl": {
+                "N": "0"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "NULL": true
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "active"
+            },
+            "createdAt": {
+                "S": "2025-10-29T00:00:00.000Z"
+            },
+            "source": {
+                "S": "Peptides"
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-10-29"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T13:23:37.950Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "startDate": {
+                "S": "2025-10-29"
+            },
+            "SK": {
+                "S": "VIAL#vial-1"
+            },
+            "usedVolumeMl": {
+                "NULL": true
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-29T19:28:35.656Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-10-29T19:28"
+            },
+            "createdAt": {
+                "S": "2025-10-29T19:28:35.656Z"
+            },
+            "SK": {
+                "S": "WEIGHT#06d4f1bc-9070-4402-857c-82b6a4358e52"
+            },
+            "weightKg": {
+                "N": "91.1"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-10-29T19:28"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-30T08:02:16.745Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-10-30T08:00"
+            },
+            "createdAt": {
+                "S": "2025-10-30T08:02:16.745Z"
+            },
+            "SK": {
+                "S": "WEIGHT#0947eb62-dedb-4cf2-a258-34db6945319e"
+            },
+            "weightKg": {
+                "N": "92.2"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-10-30T08:00"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-30T10:12:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#0992684c-7ff8-4eb3-8050-1cc21306e2d0"
+            },
+            "weightKg": {
+                "N": "93.6"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-30T10:12:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:45.957Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-20T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:45.957Z"
+            },
+            "SK": {
+                "S": "WEIGHT#194b5f9b-9557-4390-805d-eed043d49820"
+            },
+            "weightKg": {
+                "N": "90.9"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-27T10:51:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#2224b738-0f58-4e7e-8162-740bfea0efff"
+            },
+            "weightKg": {
+                "N": "89.7"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-27T10:51:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-19T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#24215c06-d0ab-42f5-afb5-8f341d7798d4"
+            },
+            "weightKg": {
+                "N": "96"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-19T08:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-27T09:51:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#349b4dad-23e3-4ce3-806f-7bcc76311829"
+            },
+            "weightKg": {
+                "N": "89.7"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-27T09:51:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-06T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#35c7e7d0-be35-40c6-b77b-80bf1f152411"
+            },
+            "weightKg": {
+                "N": "93"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-06T08:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-28T16:28:55.408Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-10-26T16:28"
+            },
+            "createdAt": {
+                "S": "2025-10-28T16:28:55.408Z"
+            },
+            "SK": {
+                "S": "WEIGHT#56ba4d39-c1af-4187-a490-8056f1ffe50f"
+            },
+            "weightKg": {
+                "N": "90.7"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-10-26T16:28"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-30T09:12:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#586383d0-63d1-4189-9ea0-87db6d94144e"
+            },
+            "weightKg": {
+                "N": "93.6"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-30T09:12:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:46.054Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-27T10:51:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:46.054Z"
+            },
+            "SK": {
+                "S": "WEIGHT#5c3ea5a7-0754-4d25-9e16-c71b7e3cf361"
+            },
+            "weightKg": {
+                "N": "89.7"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-27T10:51:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:45.896Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:45.896Z"
+            },
+            "SK": {
+                "S": "WEIGHT#6b6f2a4c-0861-4883-a90f-ef46fa058f28"
+            },
+            "weightKg": {
+                "N": "93"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-28T16:29:09.197Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-10-28T16:29"
+            },
+            "createdAt": {
+                "S": "2025-10-28T16:29:09.197Z"
+            },
+            "SK": {
+                "S": "WEIGHT#8b6f9671-1257-4b13-8fea-3d4a06b697c6"
+            },
+            "weightKg": {
+                "N": "91.2"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-10-28T16:29"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-20T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#8d63c536-caee-40f0-a479-bebc767824fa"
+            },
+            "weightKg": {
+                "N": "90.9"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T08:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-20T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#94928da2-7e4a-44a6-bc62-9ff5805f21bb"
+            },
+            "weightKg": {
+                "N": "90.9"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#a28e2296-f817-43a0-a819-50a6faa7812b"
+            },
+            "weightKg": {
+                "N": "95"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-19T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#a717aa19-81c3-4b88-9cab-6b04abbad006"
+            },
+            "weightKg": {
+                "N": "96"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-19T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-09-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "WEIGHT#c4f3aa59-62ac-4ae7-acea-494e7a6315b0"
+            },
+            "weightKg": {
+                "N": "93"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:45.728Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-19T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:45.728Z"
+            },
+            "SK": {
+                "S": "WEIGHT#c8f91ebe-fdbe-4b17-9339-ce36efc010f1"
+            },
+            "weightKg": {
+                "N": "96"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-19T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:45.814Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-30T10:12:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:45.814Z"
+            },
+            "SK": {
+                "S": "WEIGHT#e56da0bf-75db-4f15-ac88-7213731697a8"
+            },
+            "weightKg": {
+                "N": "93.6"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-30T10:12:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:45.308Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:45.308Z"
+            },
+            "SK": {
+                "S": "WEIGHT#e9412f84-4a46-4988-b645-a6f9614108e0"
+            },
+            "weightKg": {
+                "N": "95"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-08-06T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T15:29:55.736Z"
+            },
+            "SK": {
+                "S": "WEIGHT#edb98936-c72d-4b1e-818d-826d36a4bb97"
+            },
+            "weightKg": {
+                "N": "95"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T08:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "WEIGHT"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:43:41.954Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-11-05T11:45:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T11:43:41.954Z"
+            },
+            "SK": {
+                "S": "WEIGHT#id_sim4j6fpi_1762515934353"
+            },
+            "weightKg": {
+                "N": "90.2"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-11-05T11:45:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            }
+        }
+    ],
+    "Count": 38,
+    "ScannedCount": 38,
+    "ConsumedCapacity": null
+}

@@ -1,0 +1,694 @@
+{
+  "schema_version": "1.0",
+  "generated_date": "2025-11-07",
+  "description": "Complete field mapping between frontend (localStorage) and backend (DynamoDB/API) schemas",
+
+  "injections": {
+    "entity_name_frontend": "injection",
+    "entity_name_backend": "injection",
+    "table_name": "retatrutide-tracker-prod",
+    "pk_format": "USER#{userId}",
+    "sk_format": "INJECTION#{injectionId}",
+
+    "field_mappings": {
+      "id": {
+        "frontend_name": "id",
+        "backend_name": "id",
+        "frontend_format": "id_{random}_{timestamp}",
+        "backend_format": "uuid-v4",
+        "type": "string",
+        "required": true,
+        "example_frontend": "id_abc123_1699876543210",
+        "example_backend": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "migration_needed": true,
+        "migration_strategy": "Generate new UUID, maintain old ID in metadata"
+      },
+
+      "timestamp": {
+        "frontend_name": "timestamp",
+        "backend_name": "timestamp",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "example": "2024-10-29T14:30:00.000Z",
+        "migration_needed": false
+      },
+
+      "dose_mg": {
+        "frontend_name": "dose_mg",
+        "backend_name": "doseMg",
+        "type": "number",
+        "unit": "mg",
+        "required": true,
+        "validation": {
+          "min": 0.1,
+          "max": 20,
+          "precision": 1
+        },
+        "example_frontend": 4.0,
+        "example_backend": 4.0,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase"
+      },
+
+      "injection_site": {
+        "frontend_name": "injection_site",
+        "backend_name": "site",
+        "type": "string",
+        "enum": [
+          "left_thigh",
+          "right_thigh",
+          "left_arm",
+          "right_arm",
+          "abdomen_left",
+          "abdomen_right"
+        ],
+        "required": true,
+        "example_frontend": "left_thigh",
+        "example_backend": "left_thigh",
+        "migration_needed": true,
+        "migration_strategy": "Rename field to 'site', keep enum values unchanged"
+      },
+
+      "vial_id": {
+        "frontend_name": "vial_id",
+        "backend_name": "vialId",
+        "type": "string",
+        "required": false,
+        "nullable": true,
+        "example_frontend": "vial-1",
+        "example_backend": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "migration_needed": true,
+        "migration_strategy": "Rename to camelCase, map old vial IDs to new UUIDs"
+      },
+
+      "notes": {
+        "frontend_name": "notes",
+        "backend_name": "notes",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "example": "Felt some pain at injection site",
+        "migration_needed": false
+      },
+
+      "weight_kg": {
+        "frontend_name": "weight_kg",
+        "backend_name": "weightKg",
+        "type": "number",
+        "unit": "kg",
+        "required": false,
+        "nullable": true,
+        "validation": {
+          "min": 20,
+          "max": 300,
+          "precision": 1
+        },
+        "example_frontend": 90.2,
+        "example_backend": 90.2,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase",
+        "notes": "Added 2025-11-07 for graph integration"
+      },
+
+      "createdAt": {
+        "frontend_name": null,
+        "backend_name": "createdAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-10-29T14:30:05.123Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp or use current time"
+      },
+
+      "updatedAt": {
+        "frontend_name": null,
+        "backend_name": "updatedAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-10-29T14:30:05.123Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp or use current time"
+      },
+
+      "entityType": {
+        "frontend_name": null,
+        "backend_name": "entityType",
+        "type": "string",
+        "constant": "INJECTION",
+        "required": true,
+        "backend_only": true,
+        "migration_needed": true,
+        "migration_strategy": "Add constant value 'INJECTION'"
+      },
+
+      "GSI1PK": {
+        "frontend_name": null,
+        "backend_name": "GSI1PK",
+        "format": "USER#{userId}",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+        "migration_needed": true,
+        "migration_strategy": "Generate from user ID"
+      },
+
+      "GSI1SK": {
+        "frontend_name": null,
+        "backend_name": "GSI1SK",
+        "format": "TIMESTAMP#{timestamp}",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "TIMESTAMP#2024-10-29T14:30:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp field"
+      }
+    }
+  },
+
+  "vials": {
+    "entity_name_frontend": "vial",
+    "entity_name_backend": "vial",
+    "table_name": "retatrutide-tracker-prod",
+    "pk_format": "USER#{userId}",
+    "sk_format": "VIAL#{vialId}",
+
+    "field_mappings": {
+      "id": {
+        "frontend_name": "vial_id",
+        "backend_name": "id",
+        "frontend_format": "vial-{number}",
+        "backend_format": "uuid-v4",
+        "type": "string",
+        "required": true,
+        "example_frontend": "vial-1",
+        "example_backend": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "migration_needed": true,
+        "migration_strategy": "Rename 'vial_id' to 'id', generate UUID"
+      },
+
+      "concentration_mg_per_ml": {
+        "frontend_name": "concentration_mg_per_ml",
+        "backend_name": "concentrationMgPerMl",
+        "type": "number",
+        "unit": "mg/ml",
+        "required": true,
+        "validation": {
+          "min": 1,
+          "max": 100
+        },
+        "example_frontend": 10,
+        "example_backend": 10,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase"
+      },
+
+      "status": {
+        "frontend_name": "status",
+        "backend_name": "status",
+        "type": "string",
+        "enum": ["dry", "active", "finished"],
+        "required": true,
+        "default": "dry",
+        "example": "active",
+        "migration_needed": false
+      },
+
+      "source": {
+        "frontend_name": "source",
+        "backend_name": "source",
+        "type": "string",
+        "required": false,
+        "example": "Peptides",
+        "migration_needed": false
+      },
+
+      "activated_date": {
+        "frontend_name": "activated_date",
+        "backend_name": "activatedDate",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": false,
+        "nullable": true,
+        "example_frontend": "2024-10-15T10:00:00.000Z",
+        "example_backend": "2024-10-15T10:00:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase"
+      },
+
+      "notes": {
+        "frontend_name": "notes",
+        "backend_name": "notes",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "example": "Batch #12345",
+        "migration_needed": false
+      },
+
+      "current_volume_ml": {
+        "frontend_name": "current_volume_ml",
+        "backend_name": "currentVolumeMl",
+        "type": "number",
+        "unit": "ml",
+        "required": false,
+        "nullable": true,
+        "validation": {
+          "min": 0,
+          "max": 1.0
+        },
+        "example_frontend": 0.6,
+        "example_backend": 0.6,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase",
+        "notes": "Should be calculated from injection history, not stored"
+      },
+
+      "used_volume_ml": {
+        "frontend_name": "used_volume_ml",
+        "backend_name": "usedVolumeMl",
+        "type": "number",
+        "unit": "ml",
+        "required": false,
+        "nullable": true,
+        "validation": {
+          "min": 0,
+          "max": 1.0
+        },
+        "example_frontend": 0.4,
+        "example_backend": 0.4,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase",
+        "notes": "Should be calculated from injection history, not stored"
+      },
+
+      "createdAt": {
+        "frontend_name": null,
+        "backend_name": "createdAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-10-15T10:00:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Use activated_date or current time"
+      },
+
+      "updatedAt": {
+        "frontend_name": null,
+        "backend_name": "updatedAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-11-07T08:00:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Use current time"
+      },
+
+      "entityType": {
+        "frontend_name": null,
+        "backend_name": "entityType",
+        "type": "string",
+        "constant": "VIAL",
+        "required": true,
+        "backend_only": true,
+        "migration_needed": true,
+        "migration_strategy": "Add constant value 'VIAL'"
+      }
+    }
+  },
+
+  "weights": {
+    "entity_name_frontend": "weight",
+    "entity_name_backend": "weight",
+    "table_name": "retatrutide-tracker-prod",
+    "pk_format": "USER#{userId}",
+    "sk_format": "WEIGHT#{weightId}",
+
+    "field_mappings": {
+      "id": {
+        "frontend_name": "id",
+        "backend_name": "id",
+        "frontend_format": "weight_{timestamp}",
+        "backend_format": "uuid-v4",
+        "type": "string",
+        "required": true,
+        "example_frontend": "weight_1699876543210",
+        "example_backend": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "migration_needed": true,
+        "migration_strategy": "Generate new UUID, maintain old ID in metadata"
+      },
+
+      "timestamp": {
+        "frontend_name": "timestamp",
+        "backend_name": "timestamp",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "example": "2024-10-29T08:00:00.000Z",
+        "migration_needed": false
+      },
+
+      "weight_kg": {
+        "frontend_name": "weight_kg",
+        "backend_name": "weightKg",
+        "type": "number",
+        "unit": "kg",
+        "required": true,
+        "validation": {
+          "min": 20,
+          "max": 300,
+          "precision": 1
+        },
+        "example_frontend": 90.2,
+        "example_backend": 90.2,
+        "migration_needed": true,
+        "migration_strategy": "Rename field from snake_case to camelCase"
+      },
+
+      "notes": {
+        "frontend_name": "notes",
+        "backend_name": "notes",
+        "type": "string",
+        "required": false,
+        "default": "",
+        "example": "Morning weight after breakfast",
+        "migration_needed": false
+      },
+
+      "createdAt": {
+        "frontend_name": null,
+        "backend_name": "createdAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-10-29T08:05:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp or use current time"
+      },
+
+      "updatedAt": {
+        "frontend_name": null,
+        "backend_name": "updatedAt",
+        "format": "ISO 8601",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "2024-10-29T08:05:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp or use current time"
+      },
+
+      "entityType": {
+        "frontend_name": null,
+        "backend_name": "entityType",
+        "type": "string",
+        "constant": "WEIGHT",
+        "required": true,
+        "backend_only": true,
+        "migration_needed": true,
+        "migration_strategy": "Add constant value 'WEIGHT'"
+      },
+
+      "GSI1PK": {
+        "frontend_name": null,
+        "backend_name": "GSI1PK",
+        "format": "USER#{userId}",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+        "migration_needed": true,
+        "migration_strategy": "Generate from user ID"
+      },
+
+      "GSI1SK": {
+        "frontend_name": null,
+        "backend_name": "GSI1SK",
+        "format": "TIMESTAMP#{timestamp}",
+        "type": "string",
+        "required": true,
+        "backend_only": true,
+        "example": "TIMESTAMP#2024-10-29T08:00:00.000Z",
+        "migration_needed": true,
+        "migration_strategy": "Generate from timestamp field"
+      }
+    }
+  },
+
+  "settings": {
+    "entity_name_frontend": "settings",
+    "entity_name_backend": null,
+    "storage_location": "localStorage only",
+    "notes": "Settings are not synced to cloud",
+
+    "field_mappings": {
+      "height": {
+        "frontend_name": "height",
+        "type": "number",
+        "unit": "cm",
+        "required": false,
+        "validation": {
+          "min": 100,
+          "max": 250
+        },
+        "example": 175,
+        "sync_status": "frontend_only"
+      },
+
+      "start_weight": {
+        "frontend_name": "start_weight",
+        "type": "number",
+        "unit": "kg",
+        "required": false,
+        "validation": {
+          "min": 20,
+          "max": 300
+        },
+        "example": 95,
+        "sync_status": "frontend_only"
+      },
+
+      "goal_weight": {
+        "frontend_name": "goal_weight",
+        "type": "number",
+        "unit": "kg",
+        "required": false,
+        "validation": {
+          "min": 20,
+          "max": 300
+        },
+        "example": 75,
+        "sync_status": "frontend_only"
+      },
+
+      "theme": {
+        "frontend_name": "theme",
+        "type": "string",
+        "enum": ["light", "dark", "auto"],
+        "default": "dark",
+        "example": "dark",
+        "sync_status": "frontend_only"
+      },
+
+      "notifications_enabled": {
+        "frontend_name": "notifications_enabled",
+        "type": "boolean",
+        "default": true,
+        "example": true,
+        "sync_status": "frontend_only"
+      }
+    }
+  },
+
+  "migration_scripts": {
+    "frontend_to_backend": {
+      "description": "Transform frontend localStorage data to backend DynamoDB format",
+      "function_name": "transformToBackend",
+      "example": {
+        "injection_frontend": {
+          "id": "id_abc123_1699876543210",
+          "timestamp": "2024-10-29T14:30:00.000Z",
+          "dose_mg": 4.0,
+          "injection_site": "left_thigh",
+          "vial_id": "vial-1",
+          "notes": "Felt fine",
+          "weight_kg": 90.2
+        },
+        "injection_backend": {
+          "PK": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+          "SK": "INJECTION#a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "GSI1PK": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+          "GSI1SK": "TIMESTAMP#2024-10-29T14:30:00.000Z",
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "timestamp": "2024-10-29T14:30:00.000Z",
+          "doseMg": 4.0,
+          "site": "left_thigh",
+          "vialId": "new-vial-uuid",
+          "notes": "Felt fine",
+          "weightKg": 90.2,
+          "createdAt": "2024-10-29T14:30:00.000Z",
+          "updatedAt": "2024-10-29T14:30:00.000Z",
+          "entityType": "INJECTION",
+          "_migrationMetadata": {
+            "oldId": "id_abc123_1699876543210",
+            "oldVialId": "vial-1",
+            "migratedAt": "2025-11-07T12:00:00.000Z"
+          }
+        }
+      }
+    },
+
+    "backend_to_frontend": {
+      "description": "Transform backend DynamoDB data to frontend localStorage format",
+      "function_name": "transformToFrontend",
+      "example": {
+        "injection_backend": {
+          "PK": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+          "SK": "INJECTION#a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "GSI1PK": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2",
+          "GSI1SK": "TIMESTAMP#2024-10-29T14:30:00.000Z",
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "timestamp": "2024-10-29T14:30:00.000Z",
+          "doseMg": 4.0,
+          "site": "left_thigh",
+          "vialId": "new-vial-uuid",
+          "notes": "Felt fine",
+          "weightKg": 90.2,
+          "createdAt": "2024-10-29T14:30:00.000Z",
+          "updatedAt": "2024-10-29T14:30:00.000Z",
+          "entityType": "INJECTION"
+        },
+        "injection_frontend": {
+          "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "timestamp": "2024-10-29T14:30:00.000Z",
+          "dose_mg": 4.0,
+          "injection_site": "left_thigh",
+          "vial_id": "new-vial-uuid",
+          "notes": "Felt fine",
+          "weight_kg": 90.2
+        }
+      }
+    }
+  },
+
+  "validation_rules": {
+    "injections": {
+      "dose_mg": {
+        "min": 0.1,
+        "max": 20,
+        "precision": 1,
+        "error_message": "Dose must be between 0.1 and 20 mg"
+      },
+      "injection_site": {
+        "enum": ["left_thigh", "right_thigh", "left_arm", "right_arm", "abdomen_left", "abdomen_right"],
+        "error_message": "Invalid injection site"
+      },
+      "timestamp": {
+        "format": "ISO 8601",
+        "max": "now",
+        "error_message": "Injection date cannot be in the future"
+      },
+      "weight_kg": {
+        "min": 20,
+        "max": 300,
+        "precision": 1,
+        "error_message": "Weight must be between 20 and 300 kg"
+      }
+    },
+
+    "vials": {
+      "concentration_mg_per_ml": {
+        "min": 1,
+        "max": 100,
+        "error_message": "Concentration must be between 1 and 100 mg/ml"
+      },
+      "status": {
+        "enum": ["dry", "active", "finished"],
+        "error_message": "Status must be dry, active, or finished"
+      },
+      "current_volume_ml": {
+        "min": 0,
+        "max": 1.0,
+        "precision": 2,
+        "error_message": "Volume must be between 0 and 1.0 ml"
+      }
+    },
+
+    "weights": {
+      "weight_kg": {
+        "min": 20,
+        "max": 300,
+        "precision": 1,
+        "error_message": "Weight must be between 20 and 300 kg"
+      },
+      "timestamp": {
+        "format": "ISO 8601",
+        "max": "now",
+        "error_message": "Weight date cannot be in the future"
+      }
+    }
+  },
+
+  "enum_mappings": {
+    "injection_sites": {
+      "values": [
+        {"value": "left_thigh", "display": "Left Thigh", "icon": "🦵"},
+        {"value": "right_thigh", "display": "Right Thigh", "icon": "🦵"},
+        {"value": "left_arm", "display": "Left Arm", "icon": "💪"},
+        {"value": "right_arm", "display": "Right Arm", "icon": "💪"},
+        {"value": "abdomen_left", "display": "Abdomen (Left)", "icon": "🫃"},
+        {"value": "abdomen_right", "display": "Abdomen (Right)", "icon": "🫃"}
+      ],
+      "same_in_frontend_and_backend": true
+    },
+
+    "vial_statuses": {
+      "values": [
+        {"value": "dry", "display": "Dry (Not Mixed)", "color": "#94a3b8"},
+        {"value": "active", "display": "Active", "color": "#22c55e"},
+        {"value": "finished", "display": "Finished", "color": "#64748b"}
+      ],
+      "same_in_frontend_and_backend": true
+    }
+  },
+
+  "id_migration_map": {
+    "description": "Mapping table for migrating old IDs to new UUIDs",
+    "format": {
+      "old_id": "string (old format)",
+      "new_id": "string (UUID v4)",
+      "entity_type": "INJECTION | VIAL | WEIGHT",
+      "migrated_at": "ISO 8601 timestamp"
+    },
+    "example_entries": [
+      {
+        "old_id": "id_abc123_1699876543210",
+        "new_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "entity_type": "INJECTION",
+        "migrated_at": "2025-11-07T12:00:00.000Z"
+      },
+      {
+        "old_id": "vial-1",
+        "new_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+        "entity_type": "VIAL",
+        "migrated_at": "2025-11-07T12:00:00.000Z"
+      },
+      {
+        "old_id": "weight_1699876543210",
+        "new_id": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+        "entity_type": "WEIGHT",
+        "migrated_at": "2025-11-07T12:00:00.000Z"
+      }
+    ],
+    "storage_location": "localStorage key: 'id_migration_map'"
+  }
+}

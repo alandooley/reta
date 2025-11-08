@@ -1,0 +1,501 @@
+{
+    "Items": [
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.357Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First 2.0 mg dose (20 units). Mild appetite suppression."
+            },
+            "timestamp": {
+                "S": "2025-08-30T10:12:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.357Z"
+            },
+            "SK": {
+                "S": "INJECTION#1a3693d8-eb69-496d-9348-89c79cfb2503"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-30T10:12:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.822Z"
+            },
+            "notes": {
+                "S": "Right abdomen. New vial reconstituted (10 mg + 1 mL BAC). First 4.0 mg dose (40 units)."
+            },
+            "timestamp": {
+                "S": "2025-09-13T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.822Z"
+            },
+            "SK": {
+                "S": "INJECTION#1b1a6472-d35c-47ac-b664-caabf10f7eb6"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-13T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "25eaa9d1-676f-47c8-ad0b-6e5783bb912e"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.5"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.741Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second dose (5 units). No major side effects."
+            },
+            "timestamp": {
+                "S": "2025-08-12T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.741Z"
+            },
+            "SK": {
+                "S": "INJECTION#484c5af1-2e3c-425d-b43c-4422495b61c8"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-12T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:59:27.369Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-11-05T11:45:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T11:59:27.369Z"
+            },
+            "SK": {
+                "S": "INJECTION#4f205636-2e59-47ef-b667-85ecc1eb403d"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-11-05T11:45:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "vial-1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.172Z"
+            },
+            "notes": {
+                "S": ""
+            },
+            "timestamp": {
+                "S": "2025-11-05T11:45:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.172Z"
+            },
+            "SK": {
+                "S": "INJECTION#66ba4334-d134-4bd9-ad5b-31d49fa44838"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-11-05T11:45:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "vial-1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "1"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.540Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First 1.0 mg (10 units). Mild nausea only."
+            },
+            "timestamp": {
+                "S": "2025-08-19T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.540Z"
+            },
+            "SK": {
+                "S": "INJECTION#73f393a6-90c3-4d29-978f-e439d97cfb3d"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-19T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "3"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.152Z"
+            },
+            "notes": {
+                "S": "3.0 mg (30 units). Tolerated well, little nausea."
+            },
+            "timestamp": {
+                "S": "2025-09-06T08:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.152Z"
+            },
+            "SK": {
+                "S": "INJECTION#8636ecd9-c977-40b3-970b-ff37322825d2"
+            },
+            "site": {
+                "S": "abdomen_right"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-06T08:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.25"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:33.957Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First micro-dose (2.5 units) to start titration."
+            },
+            "timestamp": {
+                "S": "2025-08-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:33.957Z"
+            },
+            "SK": {
+                "S": "INJECTION#86e74c36-01db-430e-83b5-14b80c4db8e5"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4.2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.438Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Only 42 units left in vial. Finished it. Suppression moderate."
+            },
+            "timestamp": {
+                "S": "2025-09-27T10:51:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.438Z"
+            },
+            "SK": {
+                "S": "INJECTION#8a333164-3ee4-4475-8021-cf8005ae031c"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-27T10:51:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second 4.0 mg dose. Mild suppression noticed."
+            },
+            "timestamp": {
+                "S": "2025-09-20T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "INJECTION#8d369cec-cab1-48a4-b003-ea19c793d934"
+            },
+            "site": {
+                "S": "abdomen"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "4"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T12:00:32.623Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second 4.0 mg dose. Mild suppression noticed."
+            },
+            "timestamp": {
+                "S": "2025-09-20T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-11-07T12:00:32.623Z"
+            },
+            "SK": {
+                "S": "INJECTION#c966224f-5593-42be-aaf4-fc684fe15052"
+            },
+            "site": {
+                "S": "abdomen_left"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-09-20T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "S": "c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.5"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "notes": {
+                "S": "Right abdomen. Second dose (5 units). No major side effects."
+            },
+            "timestamp": {
+                "S": "2025-08-12T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "SK": {
+                "S": "INJECTION#d8f15fa5-70fc-4b80-9907-f8e413c5f54e"
+            },
+            "site": {
+                "S": "abdomen"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-12T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        },
+        {
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "entityType": {
+                "S": "INJECTION"
+            },
+            "doseMg": {
+                "N": "0.25"
+            },
+            "updatedAt": {
+                "S": "2025-10-24T16:25:43.804Z"
+            },
+            "notes": {
+                "S": "Right abdomen. First micro-dose (2.5 units) to start titration."
+            },
+            "timestamp": {
+                "S": "2025-08-06T09:00:00.000Z"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:43.804Z"
+            },
+            "SK": {
+                "S": "INJECTION#e70a0dd5-42fa-461b-b11f-d939a73857eb"
+            },
+            "site": {
+                "S": "abdomen"
+            },
+            "GSI1SK": {
+                "S": "TIMESTAMP#2025-08-06T09:00:00.000Z"
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "vialId": {
+                "NULL": true
+            }
+        }
+    ],
+    "Count": 13,
+    "ScannedCount": 39,
+    "ConsumedCapacity": null
+}

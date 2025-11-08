@@ -29,7 +29,7 @@ const {
 
 test.describe('Chart Rendering - Weight Chart', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -304,7 +304,7 @@ test.describe('Chart Rendering - Weight Chart', () => {
 
 test.describe('Chart Rendering - Chart Container', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -347,7 +347,7 @@ test.describe('Chart Rendering - Chart Container', () => {
 
 test.describe('Chart Rendering - Chart Responsiveness', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

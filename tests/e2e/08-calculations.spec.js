@@ -28,7 +28,7 @@ const {
 
 test.describe('Calculations - Medication Level', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -225,7 +225,7 @@ test.describe('Calculations - Medication Level', () => {
 
 test.describe('Calculations - Supply Forecast', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -440,7 +440,7 @@ test.describe('Calculations - Supply Forecast', () => {
 
 test.describe('Calculations - BMI Edge Cases', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

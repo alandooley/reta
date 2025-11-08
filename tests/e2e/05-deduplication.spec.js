@@ -26,7 +26,7 @@ const {
 
 test.describe('Deduplication - Duplicate Detection', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -257,21 +257,21 @@ test.describe('Deduplication - Duplicate Detection', () => {
                 id: 'inj-2a',
                 timestamp: '2025-11-08T10:00:00Z',
                 dose_mg: 0.75,
-                injection_site: 'right_abdomen',
+                injection_site: 'abdomen_right',
                 vial_id: vial.vial_id
             }),
             createValidInjection({
                 id: 'inj-2b',
                 timestamp: '2025-11-08T10:00:00Z',
                 dose_mg: 0.75,
-                injection_site: 'right_abdomen',
+                injection_site: 'abdomen_right',
                 vial_id: vial.vial_id
             }),
             createValidInjection({
                 id: 'inj-2c',
                 timestamp: '2025-11-08T10:00:00Z',
                 dose_mg: 0.75,
-                injection_site: 'right_abdomen',
+                injection_site: 'abdomen_right',
                 vial_id: vial.vial_id
             })
         ];
@@ -312,7 +312,7 @@ test.describe('Deduplication - Duplicate Detection', () => {
 
 test.describe('Deduplication - Record Selection', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -598,7 +598,7 @@ test.describe('Deduplication - Record Selection', () => {
 
 test.describe('Deduplication - Data Cleanup', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

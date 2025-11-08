@@ -32,7 +32,7 @@ const {
 
 test.describe('Weight CRUD - CREATE Operations', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -45,17 +45,16 @@ test.describe('Weight CRUD - CREATE Operations', () => {
         await navigateToTab(page, 'results');
 
         // Click Add Weight button
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
         // Fill form
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.5');
         await fillInput(page, '#weight-body-fat', '22.5');
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // Verify weight created
         const weights = await getWeights(page);
@@ -70,17 +69,16 @@ test.describe('Weight CRUD - CREATE Operations', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
         // Fill only required fields
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '75.0');
         // Skip body fat
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         expect(weights.length).toBe(1);
@@ -94,15 +92,14 @@ test.describe('Weight CRUD - CREATE Operations', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         const expectedLbs = 80.0 * 2.20462; // 176.3696
@@ -115,15 +112,14 @@ test.describe('Weight CRUD - CREATE Operations', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         expect(weights[0].source).toBe('manual');
@@ -136,22 +132,20 @@ test.describe('Weight CRUD - CREATE Operations', () => {
         await navigateToTab(page, 'results');
 
         // Add first weight
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // Add second weight
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
-        await fillInput(page, '#weight-date', '2025-11-08');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-08T08:00');
         await fillInput(page, '#weight-kg', '79.5');
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         expect(weights.length).toBe(2);
@@ -165,7 +159,7 @@ test.describe('Weight CRUD - CREATE Operations', () => {
 
 test.describe('Weight CRUD - BMI Calculation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -179,15 +173,14 @@ test.describe('Weight CRUD - BMI Calculation', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         const heightM = 1.75;
@@ -202,15 +195,14 @@ test.describe('Weight CRUD - BMI Calculation', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
 
         await submitForm(page, '#add-weight-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         const weights = await getWeights(page);
         expect(weights[0].bmi).toBeNull();
@@ -230,15 +222,14 @@ test.describe('Weight CRUD - BMI Calculation', () => {
             await reloadPage(page);
 
             await navigateToTab(page, 'results');
-            await page.click('button:has-text("+ Add Weight")');
+            await page.click('button.btn-primary:has-text("Add Weight")');
             await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-            await fillInput(page, '#weight-date', '2025-11-07');
-            await fillInput(page, '#weight-time', '08:00');
+            await fillInput(page, '#weight-date', '2025-11-07T08:00');
             await fillInput(page, '#weight-kg', String(testCase.weightKg));
 
             await submitForm(page, '#add-weight-form');
-            await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+            await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
             const weights = await getWeights(page);
             expect(weights[0].bmi).toBeCloseTo(testCase.expectedBMI, 2);
@@ -248,7 +239,7 @@ test.describe('Weight CRUD - BMI Calculation', () => {
 
 test.describe('Weight CRUD - DELETE Operations', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -343,7 +334,7 @@ test.describe('Weight CRUD - DELETE Operations', () => {
 
 test.describe('Weight CRUD - DATA PERSISTENCE', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -423,7 +414,7 @@ test.describe('Weight CRUD - DATA PERSISTENCE', () => {
 
 test.describe('Weight CRUD - VALIDATION', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -433,11 +424,10 @@ test.describe('Weight CRUD - VALIDATION', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '-5.0'); // Invalid
 
         const weightInput = await page.$('#weight-kg');
@@ -451,11 +441,10 @@ test.describe('Weight CRUD - VALIDATION', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '0'); // Invalid
 
         const weightInput = await page.$('#weight-kg');
@@ -469,11 +458,10 @@ test.describe('Weight CRUD - VALIDATION', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '600'); // Unrealistic
 
         const weightInput = await page.$('#weight-kg');
@@ -490,11 +478,10 @@ test.describe('Weight CRUD - VALIDATION', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         await fillInput(page, '#weight-kg', '80.0');
         await fillInput(page, '#weight-body-fat', '150'); // Invalid > 100
 
@@ -509,11 +496,10 @@ test.describe('Weight CRUD - VALIDATION', () => {
         await reloadPage(page);
 
         await navigateToTab(page, 'results');
-        await page.click('button:has-text("+ Add Weight")');
+        await page.click('button.btn-primary:has-text("Add Weight")');
         await page.waitForSelector('#add-weight-form', { timeout: 2000 });
 
-        await fillInput(page, '#weight-date', '2025-11-07');
-        await fillInput(page, '#weight-time', '08:00');
+        await fillInput(page, '#weight-date', '2025-11-07T08:00');
         // Skip weight_kg
 
         const weightInput = await page.$('#weight-kg');
@@ -525,7 +511,7 @@ test.describe('Weight CRUD - VALIDATION', () => {
 
 test.describe('Weight CRUD - Weight Tracking', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

@@ -30,7 +30,7 @@ const {
 
 test.describe('Sync Queue - Basic Operations', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -120,7 +120,7 @@ test.describe('Sync Queue - Basic Operations', () => {
 
 test.describe('Sync Queue - Retry Logic', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -236,7 +236,7 @@ test.describe('Sync Queue - Retry Logic', () => {
 
 test.describe('Sync Queue - Queue Management', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -471,7 +471,7 @@ test.describe('Sync Queue - Queue Management', () => {
 
 test.describe('Sync Queue - Edge Cases', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

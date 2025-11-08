@@ -34,7 +34,7 @@ const {
 
 test.describe('FIX_SUMMARY Regression - Bug #1: Deduplication Property Names', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -127,8 +127,8 @@ test.describe('FIX_SUMMARY Regression - Bug #1: Deduplication Property Names', (
             createValidInjection({
                 id: 'inj-2',
                 timestamp: '2025-11-07T11:00:00Z',
-                dose_mg: 0.75,
-                injection_site: 'right_abdomen',
+                dose_mg: 0.8,
+                injection_site: 'abdomen_right',
                 vial_id: vial.vial_id
             })
         ];
@@ -162,7 +162,7 @@ test.describe('FIX_SUMMARY Regression - Bug #1: Deduplication Property Names', (
 
 test.describe('FIX_SUMMARY Regression - Bug #2: Form Reset After Submission', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -180,15 +180,14 @@ test.describe('FIX_SUMMARY Regression - Bug #2: Form Reset After Submission', ()
         await openModal(page, 'button:has-text("+ Add Shot")');
 
         // Fill form with distinctive values
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '0.5');
         await fillInput(page, '#shot-notes', 'Test injection notes');
 
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // Reopen modal
         await openModal(page, 'button:has-text("+ Add Shot")');
@@ -219,14 +218,13 @@ test.describe('FIX_SUMMARY Regression - Bug #2: Form Reset After Submission', ()
 
         // First submission
         await openModal(page, 'button:has-text("+ Add Shot")');
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '0.5');
         await fillInput(page, '#shot-notes', 'First submission');
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // User immediately reopens (confused because form wasn't reset)
         await openModal(page, 'button:has-text("+ Add Shot")');
@@ -246,7 +244,7 @@ test.describe('FIX_SUMMARY Regression - Bug #2: Form Reset After Submission', ()
 
 test.describe('FIX_SUMMARY Regression - Bug #3: Input Validation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -264,8 +262,7 @@ test.describe('FIX_SUMMARY Regression - Bug #3: Input Validation', () => {
         await openModal(page, 'button:has-text("+ Add Shot")');
 
         // Try to submit with dose = 100mg (invalid)
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '100'); // INVALID: > 50mg
@@ -294,8 +291,7 @@ test.describe('FIX_SUMMARY Regression - Bug #3: Input Validation', () => {
         await openModal(page, 'button:has-text("+ Add Shot")');
 
         // Fill form WITHOUT selecting vial
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         // Skip vial selection
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '0.5');
@@ -322,8 +318,7 @@ test.describe('FIX_SUMMARY Regression - Bug #3: Input Validation', () => {
         await navigateToTab(page, 'shots');
         await openModal(page, 'button:has-text("+ Add Shot")');
 
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', 'not-a-number'); // Invalid
@@ -340,7 +335,7 @@ test.describe('FIX_SUMMARY Regression - Bug #3: Input Validation', () => {
 
 test.describe('FIX_SUMMARY Regression - Bug #4: Deletions Stick', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -475,7 +470,7 @@ test.describe('FIX_SUMMARY Regression - Bug #4: Deletions Stick', () => {
 
 test.describe('FIX_SUMMARY Regression - Integration Test', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -492,14 +487,13 @@ test.describe('FIX_SUMMARY Regression - Integration Test', () => {
 
         // Add first shot
         await openModal(page, 'button:has-text("+ Add Shot")');
-        await fillInput(page, '#shot-date', '2025-11-07');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-07T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
         await selectOption(page, '#shot-site', 'left_thigh');
         await fillInput(page, '#shot-dose', '0.5');
         await fillInput(page, '#shot-notes', 'First shot');
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // Verify one injection
         let injections = await getInjections(page);
@@ -511,13 +505,12 @@ test.describe('FIX_SUMMARY Regression - Integration Test', () => {
         expect(notesAfterReset).toBe('');
 
         // Add second shot (different time)
-        await fillInput(page, '#shot-date', '2025-11-08');
-        await fillInput(page, '#shot-time', '10:00');
+        await fillInput(page, '#shot-date', '2025-11-08T10:00');
         await selectOption(page, '#shot-vial', vial.vial_id);
-        await selectOption(page, '#shot-site', 'right_abdomen');
-        await fillInput(page, '#shot-dose', '0.75');
+        await selectOption(page, '#shot-site', 'abdomen_right');
+        await fillInput(page, '#shot-dose', '0.8');
         await submitForm(page, '#add-shot-form');
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
 
         // Verify two unique injections (no duplicates)
         injections = await getInjections(page);

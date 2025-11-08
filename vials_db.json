@@ -1,0 +1,121 @@
+{
+    "Items": [
+        {
+            "currentVolumeMl": {
+                "NULL": true
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "finished"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:25:42.765Z"
+            },
+            "source": {
+                "S": ""
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-09-13"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:54:43.385Z"
+            },
+            "notes": {
+                "S": "Reconstituted 10mg with 1mL BAC water"
+            },
+            "startDate": {
+                "S": "2025-09-13"
+            },
+            "SK": {
+                "S": "VIAL#25eaa9d1-676f-47c8-ad0b-6e5783bb912e"
+            },
+            "usedVolumeMl": {
+                "NULL": true
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "NULL": true
+            },
+            "entityType": {
+                "S": "VIAL"
+            },
+            "concentrationMgPerMl": {
+                "N": "10"
+            },
+            "status": {
+                "S": "finished"
+            },
+            "createdAt": {
+                "S": "2025-10-24T16:33:13.754Z"
+            },
+            "source": {
+                "S": ""
+            },
+            "GSI1SK": {
+                "S": "VIAL#2025-09-13"
+            },
+            "GSI1PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:53:32.095Z"
+            },
+            "notes": {
+                "S": "Reconstituted 10mg with 1mL BAC water"
+            },
+            "startDate": {
+                "S": "2025-09-13"
+            },
+            "SK": {
+                "S": "VIAL#c45df327-4a87-4cb6-971b-f490d03e5ae1"
+            },
+            "usedVolumeMl": {
+                "NULL": true
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "initialVolumeMl": {
+                "N": "1"
+            }
+        },
+        {
+            "currentVolumeMl": {
+                "NULL": true
+            },
+            "SK": {
+                "S": "VIAL#vial-1"
+            },
+            "usedVolumeMl": {
+                "NULL": true
+            },
+            "PK": {
+                "S": "USER#3UjtxzveJhfT8ANmXN3inHW0Azy2"
+            },
+            "updatedAt": {
+                "S": "2025-11-07T11:54:48.956Z"
+            },
+            "status": {
+                "S": "active"
+            }
+        }
+    ],
+    "Count": 3,
+    "ScannedCount": 35,
+    "ConsumedCapacity": null
+}

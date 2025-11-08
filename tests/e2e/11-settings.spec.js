@@ -28,7 +28,7 @@ const {
 
 test.describe('Settings - Height Configuration', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -130,7 +130,7 @@ test.describe('Settings - Height Configuration', () => {
 
 test.describe('Settings - Goal Weight Configuration', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -227,7 +227,7 @@ test.describe('Settings - Goal Weight Configuration', () => {
 
 test.describe('Settings - Data Persistence', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -291,7 +291,7 @@ test.describe('Settings - Data Persistence', () => {
 
 test.describe('Settings - UI Elements', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -347,7 +347,7 @@ test.describe('Settings - UI Elements', () => {
 
 test.describe('Settings - Input Validation', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -417,7 +417,7 @@ test.describe('Settings - Input Validation', () => {
 
 test.describe('Settings - Save Indicator', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

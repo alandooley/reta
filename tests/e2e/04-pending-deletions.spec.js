@@ -32,7 +32,7 @@ const {
 
 test.describe('Pending Deletions - Basic Operations', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -130,7 +130,7 @@ test.describe('Pending Deletions - Basic Operations', () => {
 
 test.describe('Pending Deletions - Expiry Management', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -246,7 +246,7 @@ test.describe('Pending Deletions - Expiry Management', () => {
 
 test.describe('Pending Deletions - Resurrection Prevention', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -353,7 +353,7 @@ test.describe('Pending Deletions - Resurrection Prevention', () => {
 
 test.describe('Pending Deletions - Edge Cases', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });

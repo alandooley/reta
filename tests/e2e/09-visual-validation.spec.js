@@ -31,7 +31,7 @@ const {
 
 test.describe('Visual Validation - Supply Forecast Indicators', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -115,7 +115,7 @@ test.describe('Visual Validation - Supply Forecast Indicators', () => {
 
 test.describe('Visual Validation - Weight Change Indicators', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -177,7 +177,7 @@ test.describe('Visual Validation - Weight Change Indicators', () => {
 
 test.describe('Visual Validation - UI State', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -186,10 +186,10 @@ test.describe('Visual Validation - UI State', () => {
         await loadTestData(page, { injections: [], vials: [], weights: [] });
         await reloadPage(page);
 
-        const shotsTab = await page.$('button[onclick="app.switchTab(\'shots\')"]');
-        const inventoryTab = await page.$('button[onclick="app.switchTab(\'inventory\')"]');
-        const resultsTab = await page.$('button[onclick="app.switchTab(\'results\')"]');
-        const settingsTab = await page.$('button[onclick="app.switchTab(\'settings\')"]');
+        const shotsTab = await page.$('button[data-tab="shots"]');
+        const inventoryTab = await page.$('button[data-tab="inventory"]');
+        const resultsTab = await page.$('button[data-tab="results"]');
+        const settingsTab = await page.$('button[data-tab="settings"]');
 
         expect(shotsTab).not.toBeNull();
         expect(inventoryTab).not.toBeNull();
@@ -201,13 +201,13 @@ test.describe('Visual Validation - UI State', () => {
         await loadTestData(page, { injections: [], vials: [], weights: [] });
         await reloadPage(page);
 
-        // Initial tab should be active
-        const activeTab = await page.$('#shots-tab.active');
+        // Initial tab should be active (summary tab by default)
+        const activeTab = await page.$('button[data-tab="summary"].active');
         expect(activeTab).not.toBeNull();
 
         // Switch tab
         await navigateToTab(page, 'inventory');
-        const inventoryActive = await page.$('#inventory-tab.active');
+        const inventoryActive = await page.$('button[data-tab="inventory"].active');
         expect(inventoryActive).not.toBeNull();
     });
 
@@ -217,9 +217,9 @@ test.describe('Visual Validation - UI State', () => {
 
         await navigateToTab(page, 'shots');
 
-        // Check for empty state or no data message
+        // Check for empty state or no data message (look in main content area)
         const noDataFound = await page.evaluate(() => {
-            const table = document.querySelector('#shots-tab table tbody');
+            const table = document.querySelector('main table tbody');
             if (!table) return true;
 
             const rows = table.querySelectorAll('tr:not(.empty-state)');
@@ -241,7 +241,7 @@ test.describe('Visual Validation - UI State', () => {
         await navigateToTab(page, 'shots');
 
         const hasData = await page.evaluate(() => {
-            const table = document.querySelector('#shots-tab table tbody');
+            const table = document.querySelector('main table tbody');
             if (!table) return false;
 
             const rows = table.querySelectorAll('tr:not(.empty-state)');
@@ -255,7 +255,7 @@ test.describe('Visual Validation - UI State', () => {
         await loadTestData(page, { injections: [], vials: [], weights: [] });
         await reloadPage(page);
 
-        const modalVisible = await page.isVisible('.modal.show');
+        const modalVisible = await page.isVisible('#modal-overlay');
         expect(modalVisible).toBe(false);
     });
 
@@ -268,9 +268,9 @@ test.describe('Visual Validation - UI State', () => {
         await page.click('button:has-text("+ Add Shot")');
 
         // Wait for modal to appear
-        await page.waitForSelector('.modal.show', { timeout: 2000 });
+        await page.waitForSelector('#modal-overlay', { timeout: 2000 });
 
-        const modalVisible = await page.isVisible('.modal.show');
+        const modalVisible = await page.isVisible('#modal-overlay');
         expect(modalVisible).toBe(true);
     });
 
@@ -281,7 +281,7 @@ test.describe('Visual Validation - UI State', () => {
 
         await navigateToTab(page, 'shots');
         await page.click('button:has-text("+ Add Shot")');
-        await page.waitForSelector('.modal.show', { timeout: 2000 });
+        await page.waitForSelector('#modal-overlay', { timeout: 2000 });
 
         // Enter invalid dose
         await page.fill('#shot-dose', '100'); // > 50mg (invalid)
@@ -295,7 +295,7 @@ test.describe('Visual Validation - UI State', () => {
 
 test.describe('Visual Validation - Tooltips and Help Text', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -324,13 +324,13 @@ test.describe('Visual Validation - Tooltips and Help Text', () => {
         await reloadPage(page);
         await navigateToTab(page, 'settings');
 
-        // Check for presence of help text (not exact content)
+        // Check for presence of help text (not exact content) in main content area
         const hasHelpText = await page.evaluate(() => {
-            const settingsTab = document.querySelector('#settings-tab');
-            if (!settingsTab) return false;
+            const main = document.querySelector('main');
+            if (!main) return false;
 
             // Look for paragraphs or help text elements
-            const helpElements = settingsTab.querySelectorAll('p, .help-text, small');
+            const helpElements = main.querySelectorAll('p, .help-text, small');
             return helpElements.length > 0;
         });
 
@@ -340,7 +340,7 @@ test.describe('Visual Validation - Tooltips and Help Text', () => {
 
 test.describe('Visual Validation - Stat Cards', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -389,7 +389,7 @@ test.describe('Visual Validation - Stat Cards', () => {
 
 test.describe('Visual Validation - Loading States', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -401,7 +401,7 @@ test.describe('Visual Validation - Loading States', () => {
 
         await navigateToTab(page, 'shots');
         await page.click('button:has-text("+ Add Shot")');
-        await page.waitForSelector('.modal.show', { timeout: 2000 });
+        await page.waitForSelector('#modal-overlay', { timeout: 2000 });
 
         await page.fill('#shot-date', '2025-11-07');
         await page.fill('#shot-time', '10:00');
@@ -413,7 +413,7 @@ test.describe('Visual Validation - Loading States', () => {
 
         // Save indicator should appear briefly
         // Note: May disappear quickly, this tests that save flow works
-        await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 3000 });
+        await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 3000 });
     });
 
     test('should initialize without loading errors', async ({ page }) => {
@@ -438,7 +438,7 @@ test.describe('Visual Validation - Loading States', () => {
 
 test.describe('Visual Validation - Responsive Elements', () => {
     test.beforeEach(async ({ page }) => {
-        await page.goto('http://localhost:3000');
+        await page.goto('http://localhost:3000/?test=true');
         await clearAllStorage(page);
         await waitForAppReady(page);
     });
@@ -478,7 +478,7 @@ test.describe('Visual Validation - Responsive Elements', () => {
         await navigateToTab(page, 'shots');
 
         const hasTable = await page.evaluate(() => {
-            const table = document.querySelector('#shots-tab table');
+            const table = document.querySelector('main table');
             if (!table) return false;
 
             const thead = table.querySelector('thead');
