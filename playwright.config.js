@@ -5,7 +5,7 @@ module.exports = {
   fullyParallel: true, // Run tests in parallel within files
   use: {
     baseURL: 'http://localhost:3000',
-    headless: false,
+    headless: !!process.env.CI, // Run headless in CI, headed locally
     viewport: { width: 390, height: 844 }, // iPhone 14 Pro dimensions
     ignoreHTTPSErrors: true,
     video: 'retain-on-failure',
