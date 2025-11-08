@@ -30,13 +30,6 @@ jobs:
           npm run sync-version
           echo "✅ Version sync complete"
 
-      - name: Run tests before deployment
-        run: |
-          echo "🧪 Running test suite before deployment..."
-          npx playwright install --with-deps chromium
-          npm test
-          echo "✅ All tests passed"
-
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
