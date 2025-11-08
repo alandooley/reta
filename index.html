@@ -8231,6 +8231,29 @@
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('[INIT] DOMContentLoaded event fired');
 
+            // CRITICAL: Set up auth button IMMEDIATELY as fallback
+            const authGateButtonFallback = document.getElementById('auth-gate-button');
+            if (authGateButtonFallback && !authGateButtonFallback.onclick) {
+                console.log('[INIT] Setting up fallback auth button handler');
+                authGateButtonFallback.onclick = async () => {
+                    console.log('[FALLBACK] Auth button clicked via fallback handler');
+                    authGateButtonFallback.textContent = 'Redirecting...';
+                    authGateButtonFallback.disabled = true;
+                    try {
+                        if (typeof authManager !== 'undefined') {
+                            await authManager.signInWithGoogle();
+                        } else {
+                            alert('Authentication system not ready. Please refresh the page.');
+                        }
+                    } catch (error) {
+                        console.error('[FALLBACK] Error:', error);
+                        authGateButtonFallback.textContent = 'Sign In with Google';
+                        authGateButtonFallback.disabled = false;
+                        alert(error.message || 'Sign in failed. Please try again.');
+                    }
+                };
+            }
+
             // CRITICAL: Check test mode FIRST before any async operations
             const urlParams = new URLSearchParams(window.location.search);
             const isTestMode = urlParams.get('test') === 'true';
@@ -8362,20 +8385,27 @@
 
             // Sign in handler for auth gate
             if (authGateButton) {
+                console.log('[AUTH-SETUP] Setting up auth gate button handler');
                 authGateButton.addEventListener('click', async () => {
+                    console.log('[AUTH-CLICK] Sign in button clicked');
                     authGateButton.textContent = 'Redirecting to Google...';
                     authGateButton.disabled = true;
                     try {
+                        console.log('[AUTH-CLICK] Calling authManager.signInWithGoogle()');
                         await authManager.signInWithGoogle();
+                        console.log('[AUTH-CLICK] Sign in completed (should redirect)');
                         // Note: Page will redirect, so code after this won't execute
                     } catch (error) {
-                        console.error('Sign in error:', error);
+                        console.error('[AUTH-ERROR] Sign in error:', error);
                         authGateButton.textContent = 'Sign In with Google';
                         authGateButton.disabled = false;
                         // Show the detailed error message
                         alert(error.message || 'Failed to sign in. Please try again.');
                     }
                 });
+                console.log('[AUTH-SETUP] Auth gate button handler set up successfully');
+            } else {
+                console.error('[AUTH-SETUP] Auth gate button not found!');
             }
 
             // Show/hide content based on auth state
