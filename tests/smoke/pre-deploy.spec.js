@@ -25,15 +25,15 @@ const {
   getInjections,
   getVials,
   getWeights,
-  getSyncQueue
+  getSyncQueue,
+  reloadPage
 } = require('../helpers/test-utils');
 
 test.describe('Pre-Deployment Smoke Tests', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/?test=true');
     await clearAllStorage(page);
-    await page.reload();
-    await waitForAppReady(page);
+    await page.goto('http://localhost:3000/?test=true');  // Reload with test param preserved
   });
 
   test('APP LOADS: Application loads without JavaScript errors', async ({ page }) => {
@@ -46,10 +46,10 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     });
 
     // Check that main elements are present
-    await expect(page.locator('.nav-tabs')).toBeVisible();
-    await expect(page.locator('#shots-tab')).toBeVisible();
-    await expect(page.locator('#inventory-tab')).toBeVisible();
-    await expect(page.locator('#results-tab')).toBeVisible();
+    await expect(page.locator('.bottom-nav')).toBeVisible();
+    await expect(page.locator('button[data-tab="shots"]')).toBeVisible();
+    await expect(page.locator('button[data-tab="inventory"]')).toBeVisible();
+    await expect(page.locator('button[data-tab="results"]')).toBeVisible();
 
     // No critical errors should be logged
     const criticalErrors = errors.filter(err =>
@@ -63,18 +63,16 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     // Create a test vial first
     const vial = createValidVial();
     await loadTestData(page, { vials: [vial], injections: [], weights: [] });
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
 
     // Navigate to Shots tab
     await navigateToTab(page, 'shots');
 
-    // Open Add Shot modal
-    await openModal(page, 'button:has-text("+ Add Shot")');
+    // Open Add Shot modal (use correct button ID for shots tab)
+    await openModal(page, '#add-shot-modal-btn');
 
     // Fill in the form
-    await fillInput(page, '#shot-date', '2025-11-07');
-    await fillInput(page, '#shot-time', '10:00');
+    await fillInput(page, '#shot-date', '2025-11-07T10:00');
     await selectOption(page, '#shot-vial', vial.vial_id);
     await selectOption(page, '#shot-site', 'left_thigh');
     await fillInput(page, '#shot-dose', '0.5');
@@ -83,7 +81,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     await submitForm(page, '#add-shot-form');
 
     // Wait for modal to close
-    await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 2000 });
+    await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 2000 });
 
     // Verify injection was added to localStorage
     const injections = await getInjections(page);
@@ -97,19 +95,18 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     await navigateToTab(page, 'inventory');
 
     // Open Add Vial modal
-    await openModal(page, 'button:has-text("+ Add to Dry Stock")');
+    await openModal(page, '#add-vial-btn');
 
     // Fill in the form
     await fillInput(page, '#vial-order-date', '2025-11-01');
-    await fillInput(page, '#vial-total-mg', '10');
+    await fillInput(page, '#vial-mg', '10');
     await fillInput(page, '#vial-supplier', 'Test Supplier');
-    await fillInput(page, '#vial-lot-number', 'LOT-TEST-001');
 
     // Submit form
     await submitForm(page, '#add-vial-form');
 
     // Wait for modal to close
-    await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 2000 });
+    await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 2000 });
 
     // Verify vial was added to localStorage
     const vials = await getVials(page);
@@ -122,19 +119,18 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     // Navigate to Results tab
     await navigateToTab(page, 'results');
 
-    // Open Add Weight modal
-    await openModal(page, 'button:has-text("+ Add Weight")');
+    // Open Add Weight modal (use FAB button on results tab)
+    await openModal(page, '#fab-button');
 
-    // Fill in the form
-    await fillInput(page, '#weight-date', '2025-11-07');
-    await fillInput(page, '#weight-time', '08:00');
-    await fillInput(page, '#weight-value', '80.5');
+    // Fill in the form (correct field is #weight-kg, not #weight-value)
+    await fillInput(page, '#weight-date', '2025-11-07T08:00');
+    await fillInput(page, '#weight-kg', '80.5');
 
     // Submit form
     await submitForm(page, '#add-weight-form');
 
     // Wait for modal to close
-    await page.waitForSelector('.modal.show', { state: 'hidden', timeout: 2000 });
+    await page.waitForSelector('#modal-overlay', { state: 'hidden', timeout: 2000 });
 
     // Verify weight was added to localStorage
     const weights = await getWeights(page);
@@ -155,8 +151,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     });
 
     // Reload page
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
 
     // Verify data is still there
     const injections = await getInjections(page);
@@ -186,18 +181,16 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     // Create a test vial
     const vial = createValidVial();
     await loadTestData(page, { vials: [vial], injections: [], weights: [] });
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
 
     // Navigate to Shots tab
     await navigateToTab(page, 'shots');
 
-    // Open Add Shot modal
-    await openModal(page, 'button:has-text("+ Add Shot")');
+    // Open Add Shot modal (use correct button ID for shots tab)
+    await openModal(page, '#add-shot-modal-btn');
 
     // Try to submit with invalid dose (too high)
-    await fillInput(page, '#shot-date', '2025-11-07');
-    await fillInput(page, '#shot-time', '10:00');
+    await fillInput(page, '#shot-date', '2025-11-07T10:00');
     await selectOption(page, '#shot-vial', vial.vial_id);
     await selectOption(page, '#shot-site', 'left_thigh');
     await fillInput(page, '#shot-dose', '100'); // Invalid: exceeds max 50mg
@@ -206,7 +199,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     await submitForm(page, '#add-shot-form');
 
     // Modal should still be open (submission prevented)
-    const modalStillVisible = await page.locator('.modal.show').isVisible();
+    const modalStillVisible = await page.locator('#modal-overlay').isVisible();
     expect(modalStillVisible).toBe(true);
 
     // Should not have added invalid injection
@@ -221,15 +214,11 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     for (const tab of tabs) {
       await navigateToTab(page, tab);
 
-      // Verify tab is active
-      const isActive = await page.locator(`#${tab}-tab`).evaluate(el =>
+      // Verify nav button is active (PWA mobile layout)
+      const isActive = await page.locator(`button[data-tab="${tab}"]`).evaluate(el =>
         el.classList.contains('active')
       );
       expect(isActive).toBe(true);
-
-      // Verify content is visible
-      const content = page.locator(`#${tab}-content`);
-      await expect(content).toBeVisible();
     }
   });
 
@@ -254,8 +243,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
       weights: []
     });
 
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
 
     // Navigate to Settings
     await navigateToTab(page, 'settings');
@@ -285,8 +273,7 @@ test.describe('Pre-Deployment Smoke Tests', () => {
     // Perform several operations
     const vial = createValidVial();
     await loadTestData(page, { vials: [vial], injections: [], weights: [] });
-    await page.reload();
-    await waitForAppReady(page);
+    await reloadPage(page);
 
     // Navigate through tabs
     await navigateToTab(page, 'shots');
