@@ -119,8 +119,18 @@ class AuthManager {
     }
 
     /**
-     * Sign in with Google (uses redirect for mobile/Safari compatibility)
-     * @param {boolean} forcePopup - Force popup mode even on mobile (fallback for storage issues)
+     * Sign in with Google (uses popup mode to avoid Safari cross-origin storage issues)
+     *
+     * IMPORTANT: We use popup mode for all devices because:
+     * 1. Safari 16.1+ blocks cross-origin iframe storage access
+     * 2. signInWithRedirect() fails when authDomain (firebaseapp.com) differs from app domain (cloudfront.net)
+     * 3. Firebase SDK loads cross-origin iframe during redirect return, which Safari blocks
+     * 4. This causes "missing initial state" errors or silent auth failures on mobile
+     *
+     * Popup mode works on mobile because it doesn't require cross-origin storage access.
+     * Proper fix would be: change authDomain to CloudFront domain + set up reverse proxy.
+     *
+     * @param {boolean} forcePopup - Kept for backwards compatibility (always uses popup now)
      */
     async signInWithGoogle(forcePopup = false) {
         try {
@@ -129,29 +139,18 @@ class AuthManager {
                 prompt: 'select_account'  // Always show account picker
             });
 
-            // Detect mobile device
+            // Detect mobile device (for logging purposes)
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            // Use popup if forced or on desktop
-            // Use redirect on mobile by default (better UX, but can have storage issues)
-            if (forcePopup || !isMobile) {
-                console.log('Starting Google sign-in via popup...');
-                const result = await firebase.auth().signInWithPopup(provider);
-                console.log('✅ Popup sign-in successful:', result.user.email);
-            } else {
-                console.log('Starting Google sign-in via redirect (mobile device)...');
+            // Always use popup mode (redirect broken on Safari 16.1+ due to cross-origin storage blocking)
+            console.log(isMobile ?
+                'Starting Google sign-in via popup (mobile device, redirect disabled due to Safari issues)...' :
+                'Starting Google sign-in via popup (desktop)...'
+            );
 
-                // Store a marker to detect if redirect fails
-                try {
-                    sessionStorage.setItem('auth_redirect_started', Date.now().toString());
-                } catch (e) {
-                    console.warn('Cannot write to sessionStorage:', e);
-                }
+            const result = await firebase.auth().signInWithPopup(provider);
+            console.log('✅ Popup sign-in successful:', result.user.email);
 
-                await firebase.auth().signInWithRedirect(provider);
-                // Note: After redirect, the page will reload and initialize()
-                // will call getRedirectResult() to complete the sign-in
-            }
         } catch (error) {
             console.error('Sign in error:', error);
 
@@ -162,9 +161,6 @@ class AuthManager {
                 throw new Error('Sign-in popup was closed. Please try again.');
             } else if (error.code === 'auth/operation-not-allowed') {
                 throw new Error('Google sign-in is not enabled. Please contact support.');
-            } else if (error.message.includes('missing initial state')) {
-                // Offer popup mode as fallback
-                throw new Error('Browser storage issue detected. Click "Try Popup Mode" button below or enable cookies.');
             } else {
                 throw new Error(`Sign in failed: ${error.message}`);
             }
