@@ -3569,6 +3569,9 @@
 
                         // Normalize vial data formats (fix mixed camelCase/snake_case)
                         this.normalizeVialData();
+
+                        // Migrate old injection site naming to consistent format
+                        this.migrateInjectionSiteNames();
                     } else {
                         // Check if we should load sample data (not in test mode)
                         const urlParams = new URLSearchParams(window.location.search);
@@ -3632,6 +3635,42 @@
                 });
 
                 console.log('Vial data normalized');
+            }
+
+            /**
+             * Migrate old injection site naming format to consistent format
+             * Old format: left_abdomen, right_abdomen, left_thigh, right_thigh
+             * New format: abdomen_left, abdomen_right, thigh_left, thigh_right
+             */
+            migrateInjectionSiteNames() {
+                if (!this.data.injections || this.data.injections.length === 0) return;
+
+                const siteMapping = {
+                    'left_abdomen': 'abdomen_left',
+                    'right_abdomen': 'abdomen_right',
+                    'left_thigh': 'thigh_left',
+                    'right_thigh': 'thigh_right',
+                    'left_arm': 'left_arm',  // No change
+                    'right_arm': 'right_arm',  // No change
+                    'abdomen': 'abdomen',  // No change
+                    'thigh': 'thigh'  // No change
+                };
+
+                let migratedCount = 0;
+                this.data.injections = this.data.injections.map(injection => {
+                    const oldSite = injection.injection_site;
+                    if (siteMapping[oldSite] && siteMapping[oldSite] !== oldSite) {
+                        injection.injection_site = siteMapping[oldSite];
+                        migratedCount++;
+                        console.log(`Migrated injection site: ${oldSite} → ${injection.injection_site}`);
+                    }
+                    return injection;
+                });
+
+                if (migratedCount > 0) {
+                    console.log(`Migrated ${migratedCount} injection site names to consistent format`);
+                    this.saveData();  // Save migrated data
+                }
             }
 
             // ====================================
@@ -3811,7 +3850,7 @@
                             id: this.generateId(),
                             timestamp: injectionDate.toISOString(),
                             dose_mg: sampleDoses[i],
-                            injection_site: ['right_abdomen', 'left_abdomen', 'right_thigh', 'left_thigh', 'right_arm'][i % 5],
+                            injection_site: ['abdomen_right', 'abdomen_left', 'thigh_right', 'thigh_left', 'right_arm'][i % 5],
                             vial_id: vialId,
                             weight_kg: null,
                             weight_source: 'manual',
@@ -4393,6 +4432,19 @@
 
             formatDateTime(dateString) {
                 return new Date(dateString).toLocaleString();
+            }
+
+            formatInjectionSite(site) {
+                // Convert underscore format to readable format
+                // abdomen_left → Abdomen Left
+                // thigh_right → Thigh Right
+                // left_arm → Left Arm
+                if (!site) return 'Unknown';
+
+                return site
+                    .split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ');
             }
 
             // ====================================
@@ -5613,7 +5665,7 @@
                             <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
                         </div>
                         <div class="shot-details">
-                            <div>Site: ${injection.injection_site}</div>
+                            <div>Site: ${this.formatInjectionSite(injection.injection_site)}</div>
                             <div>Weight: ${injection.weight_kg ? injection.weight_kg + ' kg' : 'N/A'}</div>
                         </div>
                     </div>
