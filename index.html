@@ -1118,6 +1118,45 @@
         }
 
         /* Delete Button Styles */
+        .item-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .edit-btn {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: var(--border-radius-sm);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+        }
+
+        .edit-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .edit-btn:active {
+            transform: scale(0.95);
+        }
+
+        .edit-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
         .delete-btn {
             background-color: transparent;
             border: 2px solid var(--danger-color);
@@ -2782,7 +2821,7 @@
         <!-- Add Shot Modal -->
         <div id="add-shot-modal" class="modal" style="display: none;">
             <div class="modal-header">
-                <h3 class="modal-title">Add New Shot</h3>
+                <h3 id="add-shot-modal-title" class="modal-title">Add New Shot</h3>
                 <button class="modal-close" data-modal="add-shot-modal">&times;</button>
             </div>
             <form id="add-shot-form">
@@ -2817,7 +2856,7 @@
                     <textarea id="shot-notes" placeholder="Side effects, timing, etc."></textarea>
                 </div>
                 <div class="form-group">
-                    <button type="submit" class="btn-primary">Add Shot</button>
+                    <button type="submit" id="shot-submit-btn" class="btn-primary">Add Shot</button>
                     <button type="button" class="btn-secondary" data-modal="add-shot-modal">Cancel</button>
                 </div>
             </form>
@@ -2884,7 +2923,7 @@
         <!-- Add Weight Modal -->
         <div id="add-weight-modal" class="modal" style="display: none;">
             <div class="modal-header">
-                <h3 class="modal-title">Add Weight Entry</h3>
+                <h3 id="add-weight-modal-title" class="modal-title">Add Weight Entry</h3>
                 <button class="modal-close" data-modal="add-weight-modal">&times;</button>
             </div>
             <form id="add-weight-form">
@@ -2901,7 +2940,7 @@
                     <input type="number" id="weight-body-fat" step="0.1" min="0" max="100">
                 </div>
                 <div class="form-group">
-                    <button type="submit" class="btn-primary">Add Weight</button>
+                    <button type="submit" id="weight-submit-btn" class="btn-primary">Add Weight</button>
                     <button type="button" class="btn-secondary" data-modal="add-weight-modal">Cancel</button>
                 </div>
             </form>

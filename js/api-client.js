@@ -92,6 +92,17 @@ class APIClient {
     }
 
     /**
+     * Update injection (uses POST with existing ID for upsert)
+     */
+    async updateInjection(injectionId, injection) {
+        const response = await this.request('POST', '/v1/injections', {
+            id: injectionId,
+            ...injection
+        });
+        return response.data;
+    }
+
+    /**
      * Delete injection
      */
     async deleteInjection(injectionId) {
@@ -150,6 +161,17 @@ class APIClient {
      */
     async createWeight(weight) {
         const response = await this.request('POST', '/v1/weights', weight);
+        return response.data;
+    }
+
+    /**
+     * Update weight entry (uses POST with existing ID for upsert)
+     */
+    async updateWeight(weightId, weight) {
+        const response = await this.request('POST', '/v1/weights', {
+            id: weightId,
+            ...weight
+        });
         return response.data;
     }
 

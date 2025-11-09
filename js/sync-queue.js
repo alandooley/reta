@@ -187,6 +187,8 @@ class SyncQueue {
             case 'injection':
                 if (type === 'create') {
                     return await this.apiClient.createInjection(data);
+                } else if (type === 'update') {
+                    return await this.apiClient.updateInjection(data.id, data);
                 } else if (type === 'delete') {
                     return await this.apiClient.deleteInjection(data.id);
                 }
@@ -205,6 +207,8 @@ class SyncQueue {
             case 'weight':
                 if (type === 'create') {
                     return await this.apiClient.createWeight(data);
+                } else if (type === 'update') {
+                    return await this.apiClient.updateWeight(data.id, data);
                 } else if (type === 'delete') {
                     return await this.apiClient.deleteWeight(data.id);
                 }
