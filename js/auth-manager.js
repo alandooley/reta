@@ -27,13 +27,26 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
-        // Set persistence to SESSION (better for mobile OAuth redirects)
-        // LOCAL can cause "missing initial state" errors on mobile redirect flow
+        // Set persistence based on browser capabilities
+        // Try LOCAL first (best for most cases), fall back to SESSION if blocked
         try {
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
-            console.log('Firebase auth persistence set to SESSION');
+            // Test if localStorage is available (can fail in private mode or with strict cookies)
+            const testKey = '__firebase_test__';
+            localStorage.setItem(testKey, '1');
+            localStorage.removeItem(testKey);
+
+            // localStorage works - use LOCAL persistence for best reliability
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            console.log('Firebase auth persistence set to LOCAL (localStorage available)');
         } catch (error) {
-            console.error('Failed to set persistence:', error);
+            // localStorage blocked - fall back to SESSION (uses sessionStorage)
+            console.warn('localStorage not available, using SESSION persistence:', error.message);
+            try {
+                await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+                console.log('Firebase auth persistence set to SESSION (fallback)');
+            } catch (sessionError) {
+                console.error('Failed to set any persistence:', sessionError);
+            }
         }
 
         // Check for redirect result first (for mobile/Safari compatibility)
@@ -64,11 +77,30 @@ class AuthManager {
             console.error('Error code:', error.code);
             console.error('Error message:', error.message);
             console.error('Error stack:', error.stack);
-            // Show user-friendly error
-            if (error.code === 'auth/popup-closed-by-user' ||
-                error.code === 'auth/cancelled-popup-request' ||
-                error.message.includes('missing initial state')) {
-                console.log('Auth flow was interrupted or storage is unavailable. Please try signing in again.');
+
+            // Handle missing initial state error specifically
+            if (error.message.includes('missing initial state')) {
+                console.error('⚠️ Missing initial state error - this usually means:');
+                console.error('  1. Browser blocked cookies/storage during redirect');
+                console.error('  2. User is in private/incognito mode');
+                console.error('  3. Browser cleared storage between redirect steps');
+
+                // Clear any stale auth state
+                try {
+                    await firebase.auth().signOut();
+                } catch (e) {
+                    // Ignore signout errors
+                }
+
+                // Store error info for user display
+                sessionStorage.setItem('auth_error', JSON.stringify({
+                    code: 'missing-initial-state',
+                    message: 'Browser storage was blocked during sign-in. Please enable cookies and try again.',
+                    timestamp: Date.now()
+                }));
+            } else if (error.code === 'auth/popup-closed-by-user' ||
+                       error.code === 'auth/cancelled-popup-request') {
+                console.log('Auth flow was cancelled by user');
             }
         }
 
@@ -101,24 +133,37 @@ class AuthManager {
 
     /**
      * Sign in with Google (uses redirect for mobile/Safari compatibility)
+     * @param {boolean} forcePopup - Force popup mode even on mobile (fallback for storage issues)
      */
-    async signInWithGoogle() {
+    async signInWithGoogle(forcePopup = false) {
         try {
             const provider = new firebase.auth.GoogleAuthProvider();
+            provider.setCustomParameters({
+                prompt: 'select_account'  // Always show account picker
+            });
 
-            // Use redirect on mobile for better compatibility
-            // Use popup on desktop for better UX
+            // Detect mobile device
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-            if (isMobile) {
+            // Use popup if forced or on desktop
+            // Use redirect on mobile by default (better UX, but can have storage issues)
+            if (forcePopup || !isMobile) {
+                console.log('Starting Google sign-in via popup...');
+                const result = await firebase.auth().signInWithPopup(provider);
+                console.log('✅ Popup sign-in successful:', result.user.email);
+            } else {
                 console.log('Starting Google sign-in via redirect (mobile device)...');
+
+                // Store a marker to detect if redirect fails
+                try {
+                    sessionStorage.setItem('auth_redirect_started', Date.now().toString());
+                } catch (e) {
+                    console.warn('Cannot write to sessionStorage:', e);
+                }
+
                 await firebase.auth().signInWithRedirect(provider);
                 // Note: After redirect, the page will reload and initialize()
                 // will call getRedirectResult() to complete the sign-in
-            } else {
-                console.log('Starting Google sign-in via popup (desktop)...');
-                const result = await firebase.auth().signInWithPopup(provider);
-                console.log('✅ Popup sign-in successful:', result.user.email);
             }
         } catch (error) {
             console.error('Sign in error:', error);
@@ -131,7 +176,8 @@ class AuthManager {
             } else if (error.code === 'auth/operation-not-allowed') {
                 throw new Error('Google sign-in is not enabled. Please contact support.');
             } else if (error.message.includes('missing initial state')) {
-                throw new Error('Browser storage issue. Please enable cookies and try again.');
+                // Offer popup mode as fallback
+                throw new Error('Browser storage issue detected. Click "Try Popup Mode" button below or enable cookies.');
             } else {
                 throw new Error(`Sign in failed: ${error.message}`);
             }

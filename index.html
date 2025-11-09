@@ -2284,9 +2284,21 @@
             <p style="color: #888888; margin-bottom: 32px; font-size: 16px;">
                 Please sign in to access your tracking data
             </p>
+
+            <!-- Error message (hidden by default) -->
+            <div id="auth-error-message" style="display: none; background: rgba(255, 59, 48, 0.1); border: 1px solid rgba(255, 59, 48, 0.3); border-radius: 8px; padding: 12px; margin-bottom: 20px; color: #ff3b30;">
+                <p id="auth-error-text" style="margin: 0; font-size: 14px;"></p>
+            </div>
+
             <button id="auth-gate-button" style="background: linear-gradient(135deg, #007AFF 0%, #0051a8 100%); color: white; border: none; padding: 16px 32px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3); transition: transform 0.2s, box-shadow 0.2s; min-width: 200px; touch-action: manipulation; -webkit-tap-highlight-color: rgba(0, 122, 255, 0.3);">
                 Sign In with Google
             </button>
+
+            <!-- Popup mode fallback button (hidden by default) -->
+            <button id="auth-popup-fallback-button" style="display: none; background: transparent; border: 2px solid #007AFF; color: #007AFF; padding: 12px 24px; border-radius: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 12px; min-width: 200px; touch-action: manipulation;">
+                Try Popup Mode
+            </button>
+
             <p style="color: #666666; margin-top: 32px; font-size: 12px;">
                 This is a private application. No data is shared publicly.
             </p>
@@ -8682,6 +8694,53 @@
                 console.log('[AUTH-SETUP] Auth gate button found (handler already attached during init)');
             } else {
                 console.error('[AUTH-SETUP] Auth gate button not found!');
+            }
+
+            // Check for stored auth errors and display them
+            try {
+                const authErrorJson = sessionStorage.getItem('auth_error');
+                if (authErrorJson) {
+                    const authError = JSON.parse(authErrorJson);
+                    // Only show errors from the last 5 minutes
+                    if (Date.now() - authError.timestamp < 5 * 60 * 1000) {
+                        const errorMessageDiv = document.getElementById('auth-error-message');
+                        const errorTextP = document.getElementById('auth-error-text');
+                        const popupFallbackBtn = document.getElementById('auth-popup-fallback-button');
+
+                        if (errorMessageDiv && errorTextP) {
+                            errorTextP.textContent = authError.message;
+                            errorMessageDiv.style.display = 'block';
+                        }
+
+                        // Show popup fallback button for storage-related errors
+                        if (authError.code === 'missing-initial-state' && popupFallbackBtn) {
+                            popupFallbackBtn.style.display = 'block';
+
+                            // Set up popup fallback button handler
+                            popupFallbackBtn.addEventListener('click', async () => {
+                                popupFallbackBtn.textContent = 'Opening...';
+                                popupFallbackBtn.disabled = true;
+                                try {
+                                    await authManager.signInWithGoogle(true); // Force popup mode
+                                    // Clear error on success
+                                    sessionStorage.removeItem('auth_error');
+                                } catch (error) {
+                                    console.error('Popup sign in error:', error);
+                                    popupFallbackBtn.textContent = 'Try Popup Mode';
+                                    popupFallbackBtn.disabled = false;
+                                    if (errorTextP) {
+                                        errorTextP.textContent = error.message || 'Sign-in failed. Please try again.';
+                                    }
+                                }
+                            });
+                        }
+                    } else {
+                        // Error is too old, clear it
+                        sessionStorage.removeItem('auth_error');
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to check auth errors:', e);
             }
 
             // Show/hide content based on auth state
