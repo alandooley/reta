@@ -681,8 +681,9 @@
 
         .chart-container canvas {
             max-height: 450px;
+            min-height: 300px;
             width: 100% !important;
-            height: auto !important;
+            height: 400px !important;
         }
 
         .chart-section {
@@ -2810,10 +2811,6 @@
                     <select id="shot-vial" required>
                         <option value="">Select vial</option>
                     </select>
-                </div>
-                <div class="form-group">
-                    <label for="shot-weight">Weight (kg) - Optional</label>
-                    <input type="number" id="shot-weight" step="0.1" min="0" max="500">
                 </div>
                 <div class="form-group">
                     <label for="shot-notes">Notes - Optional</label>
@@ -5075,19 +5072,8 @@
                         dose_mg: doseMg,
                         injection_site: document.getElementById('shot-site').value,
                         vial_id: vialId,
-                        weight_kg: document.getElementById('shot-weight').value ?
-                            parseFloat(document.getElementById('shot-weight').value) : null,
                         notes: document.getElementById('shot-notes').value
                     };
-
-                    // Add weight entry if provided
-                    if (injection.weight_kg) {
-                        await this.addWeight({
-                            timestamp: injection.timestamp,
-                            weight_kg: injection.weight_kg,
-                            source: 'manual'
-                        });
-                    }
 
                     await this.addInjection(injection);
 
@@ -5732,19 +5718,12 @@
             }
 
             updateShotsWithWeightChart() {
-                console.log('[CHART DEBUG] updateShotsWithWeightChart() called');
                 const canvas = document.getElementById('shots-weight-chart');
-                console.log('[CHART DEBUG] Canvas element:', canvas);
-                if (!canvas) {
-                    console.error('[CHART DEBUG] Canvas element not found!');
-                    return;
-                }
+                if (!canvas) return;
                 const ctx = canvas.getContext('2d');
-                console.log('[CHART DEBUG] Context:', ctx);
 
                 // Destroy existing chart if it exists
                 if (this.charts.shotsWeightChart) {
-                    console.log('[CHART DEBUG] Destroying existing chart');
                     this.charts.shotsWeightChart.destroy();
                 }
 
@@ -5754,8 +5733,6 @@
                 if (this.timeRange !== 'all') {
                     cutoffDate = new Date(now.getTime() - this.timeRange * 24 * 60 * 60 * 1000);
                 }
-                console.log('[CHART DEBUG] Time range:', this.timeRange, 'Cutoff date:', cutoffDate);
-                console.log('[CHART DEBUG] Total weights in data:', this.data.weights.length);
 
                 const sortedWeights = [...this.data.weights]
                     .filter(w => this.timeRange === 'all' || new Date(w.timestamp) >= cutoffDate)
@@ -5787,14 +5764,8 @@
                     });
                 });
 
-                console.log('[CHART DEBUG] Filtered weights:', sortedWeights.length);
-                console.log('[CHART DEBUG] Filtered injections:', sortedInjections.length);
-                console.log('[CHART DEBUG] Injections with weights:', injectionsWithWeights.length);
-                console.log('[CHART DEBUG] Weights with injections:', weightsWithInjections.length);
-
                 if (injectionsWithWeights.length === 0 || weightsWithInjections.length === 0) {
                     // Show empty state
-                    console.log('[CHART DEBUG] No matching data - showing empty state');
                     const container = canvas.parentElement;
                     container.innerHTML = `
                         <div class="empty-state">
@@ -6048,12 +6019,9 @@
                         }
                     }
                 });
-
-                console.log('[CHART DEBUG] Shots with weight chart created successfully:', this.charts.shotsWeightChart);
             }
 
             updateWeightOnlyChart() {
-                console.log('[CHART DEBUG] updateWeightOnlyChart() called');
                 const canvas = document.getElementById('weight-only-chart');
                 if (!canvas) return;
                 const ctx = canvas.getContext('2d');
