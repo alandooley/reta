@@ -1,5 +1,5 @@
 // Service Worker for Injection Tracker PWA
-const VERSION = '1.1.2';
+const VERSION = '1.1.3';
 const CACHE_NAME = `injection-tracker-v${VERSION}`;
 const CACHE_ASSETS = [
   './',
@@ -29,11 +29,35 @@ self.addEventListener('install', event => {
         );
       })
       .then(() => {
-        console.log('Cache installation completed');
-        self.skipWaiting();
+        console.log('Cache installation completed - forcing immediate activation');
+        // Force immediate activation without waiting for existing service workers
+        return self.skipWaiting();
       })
       .catch(error => {
         console.error('Cache install failed:', error);
+      })
+  );
+});
+
+// Activate event - take control immediately and clean up old caches
+self.addEventListener('activate', event => {
+  console.log('Service worker activating - cleaning up old caches');
+  event.waitUntil(
+    caches.keys()
+      .then(cacheNames => {
+        return Promise.all(
+          cacheNames.map(cacheName => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('Old caches cleaned, taking control of all clients');
+        // Take control of all pages immediately, don't wait for reload
+        return self.clients.claim();
       })
   );
 });

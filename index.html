@@ -7394,6 +7394,25 @@
                     navigator.serviceWorker.register('/sw.js')
                         .then(registration => {
                             console.log('Service Worker registered successfully:', registration.scope);
+
+                            // Force update check on every page load to bust cache
+                            registration.update().then(() => {
+                                console.log('Service Worker update check completed');
+                            });
+
+                            // Listen for new service worker
+                            registration.addEventListener('updatefound', () => {
+                                const newWorker = registration.installing;
+                                console.log('New Service Worker found, installing...');
+
+                                newWorker.addEventListener('statechange', () => {
+                                    if (newWorker.state === 'activated') {
+                                        console.log('New Service Worker activated - reloading page');
+                                        // Reload page to use new service worker
+                                        window.location.reload();
+                                    }
+                                });
+                            });
                         })
                         .catch(error => {
                             console.log('Service Worker registration failed:', error);

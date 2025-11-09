@@ -63,7 +63,9 @@
       "Bash(gh run download:*)",
       "Bash(aws s3 sync:*)",
       "Bash(NUL)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(aws s3:*)",
+      "Bash(aws cloudfront get-invalidation:*)"
     ],
     "deny": [],
     "ask": []
