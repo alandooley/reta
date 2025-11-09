@@ -27,26 +27,20 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
-        // Set persistence based on browser capabilities
-        // Try LOCAL first (best for most cases), fall back to SESSION if blocked
+        // Always use SESSION persistence for redirect flow compatibility
+        // LOCAL persistence breaks mobile OAuth redirects because:
+        // 1. User starts redirect with one persistence mode
+        // 2. Page reloads after OAuth completes
+        // 3. If we change persistence before getRedirectResult(), Firebase can't find the stored state
+        // 4. Result: "missing initial state" error or silent auth failure
+        //
+        // SESSION persistence works reliably across redirects on all devices
         try {
-            // Test if localStorage is available (can fail in private mode or with strict cookies)
-            const testKey = '__firebase_test__';
-            localStorage.setItem(testKey, '1');
-            localStorage.removeItem(testKey);
-
-            // localStorage works - use LOCAL persistence for best reliability
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            console.log('Firebase auth persistence set to LOCAL (localStorage available)');
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+            console.log('Firebase auth persistence set to SESSION (redirect flow compatible)');
         } catch (error) {
-            // localStorage blocked - fall back to SESSION (uses sessionStorage)
-            console.warn('localStorage not available, using SESSION persistence:', error.message);
-            try {
-                await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
-                console.log('Firebase auth persistence set to SESSION (fallback)');
-            } catch (sessionError) {
-                console.error('Failed to set any persistence:', sessionError);
-            }
+            console.error('Failed to set SESSION persistence:', error);
+            // Continue anyway - Firebase will use default persistence
         }
 
         // Check for redirect result first (for mobile/Safari compatibility)
@@ -85,14 +79,7 @@ class AuthManager {
                 console.error('  2. User is in private/incognito mode');
                 console.error('  3. Browser cleared storage between redirect steps');
 
-                // Clear any stale auth state
-                try {
-                    await firebase.auth().signOut();
-                } catch (e) {
-                    // Ignore signout errors
-                }
-
-                // Store error info for user display
+                // Store error info for user display (don't sign out - may destroy partial auth)
                 sessionStorage.setItem('auth_error', JSON.stringify({
                     code: 'missing-initial-state',
                     message: 'Browser storage was blocked during sign-in. Please enable cookies and try again.',
