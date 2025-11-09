@@ -27,10 +27,11 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
-        // Set persistence to LOCAL (persists across browser sessions)
+        // Set persistence to SESSION (better for mobile OAuth redirects)
+        // LOCAL can cause "missing initial state" errors on mobile redirect flow
         try {
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-            console.log('Firebase auth persistence set to LOCAL');
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
+            console.log('Firebase auth persistence set to SESSION');
         } catch (error) {
             console.error('Failed to set persistence:', error);
         }

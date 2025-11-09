@@ -65,7 +65,10 @@
       "Bash(NUL)",
       "Bash(dir:*)",
       "Bash(aws s3:*)",
-      "Bash(aws cloudfront get-invalidation:*)"
+      "Bash(aws cloudfront get-invalidation:*)",
+      "Bash(git fetch:*)",
+      "Bash(git diff:*)",
+      "Bash(git checkout:*)"
     ],
     "deny": [],
     "ask": []
