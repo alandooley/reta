@@ -2984,6 +2984,13 @@
                 this._pendingDeletions = this.initPendingDeletions();
                 // Phase 1B: Initialize sync queue
                 this.syncQueue = null; // Will be initialized after auth
+                // Edit mode state
+                this.editMode = {
+                    active: false,
+                    entityType: null,  // 'injection' or 'weight'
+                    entityId: null,
+                    originalData: null
+                };
                 this.init();
             }
 
@@ -3886,6 +3893,66 @@
                 }
             }
 
+            async updateInjection(injectionId, updates) {
+                // Find existing injection
+                const injectionIndex = this.data.injections.findIndex(inj => inj.id === injectionId);
+                if (injectionIndex === -1) {
+                    throw new Error('Injection not found');
+                }
+
+                const oldInjection = this.data.injections[injectionIndex];
+                const oldDose = oldInjection.dose_mg;
+                const oldVialId = oldInjection.vial_id;
+
+                // Update injection with new data
+                const updatedInjection = {
+                    ...oldInjection,
+                    timestamp: updates.timestamp || oldInjection.timestamp,
+                    dose_mg: parseFloat(updates.dose_mg),
+                    injection_site: updates.injection_site,
+                    vial_id: updates.vial_id,
+                    notes: updates.notes || '',
+                    medication_level_at_injection: this.calculateCurrentMedicationLevel(updates.timestamp || oldInjection.timestamp).value || 0
+                };
+
+                this.data.injections[injectionIndex] = updatedInjection;
+                this.data.injections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Handle vial usage changes
+                if (oldVialId === updates.vial_id) {
+                    // Same vial, adjust usage
+                    if (oldDose !== updates.dose_mg) {
+                        await this.reverseVialUsage(oldVialId, oldDose);
+                        await this.updateVialUsage(updates.vial_id, updates.dose_mg);
+                    }
+                } else {
+                    // Different vial, reverse old and apply new
+                    await this.reverseVialUsage(oldVialId, oldDose);
+                    await this.updateVialUsage(updates.vial_id, updates.dose_mg);
+                }
+
+                this.saveData();
+                this.updateUI();
+
+                // Push to sync queue if authenticated
+                if (authManager && authManager.isAuthenticated() && this.syncQueue) {
+                    this.syncQueue.add({
+                        type: 'update',
+                        entity: 'injection',
+                        localId: injectionId,
+                        data: {
+                            id: injectionId,
+                            timestamp: updatedInjection.timestamp,
+                            doseMg: updatedInjection.dose_mg,
+                            site: updatedInjection.injection_site,
+                            vialId: updatedInjection.vial_id,
+                            notes: updatedInjection.notes
+                        }
+                    });
+                    console.log('Injection update added to sync queue');
+                }
+            }
+
             async updateVialUsage(vialId, doseMg) {
                 const vial = this.findVialById(vialId);
                 if (vial) {
@@ -4122,6 +4189,49 @@
                         }
                     });
                     console.log('Weight added to sync queue');
+                }
+            }
+
+            async updateWeight(weightId, updates) {
+                // Find existing weight
+                const weightIndex = this.data.weights.findIndex(w => (w.id || w.timestamp) === weightId);
+                if (weightIndex === -1) {
+                    throw new Error('Weight entry not found');
+                }
+
+                const oldWeight = this.data.weights[weightIndex];
+
+                // Update weight with new data
+                const updatedWeight = {
+                    ...oldWeight,
+                    timestamp: updates.timestamp || oldWeight.timestamp,
+                    weight_kg: parseFloat(updates.weight_kg),
+                    weight_lbs: this.kgToLbs(parseFloat(updates.weight_kg)),
+                    body_fat_percentage: updates.body_fat_percentage || null
+                };
+
+                this.data.weights[weightIndex] = updatedWeight;
+                this.data.weights.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                this.saveData();
+                this.updateUI();
+
+                // Push to sync queue if authenticated
+                if (authManager && authManager.isAuthenticated() && this.syncQueue) {
+                    this.syncQueue.add({
+                        type: 'update',
+                        entity: 'weight',
+                        localId: weightId,
+                        data: {
+                            id: weightId,
+                            timestamp: updatedWeight.timestamp,
+                            weightKg: updatedWeight.weight_kg,
+                            source: updatedWeight.source,
+                            bmi: updatedWeight.bmi,
+                            bodyFatPercentage: updatedWeight.body_fat_percentage
+                        }
+                    });
+                    console.log('Weight update added to sync queue');
                 }
             }
 
@@ -4453,6 +4563,7 @@
                 this.setupNavigation();
                 this.setupModalHandlers();
                 this.setupFormHandlers();
+                this.setupEditHandlers();
             }
 
             setupNavigation() {
@@ -4616,6 +4727,23 @@
                 // Cloud backup
                 document.getElementById('create-cloud-backup-btn').addEventListener('click', () => {
                     this.createCloudBackup();
+                });
+            }
+
+            setupEditHandlers() {
+                // Use event delegation for edit buttons (since they're dynamically created)
+                document.addEventListener('click', (e) => {
+                    const editBtn = e.target.closest('.edit-btn');
+                    if (!editBtn) return;
+
+                    const entityType = editBtn.dataset.entityType;
+                    const entityId = editBtn.dataset.entityId;
+
+                    if (entityType === 'injection') {
+                        this.showEditInjectionModal(entityId);
+                    } else if (entityType === 'weight') {
+                        this.showEditWeightModal(entityId);
+                    }
                 });
             }
 
@@ -5046,8 +5174,80 @@
                 modals.forEach(modal => modal.style.display = 'none');
                 document.body.style.overflow = '';
 
+                // Reset edit mode state
+                this.editMode.active = false;
+                this.editMode.entityType = null;
+                this.editMode.entityId = null;
+                this.editMode.originalData = null;
+
+                // Reset modal titles and button text
+                document.getElementById('add-shot-modal-title').textContent = 'Add New Shot';
+                document.getElementById('shot-submit-btn').textContent = 'Add Shot';
+                document.getElementById('add-weight-modal-title').textContent = 'Add Weight Entry';
+                document.getElementById('weight-submit-btn').textContent = 'Add Weight';
+
                 // Reset forms
                 document.querySelectorAll('form').forEach(form => form.reset());
+            }
+
+            showEditInjectionModal(injectionId) {
+                // Find injection by ID
+                const injection = this.data.injections.find(inj => inj.id === injectionId);
+                if (!injection) {
+                    console.error('Injection not found:', injectionId);
+                    return;
+                }
+
+                // Set edit mode state
+                this.editMode.active = true;
+                this.editMode.entityType = 'injection';
+                this.editMode.entityId = injectionId;
+                this.editMode.originalData = { ...injection };
+
+                // Update modal title and button
+                document.getElementById('add-shot-modal-title').textContent = 'Edit Shot';
+                document.getElementById('shot-submit-btn').textContent = 'Save Changes';
+
+                // Pre-fill form with existing data
+                document.getElementById('shot-date').value = new Date(injection.timestamp).toISOString().slice(0, 16);
+                document.getElementById('shot-dose').value = injection.dose_mg;
+                document.getElementById('shot-site').value = injection.injection_site;
+                document.getElementById('shot-vial').value = injection.vial_id || '';
+                document.getElementById('shot-notes').value = injection.notes || '';
+
+                // Show modal
+                document.getElementById('modal-overlay').style.display = 'block';
+                document.getElementById('add-shot-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
+            showEditWeightModal(weightId) {
+                // Find weight by ID
+                const weight = this.data.weights.find(w => (w.id || w.timestamp) === weightId);
+                if (!weight) {
+                    console.error('Weight entry not found:', weightId);
+                    return;
+                }
+
+                // Set edit mode state
+                this.editMode.active = true;
+                this.editMode.entityType = 'weight';
+                this.editMode.entityId = weightId;
+                this.editMode.originalData = { ...weight };
+
+                // Update modal title and button
+                document.getElementById('add-weight-modal-title').textContent = 'Edit Weight Entry';
+                document.getElementById('weight-submit-btn').textContent = 'Save Changes';
+
+                // Pre-fill form with existing data
+                document.getElementById('weight-date').value = new Date(weight.timestamp).toISOString().slice(0, 16);
+                document.getElementById('weight-kg').value = weight.weight_kg;
+                document.getElementById('weight-body-fat').value = weight.body_fat_percentage || '';
+
+                // Show modal
+                document.getElementById('modal-overlay').style.display = 'block';
+                document.getElementById('add-weight-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
             }
 
             populateVialSelect() {
@@ -5114,7 +5314,12 @@
                         notes: document.getElementById('shot-notes').value
                     };
 
-                    await this.addInjection(injection);
+                    // Check if in edit mode
+                    if (this.editMode.active && this.editMode.entityType === 'injection') {
+                        await this.updateInjection(this.editMode.entityId, injection);
+                    } else {
+                        await this.addInjection(injection);
+                    }
 
                     // Reset form after successful submission
                     form.reset();
@@ -5267,7 +5472,12 @@
                         source: 'manual'
                     };
 
-                    await this.addWeight(weight);
+                    // Check if in edit mode
+                    if (this.editMode.active && this.editMode.entityType === 'weight') {
+                        await this.updateWeight(this.editMode.entityId, weight);
+                    } else {
+                        await this.addWeight(weight);
+                    }
                 } catch (error) {
                     console.error('Error adding weight:', error);
                     alert('Weight saved locally. Cloud sync will retry automatically.');
@@ -5295,12 +5505,20 @@
                             <div>Weight: ${injection.weight_kg ? injection.weight_kg + ' kg' : 'N/A'}</div>
                         </div>
                     </div>
-                    <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
-                            <path d="M10 11v6M14 11v6"/>
-                        </svg>
-                    </button>
+                    <div class="item-actions">
+                        <button class="edit-btn" data-entity-type="injection" data-entity-id="${injection.id}" aria-label="Edit injection" title="Edit this injection">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                <path d="M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
+                    </div>
                     <div class="delete-action">Delete</div>
                 `;
 
@@ -6846,12 +7064,20 @@
                         </div>
                         ` : ''}
                     </div>
-                    <button class="delete-btn" aria-label="Delete weight entry" title="Delete this weight entry">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
-                            <path d="M10 11v6M14 11v6"/>
-                        </svg>
-                    </button>
+                    <div class="item-actions">
+                        <button class="edit-btn" data-entity-type="weight" data-entity-id="${weight.id || weight.timestamp}" aria-label="Edit weight entry" title="Edit this weight entry">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
+                        <button class="delete-btn" aria-label="Delete weight entry" title="Delete this weight entry">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                <path d="M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
+                    </div>
                 `;
                 return div;
             }
