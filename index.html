@@ -6206,8 +6206,8 @@
                 });
 
                 activeVials.forEach(vial => {
-                    const concentration = vial.concentration_mg_per_ml || vial.concentration_mg_ml;
-                    const volume = vial.current_volume_ml || vial.remaining_ml;
+                    const concentration = vial.concentration_mg_ml || vial.concentrationMgMl || vial.concentration_mg_per_ml;
+                    const volume = vial.current_volume_ml || vial.currentVolumeMl || vial.remaining_ml;
 
                     // Phase 2: Validate vial data
                     if (!concentration || concentration <= 0) {
