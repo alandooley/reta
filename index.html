@@ -4064,8 +4064,6 @@
                     dose_mg: parseFloat(injection.dose_mg),
                     injection_site: injection.injection_site,
                     vial_id: injection.vial_id,
-                    weight_kg: injection.weight_kg ? parseFloat(injection.weight_kg) : null,
-                    weight_source: injection.weight_source || 'manual',
                     notes: injection.notes || '',
                     medication_level_at_injection: this.calculateCurrentMedicationLevel(injection.timestamp).value || 0
                 };
@@ -5051,7 +5049,7 @@
                     return;
                 }
 
-                const headers = ['Date', 'Time', 'Dose (mg)', 'Site', 'Weight (kg)', 'Notes'];
+                const headers = ['Date', 'Time', 'Dose (mg)', 'Site', 'Notes'];
                 const rows = this.data.injections.map(inj => {
                     const date = new Date(inj.timestamp);
                     return [
@@ -5059,7 +5057,6 @@
                         date.toLocaleTimeString(),
                         inj.dose_mg,
                         inj.injection_site,
-                        inj.weight_kg || '',
                         inj.notes || ''
                     ];
                 });
