@@ -5322,8 +5322,8 @@
                     button.textContent = 'Creating backup...';
                     button.disabled = true;
 
-                    // Call API to create backup
-                    const result = await apiClient.createBackup();
+                    // Call API to create backup with local data
+                    const result = await apiClient.createBackup(this.data);
 
                     // Update UI with success
                     const timestamp = new Date(result.timestamp).toLocaleString();

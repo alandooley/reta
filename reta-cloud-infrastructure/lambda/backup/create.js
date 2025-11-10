@@ -1,5 +1,5 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
-const { DynamoDBDocumentClient, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { DynamoDBDocumentClient, QueryCommand, PutCommand } = require('@aws-sdk/lib-dynamodb');
 const { S3Client, PutObjectCommand, ListObjectsV2Command, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 
 const dynamoClient = new DynamoDBClient({ region: process.env.AWS_REGION });
@@ -25,7 +25,93 @@ exports.handler = async (event) => {
       };
     }
 
-    // Query all data for this user
+    // Parse request body if provided (bulk upload before backup)
+    let bodyData = null;
+    if (event.body) {
+      try {
+        bodyData = typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+      } catch (e) {
+        console.error('Failed to parse request body:', e);
+      }
+    }
+
+    // If data provided, write it to DynamoDB first (bulk upload)
+    if (bodyData) {
+      console.log('Bulk uploading data before backup...');
+      const timestamp = new Date().toISOString();
+
+      // Write injections
+      if (bodyData.injections && Array.isArray(bodyData.injections)) {
+        for (const injection of bodyData.injections) {
+          await docClient.send(new PutCommand({
+            TableName: process.env.TABLE_NAME,
+            Item: {
+              PK: `USER#${userId}`,
+              SK: `INJECTION#${injection.id}`,
+              timestamp: injection.timestamp,
+              doseMg: injection.dose_mg || injection.doseMg,
+              site: injection.injection_site || injection.site,
+              vialId: injection.vial_id || injection.vialId,
+              notes: injection.notes || '',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            },
+          }));
+        }
+        console.log(`Uploaded ${bodyData.injections.length} injections`);
+      }
+
+      // Write vials
+      if (bodyData.vials && Array.isArray(bodyData.vials)) {
+        for (const vial of bodyData.vials) {
+          await docClient.send(new PutCommand({
+            TableName: process.env.TABLE_NAME,
+            Item: {
+              PK: `USER#${userId}`,
+              SK: `VIAL#${vial.vial_id || vial.id}`,
+              orderDate: vial.order_date || vial.orderDate,
+              reconstitutionDate: vial.reconstitution_date || vial.reconstitutionDate,
+              expirationDate: vial.expiration_date || vial.expirationDate,
+              totalMg: vial.total_mg || vial.totalMg,
+              bacWaterMl: vial.bac_water_ml || vial.bacWaterMl,
+              concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
+              currentVolumeMl: vial.current_volume_ml || vial.currentVolumeMl,
+              status: vial.status,
+              supplier: vial.supplier || '',
+              lotNumber: vial.lot_number || vial.lotNumber || '',
+              dosesUsed: vial.doses_used || vial.dosesUsed || 0,
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            },
+          }));
+        }
+        console.log(`Uploaded ${bodyData.vials.length} vials`);
+      }
+
+      // Write weights
+      if (bodyData.weights && Array.isArray(bodyData.weights)) {
+        for (const weight of bodyData.weights) {
+          await docClient.send(new PutCommand({
+            TableName: process.env.TABLE_NAME,
+            Item: {
+              PK: `USER#${userId}`,
+              SK: `WEIGHT#${weight.id}`,
+              timestamp: weight.timestamp,
+              weightKg: weight.weight_kg || weight.weightKg,
+              bodyFatPercentage: weight.body_fat_percentage || weight.bodyFatPercentage,
+              notes: weight.notes || '',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            },
+          }));
+        }
+        console.log(`Uploaded ${bodyData.weights.length} weights`);
+      }
+
+      console.log('Bulk upload complete');
+    }
+
+    // Query all data for this user (now includes newly uploaded data)
     const params = {
       TableName: process.env.TABLE_NAME,
       KeyConditionExpression: 'PK = :pk',

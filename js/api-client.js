@@ -215,10 +215,10 @@ class APIClient {
     }
 
     /**
-     * Create backup
+     * Create backup with local data
      */
-    async createBackup() {
-        const response = await this.request('POST', '/v1/backup');
+    async createBackup(data) {
+        const response = await this.request('POST', '/v1/backup', data);
         return response.backup;
     }
 
