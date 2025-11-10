@@ -6233,7 +6233,8 @@
                 const dryStockVials = vials.filter(v => v.status === 'dry_stock');
 
                 dryStockVials.forEach(vial => {
-                    const totalMg = vial.total_mg;
+                    // Handle property name variations (cloud sync compatibility)
+                    const totalMg = vial.total_mg || vial.totalMg;
 
                     // Phase 2: Validate dry stock data
                     if (!totalMg || totalMg <= 0) {
