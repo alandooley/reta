@@ -1189,6 +1189,40 @@
             height: 20px;
         }
 
+        .edit-btn {
+            background-color: transparent;
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            border-radius: var(--border-radius-sm);
+            padding: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0.7;
+            margin-right: 8px;
+        }
+
+        .edit-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+            opacity: 1;
+            transform: scale(1.05);
+        }
+
+        .edit-btn:active {
+            transform: scale(0.95);
+        }
+
+        .edit-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
         .vial-info {
             flex: 1;
         }
@@ -2909,6 +2943,33 @@
                 <div class="form-group">
                     <button id="vial-submit-btn" type="submit" class="btn-primary">Add to Dry Stock</button>
                     <button type="button" class="btn-secondary" data-modal="add-vial-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Edit Vial Modal -->
+        <div id="edit-vial-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 class="modal-title">Edit Vial</h3>
+                <button class="modal-close" data-modal="edit-vial-modal">&times;</button>
+            </div>
+            <form id="edit-vial-form">
+                <input type="hidden" id="edit-vial-id">
+                <div class="form-group">
+                    <label for="edit-vial-order-date">Order Date</label>
+                    <input type="date" id="edit-vial-order-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="edit-vial-supplier">Supplier</label>
+                    <input type="text" id="edit-vial-supplier" placeholder="Pharmacy name">
+                </div>
+                <div class="form-group">
+                    <label for="edit-vial-mg">mg per Vial</label>
+                    <input type="number" id="edit-vial-mg" step="0.1" min="0" required placeholder="10">
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">Save Changes</button>
+                    <button type="button" class="btn-secondary" data-modal="edit-vial-modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -4856,6 +4917,12 @@
                     this.handleAddVial();
                 });
 
+                // Edit Vial Form
+                document.getElementById('edit-vial-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleEditVial();
+                });
+
                 // Activate Vial Form
                 document.getElementById('activate-vial-form').addEventListener('submit', (e) => {
                     e.preventDefault();
@@ -5763,6 +5830,86 @@
                 }, 300);
             }
 
+            openEditVialModal(vialId) {
+                const vial = this.findVialById(vialId);
+                if (!vial) {
+                    alert('Vial not found');
+                    return;
+                }
+
+                // Populate the form with vial data
+                document.getElementById('edit-vial-id').value = vial.vial_id;
+                document.getElementById('edit-vial-order-date').value = new Date(vial.order_date).toISOString().split('T')[0];
+                document.getElementById('edit-vial-supplier').value = vial.supplier || '';
+                document.getElementById('edit-vial-mg').value = vial.total_mg;
+
+                // Open the modal
+                this.openModal('edit-vial-modal');
+            }
+
+            async handleEditVial() {
+                const vialId = document.getElementById('edit-vial-id').value;
+                const orderDate = document.getElementById('edit-vial-order-date').value;
+                const supplier = document.getElementById('edit-vial-supplier').value;
+                const totalMg = parseFloat(document.getElementById('edit-vial-mg').value);
+
+                if (!vialId || !orderDate || !totalMg) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                const vial = this.findVialById(vialId);
+                if (!vial) {
+                    alert('Vial not found');
+                    return;
+                }
+
+                // Update vial properties
+                vial.order_date = orderDate;
+                vial.supplier = supplier || '';
+                vial.total_mg = totalMg;
+
+                // If vial is activated, update concentration
+                if (vial.bac_water_ml && vial.bac_water_ml > 0) {
+                    vial.concentration_mg_ml = totalMg / vial.bac_water_ml;
+                }
+
+                // Update expiration date if vial hasn't been activated
+                if (vial.status === 'dry_stock') {
+                    vial.expiration_date = this.calculateExpirationDate(null, orderDate);
+                }
+
+                this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+                this.saveData();
+                this.updateUI();
+
+                // Push update to sync queue
+                if (authManager && authManager.isAuthenticated() && this.syncQueue) {
+                    this.syncQueue.add({
+                        type: 'update',
+                        entity: 'vial',
+                        localId: vial.vial_id,
+                        data: {
+                            id: vial.vial_id,
+                            startDate: vial.order_date,
+                            initialVolumeMl: vial.bac_water_ml || 0,
+                            concentrationMgPerMl: vial.concentration_mg_ml || 0,
+                            currentVolumeMl: vial.remaining_ml || 0,
+                            usedVolumeMl: vial.bac_water_ml ? (vial.bac_water_ml - vial.remaining_ml) : 0,
+                            status: vial.status,
+                            source: vial.supplier || '',
+                            notes: `${totalMg}mg ${vial.status === 'dry_stock' ? 'dry stock' : 'active'}`
+                        }
+                    });
+                    console.log(`Vial ${vial.vial_id} update added to sync queue`);
+                }
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
+            }
+
             async handleActivateVial() {
                 const vialId = document.getElementById('activate-vial-id').value;
                 const bacWaterMl = parseFloat(document.getElementById('activate-bac-water').value);
@@ -5919,6 +6066,12 @@
                                 </div>
                             </div>
                         </div>
+                        <button class="edit-btn" aria-label="Edit vial" title="Edit this vial">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
                         <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
@@ -8369,6 +8522,17 @@
                                 const itemId = item.getAttribute('data-item-id');
                                 const timestamp = item.getAttribute('data-timestamp');
                                 this.handleDeleteVial(item, itemId, timestamp);
+                            };
+                        }
+
+                        // Add handler for edit button
+                        const editBtn = item.querySelector('.edit-btn');
+                        if (editBtn && !editBtn.dataset.initialized) {
+                            editBtn.dataset.initialized = 'true';
+                            editBtn.onclick = (e) => {
+                                e.stopPropagation();
+                                const itemId = item.getAttribute('data-item-id');
+                                app.openEditVialModal(itemId);
                             };
                         }
 
