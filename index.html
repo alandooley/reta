@@ -4807,7 +4807,9 @@
                 const lastInjection = this.getMostRecentInjection();
                 const lastShot = new Date(lastInjection.timestamp);
                 const nextShot = new Date(lastShot);
-                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
+                const frequency = this.data.settings.injectionFrequency ||
+                                this.data.settings.injectionFrequencyDays || 7;
+                nextShot.setDate(nextShot.getDate() + frequency);
 
                 const now = new Date();
                 const diffTime = nextShot - now;
@@ -7767,8 +7769,10 @@
                 const lastShot = new Date(lastInjection.timestamp);
 
                 // Calculate next shot based on injection frequency
+                const frequency = this.data.settings.injectionFrequency ||
+                                this.data.settings.injectionFrequencyDays || 7;
                 const nextShot = new Date(lastShot);
-                nextShot.setDate(nextShot.getDate() + this.data.settings.injectionFrequency);
+                nextShot.setDate(nextShot.getDate() + frequency);
 
                 // Format the date display
                 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -7792,7 +7796,7 @@
 
                 // Calculate progress and update colors
                 const timeDiff = nextShot.getTime() - now.getTime();
-                const totalTime = this.data.settings.injectionFrequency * 24 * 60 * 60 * 1000;
+                const totalTime = frequency * 24 * 60 * 60 * 1000;
                 const elapsedTime = now.getTime() - lastShot.getTime();
                 const progress = Math.min(100, (elapsedTime / totalTime) * 100);
 

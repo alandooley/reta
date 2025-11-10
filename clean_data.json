@@ -443,7 +443,7 @@
   ],
   "settings": {
     "defaultDose": 4.0,
-    "injectionFrequencyDays": 7,
+    "injectionFrequency": 7,
     "heightCm": 182,
     "goalWeightKg": 85
   }
