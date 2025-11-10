@@ -1,0 +1,450 @@
+{
+  "vials": [
+    {
+      "vial_id": "vial_20240805_1",
+      "order_date": "2025-08-05",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": 1.0,
+      "concentration_mg_ml": 10.0,
+      "reconstitution_date": "2025-08-05",
+      "expiration_date": "2025-09-04",
+      "remaining_ml": 0.0,
+      "current_volume_ml": 0.0,
+      "doses_used": 5,
+      "status": "empty"
+    },
+    {
+      "vial_id": "vial_20240805_2",
+      "order_date": "2025-08-05",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": 1.0,
+      "concentration_mg_ml": 10.0,
+      "reconstitution_date": "2025-09-13",
+      "expiration_date": "2025-10-13",
+      "remaining_ml": 0.0,
+      "current_volume_ml": 0.0,
+      "doses_used": 3,
+      "status": "empty"
+    },
+    {
+      "vial_id": "vial_20241029_1",
+      "order_date": "2025-10-29",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": 1.0,
+      "concentration_mg_ml": 10.0,
+      "reconstitution_date": "2025-10-29",
+      "expiration_date": "2025-11-28",
+      "remaining_ml": 0.2,
+      "current_volume_ml": 0.2,
+      "doses_used": 2,
+      "status": "active"
+    },
+    {
+      "vial_id": "vial_20241029_2",
+      "order_date": "2025-10-29",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": null,
+      "concentration_mg_ml": null,
+      "reconstitution_date": null,
+      "expiration_date": "2027-10-29",
+      "remaining_ml": 0,
+      "current_volume_ml": 0,
+      "doses_used": 0,
+      "status": "dry_stock"
+    },
+    {
+      "vial_id": "vial_20241029_3",
+      "order_date": "2025-10-29",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": null,
+      "concentration_mg_ml": null,
+      "reconstitution_date": null,
+      "expiration_date": "2027-10-29",
+      "remaining_ml": 0,
+      "current_volume_ml": 0,
+      "doses_used": 0,
+      "status": "dry_stock"
+    },
+    {
+      "vial_id": "vial_20241029_4",
+      "order_date": "2025-10-29",
+      "supplier": "",
+      "lot_number": "",
+      "total_mg": 10,
+      "bac_water_ml": null,
+      "concentration_mg_ml": null,
+      "reconstitution_date": null,
+      "expiration_date": "2027-10-29",
+      "remaining_ml": 0,
+      "current_volume_ml": 0,
+      "doses_used": 0,
+      "status": "dry_stock"
+    }
+  ],
+  "injections": [
+    {
+      "id": "inj_20240806",
+      "timestamp": "2025-08-06T10:00:00.000Z",
+      "dose_mg": 0.25,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_1",
+      "notes": "",
+      "medication_level_at_injection": 0
+    },
+    {
+      "id": "inj_20240812",
+      "timestamp": "2025-08-12T10:00:00.000Z",
+      "dose_mg": 0.5,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_1",
+      "notes": "",
+      "medication_level_at_injection": 0.25
+    },
+    {
+      "id": "inj_20240819",
+      "timestamp": "2025-08-19T10:00:00.000Z",
+      "dose_mg": 1.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_1",
+      "notes": "",
+      "medication_level_at_injection": 0.5
+    },
+    {
+      "id": "inj_20240830",
+      "timestamp": "2025-08-30T10:00:00.000Z",
+      "dose_mg": 2.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_1",
+      "notes": "",
+      "medication_level_at_injection": 1.0
+    },
+    {
+      "id": "inj_20240906",
+      "timestamp": "2025-09-06T09:00:00.000Z",
+      "dose_mg": 3.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_1",
+      "notes": "",
+      "medication_level_at_injection": 2.0
+    },
+    {
+      "id": "inj_20240913",
+      "timestamp": "2025-09-13T10:00:00.000Z",
+      "dose_mg": 4.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_2",
+      "notes": "",
+      "medication_level_at_injection": 3.0
+    },
+    {
+      "id": "inj_20240920",
+      "timestamp": "2025-09-20T10:00:00.000Z",
+      "dose_mg": 4.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_2",
+      "notes": "",
+      "medication_level_at_injection": 4.0
+    },
+    {
+      "id": "inj_20240927",
+      "timestamp": "2025-09-27T10:00:00.000Z",
+      "dose_mg": 4.2,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20240805_2",
+      "notes": "",
+      "medication_level_at_injection": 4.0
+    },
+    {
+      "id": "inj_20241030",
+      "timestamp": "2025-10-30T19:45:00.000Z",
+      "dose_mg": 4.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20241029_1",
+      "notes": "",
+      "medication_level_at_injection": 4.2
+    },
+    {
+      "id": "inj_20241105",
+      "timestamp": "2025-11-05T11:45:00.000Z",
+      "dose_mg": 4.0,
+      "injection_site": "abdomen_right",
+      "vial_id": "vial_20241029_1",
+      "notes": "",
+      "medication_level_at_injection": 4.0
+    }
+  ],
+  "weights": [
+    {
+      "id": "weight_20240801",
+      "timestamp": "2025-08-01T08:02:00.000Z",
+      "weight_kg": 95.2,
+      "body_fat_percentage": 23.5
+    },
+    {
+      "id": "weight_20240805",
+      "timestamp": "2025-08-05T08:03:00.000Z",
+      "weight_kg": 95.9,
+      "body_fat_percentage": 23.4
+    },
+    {
+      "id": "weight_20240807",
+      "timestamp": "2025-08-07T08:03:00.000Z",
+      "weight_kg": 94.4,
+      "body_fat_percentage": 23.7
+    },
+    {
+      "id": "weight_20240902",
+      "timestamp": "2025-09-02T08:04:00.000Z",
+      "weight_kg": 93.6,
+      "body_fat_percentage": 25.7
+    },
+    {
+      "id": "weight_20240903",
+      "timestamp": "2025-09-03T08:07:00.000Z",
+      "weight_kg": 93.6,
+      "body_fat_percentage": 24.7
+    },
+    {
+      "id": "weight_20240904",
+      "timestamp": "2025-09-04T08:08:00.000Z",
+      "weight_kg": 93.3,
+      "body_fat_percentage": 24.8
+    },
+    {
+      "id": "weight_20240905",
+      "timestamp": "2025-09-05T08:08:00.000Z",
+      "weight_kg": 92.4,
+      "body_fat_percentage": 24.8
+    },
+    {
+      "id": "weight_20240907",
+      "timestamp": "2025-09-07T07:09:00.000Z",
+      "weight_kg": 93.5,
+      "body_fat_percentage": 23.6
+    },
+    {
+      "id": "weight_20240908",
+      "timestamp": "2025-09-08T08:08:00.000Z",
+      "weight_kg": 93.6,
+      "body_fat_percentage": 23.7
+    },
+    {
+      "id": "weight_20240909",
+      "timestamp": "2025-09-09T07:53:00.000Z",
+      "weight_kg": 92.8,
+      "body_fat_percentage": 24.1
+    },
+    {
+      "id": "weight_20240910",
+      "timestamp": "2025-09-10T08:22:00.000Z",
+      "weight_kg": 93.0,
+      "body_fat_percentage": 23.7
+    },
+    {
+      "id": "weight_20240916",
+      "timestamp": "2025-09-16T08:05:00.000Z",
+      "weight_kg": 92.0,
+      "body_fat_percentage": 24.6
+    },
+    {
+      "id": "weight_20240917",
+      "timestamp": "2025-09-17T07:56:00.000Z",
+      "weight_kg": 91.8,
+      "body_fat_percentage": 24.6
+    },
+    {
+      "id": "weight_20240919",
+      "timestamp": "2025-09-19T07:56:00.000Z",
+      "weight_kg": 91.8,
+      "body_fat_percentage": 23.9
+    },
+    {
+      "id": "weight_20240923",
+      "timestamp": "2025-09-23T08:03:00.000Z",
+      "weight_kg": 90.9,
+      "body_fat_percentage": 24.0
+    },
+    {
+      "id": "weight_20240927",
+      "timestamp": "2025-09-27T09:51:00.000Z",
+      "weight_kg": 89.7,
+      "body_fat_percentage": 23.3
+    },
+    {
+      "id": "weight_20240930",
+      "timestamp": "2025-09-30T08:01:00.000Z",
+      "weight_kg": 89.2,
+      "body_fat_percentage": 23.2
+    },
+    {
+      "id": "weight_20241001",
+      "timestamp": "2025-10-01T08:02:00.000Z",
+      "weight_kg": 89.2,
+      "body_fat_percentage": 23.5
+    },
+    {
+      "id": "weight_20241002",
+      "timestamp": "2025-10-02T08:01:00.000Z",
+      "weight_kg": 89.6,
+      "body_fat_percentage": 22.3
+    },
+    {
+      "id": "weight_20241004",
+      "timestamp": "2025-10-04T10:04:00.000Z",
+      "weight_kg": 89.8,
+      "body_fat_percentage": 22.8
+    },
+    {
+      "id": "weight_20241005",
+      "timestamp": "2025-10-05T10:02:00.000Z",
+      "weight_kg": 90.2,
+      "body_fat_percentage": 23.1
+    },
+    {
+      "id": "weight_20241006",
+      "timestamp": "2025-10-06T08:06:00.000Z",
+      "weight_kg": 90.2,
+      "body_fat_percentage": 22.3
+    },
+    {
+      "id": "weight_20241007",
+      "timestamp": "2025-10-07T08:08:00.000Z",
+      "weight_kg": 90.1,
+      "body_fat_percentage": 22.5
+    },
+    {
+      "id": "weight_20241008",
+      "timestamp": "2025-10-08T08:00:00.000Z",
+      "weight_kg": 90.1,
+      "body_fat_percentage": 23.0
+    },
+    {
+      "id": "weight_20241010",
+      "timestamp": "2025-10-10T08:13:00.000Z",
+      "weight_kg": 89.9,
+      "body_fat_percentage": 22.4
+    },
+    {
+      "id": "weight_20241014",
+      "timestamp": "2025-10-14T08:03:00.000Z",
+      "weight_kg": 90.3,
+      "body_fat_percentage": 22.4
+    },
+    {
+      "id": "weight_20241015",
+      "timestamp": "2025-10-15T07:52:00.000Z",
+      "weight_kg": 90.4,
+      "body_fat_percentage": 22.0
+    },
+    {
+      "id": "weight_20241016",
+      "timestamp": "2025-10-16T08:02:00.000Z",
+      "weight_kg": 90.3,
+      "body_fat_percentage": 22.8
+    },
+    {
+      "id": "weight_20241021",
+      "timestamp": "2025-10-21T08:02:00.000Z",
+      "weight_kg": 90.9,
+      "body_fat_percentage": 23.0
+    },
+    {
+      "id": "weight_20241026",
+      "timestamp": "2025-10-26T11:28:00.000Z",
+      "weight_kg": 90.7,
+      "body_fat_percentage": 23.0
+    },
+    {
+      "id": "weight_20241028",
+      "timestamp": "2025-10-28T09:35:00.000Z",
+      "weight_kg": 91.2,
+      "body_fat_percentage": 22.6
+    },
+    {
+      "id": "weight_20241029",
+      "timestamp": "2025-10-29T08:06:00.000Z",
+      "weight_kg": 91.1,
+      "body_fat_percentage": 22.7
+    },
+    {
+      "id": "weight_20241030_1",
+      "timestamp": "2025-10-30T08:01:00.000Z",
+      "weight_kg": 92.2
+    },
+    {
+      "id": "weight_20241030_2",
+      "timestamp": "2025-10-30T20:34:00.000Z",
+      "weight_kg": 90.4
+    },
+    {
+      "id": "weight_20241031",
+      "timestamp": "2025-10-31T08:09:00.000Z",
+      "weight_kg": 91.7,
+      "body_fat_percentage": 22.0
+    },
+    {
+      "id": "weight_20241101",
+      "timestamp": "2025-11-01T09:57:00.000Z",
+      "weight_kg": 91.0,
+      "body_fat_percentage": 22.6
+    },
+    {
+      "id": "weight_20241102",
+      "timestamp": "2025-11-02T11:08:00.000Z",
+      "weight_kg": 90.8,
+      "body_fat_percentage": 23.8
+    },
+    {
+      "id": "weight_20241103",
+      "timestamp": "2025-11-03T07:38:00.000Z",
+      "weight_kg": 90.4,
+      "body_fat_percentage": 23.1
+    },
+    {
+      "id": "weight_20241104",
+      "timestamp": "2025-11-04T08:06:00.000Z",
+      "weight_kg": 90.3,
+      "body_fat_percentage": 23.6
+    },
+    {
+      "id": "weight_20241105",
+      "timestamp": "2025-11-05T08:08:00.000Z",
+      "weight_kg": 89.9,
+      "body_fat_percentage": 23.0
+    },
+    {
+      "id": "weight_20241107",
+      "timestamp": "2025-11-07T08:08:00.000Z",
+      "weight_kg": 90.3,
+      "body_fat_percentage": 22.5
+    },
+    {
+      "id": "weight_20241108",
+      "timestamp": "2025-11-08T10:40:00.000Z",
+      "weight_kg": 89.7,
+      "body_fat_percentage": 23.0
+    },
+    {
+      "id": "weight_20241110",
+      "timestamp": "2025-11-10T08:08:00.000Z",
+      "weight_kg": 89.8,
+      "body_fat_percentage": 23.4
+    }
+  ],
+  "settings": {
+    "defaultDose": 4.0,
+    "injectionFrequencyDays": 7,
+    "heightCm": 182,
+    "goalWeightKg": 85
+  }
+}

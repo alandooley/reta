@@ -267,6 +267,13 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'version.handler',
     });
 
+    const settingsFn = new lambda.Function(this, 'SettingsFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-settings',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/settings')),
+      handler: 'index.handler',
+    });
+
     // HTTP API Gateway (Budget: 60% cheaper than REST API)
     const httpApi = new HttpApi(this, 'RetatrutideHttpApi', {
       apiName: 'retatrutide-tracker-api',
@@ -397,6 +404,21 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       path: `${v1}/version`,
       methods: [HttpMethod.GET],
       integration: new HttpLambdaIntegration('GetVersionIntegration', getVersionFn),
+    });
+
+    // Settings
+    httpApi.addRoutes({
+      path: `${v1}/settings`,
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetSettingsIntegration', settingsFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/settings`,
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('UpdateSettingsIntegration', settingsFn),
+      authorizer,
     });
 
     // Outputs

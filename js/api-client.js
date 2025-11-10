@@ -183,6 +183,26 @@ class APIClient {
     }
 
     // ========================================
+    // SETTINGS
+    // ========================================
+
+    /**
+     * Get user settings
+     */
+    async getSettings() {
+        const response = await this.request('GET', '/v1/settings');
+        return response.data || {};
+    }
+
+    /**
+     * Update user settings
+     */
+    async updateSettings(settings) {
+        const response = await this.request('POST', '/v1/settings', settings);
+        return response.data;
+    }
+
+    // ========================================
     // SYNC & BACKUP
     // ========================================
 
