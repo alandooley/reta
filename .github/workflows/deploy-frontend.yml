@@ -23,6 +23,12 @@ jobs:
         with:
           node-version: '18'
 
+      - name: Update build timestamp
+        run: |
+          echo "⏰ Updating build timestamp..."
+          node update-build-timestamp.js
+          echo "✅ Timestamp updated"
+
       - name: Sync version numbers
         run: |
           echo "🔢 Syncing version numbers from package.json..."

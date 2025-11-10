@@ -25,10 +25,11 @@ CURRENT_BRANCH=$(git branch --show-current)
 echo -e "${BLUE}Current branch: $CURRENT_BRANCH${NC}"
 echo ""
 
-# Step 0: Sync version numbers
-echo -e "${BLUE}🔢 Step 0/4: Syncing version numbers from package.json...${NC}"
+# Step 0: Update build timestamp and sync version
+echo -e "${BLUE}🔢 Step 0/4: Updating build timestamp and version...${NC}"
+node update-build-timestamp.js
 npm run sync-version
-echo -e "${GREEN}✓ Version sync complete${NC}"
+echo -e "${GREEN}✓ Build timestamp and version updated${NC}"
 echo ""
 
 # Step 1: Deploy Backend Infrastructure

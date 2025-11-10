@@ -3036,7 +3036,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-10'
+            timestamp: '2025-11-10 18:41:59'
         };
 
         // ====================================
@@ -3863,18 +3863,23 @@
                         notes: wt.notes || ''
                     }));
 
+                    // Note: API now returns snake_case directly, no transformation needed
                     const cloudVials = vialsAPI.map(vial => ({
-                        vial_id: vial.id,
-                        order_date: vial.startDate,
-                        total_mg: vial.initialVolumeMl * vial.concentrationMgPerMl,
-                        bac_water_ml: vial.initialVolumeMl,
-                        concentration_mg_per_ml: vial.concentrationMgPerMl,
-                        current_volume_ml: vial.currentVolumeMl,
-                        used_volume_ml: vial.usedVolumeMl,
+                        vial_id: vial.vial_id,
+                        order_date: vial.order_date,
+                        reconstitution_date: vial.reconstitution_date,
+                        expiration_date: vial.expiration_date,
+                        total_mg: vial.total_mg,
+                        bac_water_ml: vial.bac_water_ml,
+                        concentration_mg_ml: vial.concentration_mg_ml,
+                        current_volume_ml: vial.current_volume_ml,
+                        remaining_ml: vial.current_volume_ml,  // Sync both properties
                         status: vial.status,
-                        supplier: vial.source || '',
+                        supplier: vial.supplier || '',
+                        lot_number: vial.lot_number || '',
+                        doses_used: vial.doses_used || 0,
                         notes: vial.notes || '',
-                        reconstitution_date: vial.startDate
+                        used_volume_ml: vial.used_volume_ml
                     }));
 
                     // MERGE cloud data with local data (prevents losing pending items)
