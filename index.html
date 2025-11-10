@@ -2722,17 +2722,15 @@
                 <div class="settings-section">
                     <h3>Injection Schedule</h3>
                     <label>
-                        Injection Frequency:
+                        Injection Frequency (days):
                         <div class="setting-input-wrapper">
-                            <select id="injection-frequency">
-                                <option value="7">Weekly</option>
-                                <option value="14">Bi-weekly</option>
-                                <option value="21">Every 3 weeks</option>
-                                <option value="28">Monthly</option>
-                            </select>
+                            <input type="number" id="injection-frequency" step="1" min="1" max="90" value="7" placeholder="Days between injections">
                             <span class="save-indicator">Saved</span>
                         </div>
                     </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        Common intervals: 7 (weekly), 14 (bi-weekly), 21 (every 3 weeks), 28 (monthly)
+                    </p>
                     <label>
                         Default Dose (mg):
                         <div class="setting-input-wrapper">
@@ -2755,6 +2753,9 @@
                             <span class="save-indicator">Saved</span>
                         </div>
                     </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        Preferred day of the week for injections (primarily used for weekly schedules)
+                    </p>
                     <label>
                         Height (cm):
                         <div class="setting-input-wrapper">
@@ -3034,7 +3035,7 @@
         // VERSION INFORMATION
         // ====================================
         const APP_VERSION = {
-            frontend: '1.2.0',
+            frontend: '1.3.0',
             timestamp: '2025-11-10'
         };
 
@@ -7626,13 +7627,29 @@
 
                 // Count doses from active vials
                 activeVials.forEach(vial => {
-                    const dosesInVial = (vial.remaining_ml * vial.concentration_mg_ml) / defaultDose;
+                    // Handle property name variations (cloud sync compatibility)
+                    const concentration = vial.concentration_mg_ml || vial.concentrationMgMl || 0;
+                    const remainingMl = vial.remaining_ml || vial.current_volume_ml || vial.currentVolumeMl || 0;
+
+                    if (concentration <= 0 || remainingMl <= 0) {
+                        console.warn('[VialsPage] Skipping active vial with invalid data:', vial.vial_id);
+                        return;
+                    }
+
+                    const dosesInVial = (remainingMl * concentration) / defaultDose;
                     totalDoses += dosesInVial;
                 });
 
                 // Count doses from dry stock vials (full vials)
                 dryStockVials.forEach(vial => {
-                    const dosesInVial = vial.total_mg / defaultDose;
+                    const totalMg = vial.total_mg || vial.totalMg || 0;
+
+                    if (totalMg <= 0) {
+                        console.warn('[VialsPage] Skipping dry stock vial with invalid data:', vial.vial_id);
+                        return;
+                    }
+
+                    const dosesInVial = totalMg / defaultDose;
                     totalDoses += dosesInVial;
                 });
 
