@@ -75,6 +75,28 @@ test-data-protection.html
 retatrutide_import_data.json
 migration-data.json
 
+# Cleanup/utility scripts (temporary files)
+CLEANUP_COMMANDS.md
+CLEAN_DATA_SUMMARY.md
+CLEAN_SLATE_README.md
+DATA_RECREATION_GUIDE.md
+IMPORT_INSTRUCTIONS.md
+clean_data_2025.json
+create_clean_data.py
+data-template.json
+debug.html
+delete_cloud_data.bat
+delete_cloud_data.ps1
+delete_cloud_data.sh
+delete_commands.txt
+delete_dynamodb_items.py
+get_user_id.html
+show_user_id.html
+unregister-sw.html
+user_data_backup.json
+verify_clean_data.py
+fix_dates.py
+
 # Cache
 .cache/
 .parcel-cache/
