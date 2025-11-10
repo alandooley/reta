@@ -38,15 +38,18 @@ exports.handler = async (event) => {
 
     // Transform DynamoDB items to application format
     const vials = result.Items?.map(item => ({
-      id: item.SK.replace('VIAL#', ''),
-      startDate: item.startDate,
-      initialVolumeMl: item.initialVolumeMl,
-      concentrationMgPerMl: item.concentrationMgPerMl,
-      currentVolumeMl: item.currentVolumeMl,
-      usedVolumeMl: item.usedVolumeMl,
+      vial_id: item.SK.replace('VIAL#', ''),
+      order_date: item.orderDate,
+      reconstitution_date: item.reconstitutionDate,
+      expiration_date: item.expirationDate,
+      total_mg: item.totalMg,
+      bac_water_ml: item.bacWaterMl,
+      concentration_mg_ml: item.concentrationMgMl,
+      current_volume_ml: item.currentVolumeMl,
       status: item.status,
-      source: item.source || '',
-      notes: item.notes || '',
+      supplier: item.supplier || '',
+      lot_number: item.lotNumber || '',
+      doses_used: item.dosesUsed || 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
     })) || [];
