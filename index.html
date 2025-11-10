@@ -7977,11 +7977,14 @@
                 this.data.vials.forEach(vial => {
                     // Check if vial has been used more than its capacity
                     if (vial.status === 'active' && vial.concentration_mg_ml > 0) {
-                        const totalUsedMg = vial.doses_used * (vial.total_mg / (vial.bac_water_ml * vial.concentration_mg_ml));
+                        // Calculate total used by summing actual injection doses from this vial
+                        const injectionsFromVial = this.data.injections.filter(inj => inj.vial_id === vial.vial_id);
+                        const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
                         const calculatedRemainingMg = vial.total_mg - totalUsedMg;
                         const reportedRemainingMg = vial.remaining_ml * vial.concentration_mg_ml;
 
-                        if (Math.abs(calculatedRemainingMg - reportedRemainingMg) > 0.1) {
+                        // Allow 0.5mg tolerance for rounding
+                        if (Math.abs(calculatedRemainingMg - reportedRemainingMg) > 0.5) {
                             issues.push(`Vial ${vial.vial_id}: Calculated remaining (${calculatedRemainingMg.toFixed(1)}mg) doesn't match reported (${reportedRemainingMg.toFixed(1)}mg)`);
                         }
                     }
@@ -7996,9 +7999,17 @@
                         issues.push(`Vial ${vial.vial_id}: Marked as empty but has ${vial.remaining_ml}ml remaining`);
                     }
 
-                    // Check for expired active vials
-                    if (vial.status === 'active' && new Date(vial.expiration_date) < new Date()) {
-                        issues.push(`Vial ${vial.vial_id}: Marked as active but expired on ${new Date(vial.expiration_date).toLocaleDateString()}`);
+                    // Check for expired active vials (compare dates only, not times)
+                    if (vial.status === 'active' && vial.expiration_date) {
+                        const expiryDate = new Date(vial.expiration_date);
+                        const today = new Date();
+                        // Set both to midnight for fair comparison
+                        expiryDate.setHours(0, 0, 0, 0);
+                        today.setHours(0, 0, 0, 0);
+
+                        if (expiryDate < today) {
+                            issues.push(`Vial ${vial.vial_id}: Marked as active but expired on ${new Date(vial.expiration_date).toLocaleDateString()}`);
+                        }
                     }
                 });
 
