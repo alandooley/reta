@@ -39,19 +39,21 @@ exports.handler = async (event) => {
     // Transform DynamoDB items to application format
     const vials = result.Items?.map(item => ({
       vial_id: item.SK.replace('VIAL#', ''),
-      order_date: item.orderDate || null,
-      reconstitution_date: item.reconstitutionDate || null,
-      expiration_date: item.expirationDate || null,
-      total_mg: item.totalMg || 0,
-      bac_water_ml: item.bacWaterMl || null,
-      concentration_mg_ml: item.concentrationMgMl || null,
-      current_volume_ml: item.currentVolumeMl || null,
+      order_date: item.orderDate,
+      reconstitution_date: item.reconstitutionDate,
+      expiration_date: item.expirationDate,
+      total_mg: item.totalMg,
+      bac_water_ml: item.bacWaterMl,
+      concentration_mg_ml: item.concentrationMgMl,
+      current_volume_ml: item.currentVolumeMl,
       status: item.status,
       supplier: item.supplier || '',
       lot_number: item.lotNumber || '',
       doses_used: item.dosesUsed || 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
+      notes: item.notes || '',
+      used_volume_ml: item.usedVolumeMl,
     })) || [];
 
     console.log(`Retrieved ${vials.length} vials for user ${userId}`);
