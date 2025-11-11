@@ -3036,7 +3036,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-10 18:41:59'
+            timestamp: '2025-11-11 09:11:36'
         };
 
         // ====================================
@@ -9338,9 +9338,13 @@
                     cloudBackupBtn.disabled = false;
                 }
 
-                // Only run these on actual sign-in, not on token refresh
-                if (isNewAuth && app) {
-                    console.log('New auth detected, syncing data...');
+                // ALWAYS sync from cloud when authenticated (cloud is source of truth)
+                if (app) {
+                    if (isNewAuth) {
+                        console.log('New auth detected, performing full sync...');
+                    } else {
+                        console.log('Auth state confirmed, syncing from cloud...');
+                    }
 
                     // Update cloud backup status
                     app.updateCloudBackupStatus();
@@ -9348,7 +9352,7 @@
                     // Check if auto-backup is needed
                     app.checkAutoBackup();
 
-                    // Sync data from cloud (protected by guard)
+                    // Sync data from cloud - ALWAYS (protected by guard to prevent concurrent syncs)
                     app.syncFromCloud();
 
                     // Sync settings from cloud

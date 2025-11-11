@@ -4,7 +4,7 @@
  */
 
 const BACKEND_VERSION = '1.0.0';
-const BUILD_DATE = '2025-11-10';
+const BUILD_DATE = '2025-11-11';
 
 export const handler = async (event: any) => {
   console.log('Version check request:', JSON.stringify(event, null, 2));
