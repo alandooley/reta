@@ -3050,7 +3050,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-11 10:32:47'
+            timestamp: '2025-11-11 10:38:23'
         };
 
         // ====================================
@@ -6176,25 +6176,25 @@
                 this.saveData();
                 this.updateUI();
 
-                // Push activated vial to sync queue (Phase 1B: Reliable sync with retry)
+                // Push activated vial to sync queue - use 'update' since vial already exists
                 if (authManager && authManager.isAuthenticated() && this.syncQueue) {
                     this.syncQueue.add({
-                        type: 'create',
+                        type: 'update',  // PATCH endpoint - vial already exists as dry_stock
                         entity: 'vial',
                         localId: vial.vial_id,
                         data: {
                             id: vial.vial_id,
-                            startDate: vial.reconstitution_date,
-                            initialVolumeMl: bacWaterMl,
-                            concentrationMgPerMl: concentrationMgMl,
-                            currentVolumeMl: vial.remaining_ml,
+                            reconstitutionDate: reconstitutionDate,
+                            expirationDate: expirationDate,
+                            bacWaterMl: bacWaterMl,
+                            concentrationMgMl: concentrationMgMl,
+                            currentVolumeMl: bacWaterMl,
                             usedVolumeMl: 0,
-                            status: vial.status,
-                            source: vial.supplier || '',
-                            notes: `${vial.total_mg}mg reconstituted`
+                            status: 'active',
+                            notes: vial.notes || `Activated with ${bacWaterMl}ml BAC water`
                         }
                     });
-                    console.log(`Vial ${vial.vial_id} activation added to sync queue`);
+                    console.log(`Vial ${vial.vial_id} activation (${concentrationMgMl.toFixed(1)}mg/ml) added to sync queue`);
                 }
 
                 // Delay modal close to show save indicator

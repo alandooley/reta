@@ -77,6 +77,31 @@ exports.handler = async (event) => {
       expressionAttributeValues[':notes'] = body.notes;
     }
 
+    // Activation fields (for converting dry_stock to active)
+    if (body.reconstitutionDate !== undefined) {
+      updateExpressions.push('#reconstitutionDate = :reconstitutionDate');
+      expressionAttributeNames['#reconstitutionDate'] = 'reconstitutionDate';
+      expressionAttributeValues[':reconstitutionDate'] = body.reconstitutionDate;
+    }
+
+    if (body.expirationDate !== undefined) {
+      updateExpressions.push('#expirationDate = :expirationDate');
+      expressionAttributeNames['#expirationDate'] = 'expirationDate';
+      expressionAttributeValues[':expirationDate'] = body.expirationDate;
+    }
+
+    if (body.bacWaterMl !== undefined) {
+      updateExpressions.push('#bacWaterMl = :bacWaterMl');
+      expressionAttributeNames['#bacWaterMl'] = 'bacWaterMl';
+      expressionAttributeValues[':bacWaterMl'] = body.bacWaterMl;
+    }
+
+    if (body.concentrationMgMl !== undefined) {
+      updateExpressions.push('#concentrationMgMl = :concentrationMgMl');
+      expressionAttributeNames['#concentrationMgMl'] = 'concentrationMgMl';
+      expressionAttributeValues[':concentrationMgMl'] = body.concentrationMgMl;
+    }
+
     if (updateExpressions.length === 1) {
       // Only updatedAt would be updated, which means no actual changes
       return {
