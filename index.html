@@ -2982,6 +2982,13 @@
                     <label for="edit-vial-mg">mg per Vial</label>
                     <input type="number" id="edit-vial-mg" step="0.1" min="0" required placeholder="10">
                 </div>
+                <div class="form-group" id="edit-vial-volume-group" style="display: none;">
+                    <label for="edit-vial-current-volume">Current Volume (ml)</label>
+                    <input type="number" id="edit-vial-current-volume" step="0.01" min="0" placeholder="0.50">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Manually adjust remaining volume in this vial (active vials only)
+                    </p>
+                </div>
                 <div class="form-group">
                     <button type="submit" class="btn-primary">Save Changes</button>
                     <button type="button" class="btn-secondary" data-modal="edit-vial-modal">Cancel</button>
@@ -3050,7 +3057,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-11 10:47:12'
+            timestamp: '2025-11-11 10:51:19'
         };
 
         // ====================================
@@ -6076,6 +6083,18 @@
                 document.getElementById('edit-vial-supplier').value = vial.supplier || '';
                 document.getElementById('edit-vial-mg').value = vial.total_mg;
 
+                // Show volume field for active vials
+                const volumeGroup = document.getElementById('edit-vial-volume-group');
+                const volumeInput = document.getElementById('edit-vial-current-volume');
+                if (vial.status === 'active' || vial.status === 'insufficient' || vial.status === 'expiring') {
+                    volumeGroup.style.display = 'block';
+                    const currentVol = vial.current_volume_ml || vial.remaining_ml || 0;
+                    volumeInput.value = currentVol.toFixed(2);
+                } else {
+                    volumeGroup.style.display = 'none';
+                    volumeInput.value = '';
+                }
+
                 // Open the modal
                 this.openModal('edit-vial-modal');
             }
@@ -6085,6 +6104,8 @@
                 const orderDate = document.getElementById('edit-vial-order-date').value;
                 const supplier = document.getElementById('edit-vial-supplier').value;
                 const totalMg = parseFloat(document.getElementById('edit-vial-mg').value);
+                const currentVolumeInput = document.getElementById('edit-vial-current-volume');
+                const newVolume = currentVolumeInput.value ? parseFloat(currentVolumeInput.value) : null;
 
                 if (!vialId || !orderDate || !totalMg) {
                     alert('Please fill in all required fields');
@@ -6102,6 +6123,22 @@
                 vial.supplier = supplier || '';
                 vial.total_mg = totalMg;
 
+                // Update current volume if provided (active vials only)
+                if (newVolume !== null && (vial.status === 'active' || vial.status === 'insufficient' || vial.status === 'expiring')) {
+                    vial.current_volume_ml = newVolume;
+                    vial.remaining_ml = newVolume;
+                    vial.used_volume_ml = vial.bac_water_ml ? (vial.bac_water_ml - newVolume) : 0;
+
+                    // Update status based on new volume
+                    if (newVolume <= 0) {
+                        vial.status = 'empty';
+                    } else if (vial.status === 'empty' || vial.status === 'insufficient') {
+                        vial.status = 'active';
+                    }
+
+                    console.log(`Manually adjusted vial ${vialId} volume to ${newVolume.toFixed(2)}ml`);
+                }
+
                 // If vial is activated, update concentration
                 if (vial.bac_water_ml && vial.bac_water_ml > 0) {
                     vial.concentration_mg_ml = totalMg / vial.bac_water_ml;
@@ -6116,7 +6153,7 @@
                 this.saveData();
                 this.updateUI();
 
-                // Push update to sync queue
+                // Push update to sync queue (use correct property names for PATCH)
                 if (authManager && authManager.isAuthenticated() && this.syncQueue) {
                     this.syncQueue.add({
                         type: 'update',
@@ -6124,14 +6161,10 @@
                         localId: vial.vial_id,
                         data: {
                             id: vial.vial_id,
-                            startDate: vial.order_date,
-                            initialVolumeMl: vial.bac_water_ml || 0,
-                            concentrationMgPerMl: vial.concentration_mg_ml || 0,
-                            currentVolumeMl: vial.remaining_ml || 0,
-                            usedVolumeMl: vial.bac_water_ml ? (vial.bac_water_ml - vial.remaining_ml) : 0,
+                            currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || 0,
+                            usedVolumeMl: vial.used_volume_ml || 0,
                             status: vial.status,
-                            source: vial.supplier || '',
-                            notes: `${totalMg}mg ${vial.status === 'dry_stock' ? 'dry stock' : 'active'}`
+                            notes: vial.notes || `${totalMg}mg vial`
                         }
                     });
                     console.log(`Vial ${vial.vial_id} update added to sync queue`);
