@@ -37,23 +37,25 @@ exports.handler = async (event) => {
     const result = await docClient.send(new QueryCommand(params));
 
     // Transform DynamoDB items to application format
+    // Note: DynamoDB stores in camelCase (orderDate, totalMg, etc.)
+    // but frontend expects snake_case (order_date, total_mg, etc.)
     const vials = result.Items?.map(item => ({
-      vial_id: item.SK.replace('VIAL#', ''),
-      order_date: item.orderDate,
-      reconstitution_date: item.reconstitutionDate,
-      expiration_date: item.expirationDate,
-      total_mg: item.totalMg,
-      bac_water_ml: item.bacWaterMl,
-      concentration_mg_ml: item.concentrationMgMl,
-      current_volume_ml: item.currentVolumeMl,
+      vial_id: item.vial_id || item.SK.replace('VIAL#', ''),
+      order_date: item.orderDate || item.order_date,
+      reconstitution_date: item.reconstitutionDate || item.reconstitution_date,
+      expiration_date: item.expirationDate || item.expiration_date,
+      total_mg: item.totalMg || item.total_mg,
+      bac_water_ml: item.bacWaterMl || item.bac_water_ml,
+      concentration_mg_ml: item.concentrationMgMl || item.concentration_mg_ml,
+      current_volume_ml: item.currentVolumeMl || item.current_volume_ml,
       status: item.status,
       supplier: item.supplier || '',
-      lot_number: item.lotNumber || '',
-      doses_used: item.dosesUsed || 0,
+      lot_number: item.lotNumber || item.lot_number || '',
+      doses_used: item.dosesUsed || item.doses_used || 0,
       createdAt: item.createdAt,
       updatedAt: item.updatedAt,
       notes: item.notes || '',
-      used_volume_ml: item.usedVolumeMl,
+      used_volume_ml: item.usedVolumeMl || item.used_volume_ml,
     })) || [];
 
     console.log(`Retrieved ${vials.length} vials for user ${userId}`);

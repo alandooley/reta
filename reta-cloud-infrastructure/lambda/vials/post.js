@@ -8,6 +8,7 @@ const docClient = DynamoDBDocumentClient.from(dynamoClient);
 /**
  * POST /v1/vials
  * Creates a new vial record for the authenticated user
+ * Supports NEW schema (orderDate, totalMg, supplier) for dry_stock vials
  */
 exports.handler = async (event) => {
   console.log('POST /v1/vials called:', JSON.stringify(event, null, 2));
@@ -27,38 +28,27 @@ exports.handler = async (event) => {
     // Parse request body
     const body = JSON.parse(event.body || '{}');
 
-    // Validate required fields
-    const { id, startDate, initialVolumeMl, concentrationMgPerMl } = body;
-    if (!startDate || initialVolumeMl === undefined || concentrationMgPerMl === undefined) {
+    // NEW SCHEMA validation (for dry_stock vials)
+    const { id, orderDate, totalMg, supplier, status } = body;
+    if (!orderDate || totalMg === undefined) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'Missing required fields: startDate, initialVolumeMl, concentrationMgPerMl',
+          error: 'Missing required fields: orderDate, totalMg',
         }),
       };
     }
 
-    // Validate numeric fields are non-negative (allow 0 for dry stock)
-    if (typeof initialVolumeMl !== 'number' || initialVolumeMl < 0) {
+    // Validate totalMg is non-negative
+    if (typeof totalMg !== 'number' || totalMg < 0) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'initialVolumeMl must be a non-negative number',
-        }),
-      };
-    }
-
-    if (typeof concentrationMgPerMl !== 'number' || concentrationMgPerMl < 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: false,
-          error: 'concentrationMgPerMl must be a non-negative number',
+          error: 'totalMg must be a non-negative number',
         }),
       };
     }
@@ -67,19 +57,27 @@ exports.handler = async (event) => {
     const vialId = id || randomUUID();
     const now = new Date().toISOString();
 
-    // Create vial item
+    // Create vial item (using camelCase to match existing DynamoDB data)
     const item = {
       PK: `USER#${userId}`,
       SK: `VIAL#${vialId}`,
       GSI1PK: `USER#${userId}`,
-      GSI1SK: `VIAL#${startDate}`,
-      startDate,
-      initialVolumeMl,
-      concentrationMgPerMl,
-      currentVolumeMl: body.currentVolumeMl || initialVolumeMl,
+      GSI1SK: `VIAL#${orderDate}`,
+      vial_id: vialId,
+      orderDate: orderDate,
+      totalMg: totalMg,
+      supplier: supplier || '',
+      status: status || 'dry_stock',
+      // Activation fields (null until activated)
+      reconstitutionDate: body.reconstitutionDate || null,
+      expirationDate: body.expirationDate || null,
+      bacWaterMl: body.bacWaterMl || null,
+      concentrationMgMl: body.concentrationMgMl || null,
+      currentVolumeMl: body.currentVolumeMl || 0,
+      remainingMl: body.remainingMl || 0,
       usedVolumeMl: body.usedVolumeMl || 0,
-      status: body.status || 'active',
-      source: body.source || '',
+      dosesUsed: body.dosesUsed || 0,
+      lotNumber: body.lotNumber || '',
       notes: body.notes || '',
       createdAt: now,
       updatedAt: now,
@@ -92,9 +90,9 @@ exports.handler = async (event) => {
       Item: item,
     }));
 
-    console.log(`Created vial ${vialId} for user ${userId}`);
+    console.log(`Created vial ${vialId} for user ${userId} (status: ${item.status})`);
 
-    // Return created vial
+    // Return created vial (frontend expects snake_case)
     return {
       statusCode: 201,
       headers: {
@@ -105,13 +103,20 @@ exports.handler = async (event) => {
         success: true,
         data: {
           id: vialId,
-          startDate,
-          initialVolumeMl,
-          concentrationMgPerMl,
-          currentVolumeMl: item.currentVolumeMl,
-          usedVolumeMl: item.usedVolumeMl,
+          vial_id: vialId,
+          order_date: item.orderDate,
+          total_mg: item.totalMg,
+          supplier: item.supplier,
           status: item.status,
-          source: item.source,
+          reconstitution_date: item.reconstitutionDate,
+          expiration_date: item.expirationDate,
+          bac_water_ml: item.bacWaterMl,
+          concentration_mg_ml: item.concentrationMgMl,
+          current_volume_ml: item.currentVolumeMl,
+          remaining_ml: item.remainingMl,
+          used_volume_ml: item.usedVolumeMl,
+          doses_used: item.dosesUsed,
+          lot_number: item.lotNumber,
           notes: item.notes,
           createdAt: now,
           updatedAt: now,

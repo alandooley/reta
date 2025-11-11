@@ -52,7 +52,7 @@ exports.handler = async (event) => {
     expressionAttributeNames['#updatedAt'] = 'updatedAt';
     expressionAttributeValues[':updatedAt'] = now;
 
-    // Handle optional fields
+    // Handle optional fields (use camelCase for DynamoDB to match existing data)
     if (body.currentVolumeMl !== undefined) {
       updateExpressions.push('#currentVolumeMl = :currentVolumeMl');
       expressionAttributeNames['#currentVolumeMl'] = 'currentVolumeMl';
@@ -77,7 +77,7 @@ exports.handler = async (event) => {
       expressionAttributeValues[':notes'] = body.notes;
     }
 
-    // Activation fields (for converting dry_stock to active)
+    // Activation fields (for converting dry_stock to active) - use camelCase
     if (body.reconstitutionDate !== undefined) {
       updateExpressions.push('#reconstitutionDate = :reconstitutionDate');
       expressionAttributeNames['#reconstitutionDate'] = 'reconstitutionDate';
