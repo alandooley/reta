@@ -1,330 +1,316 @@
 /**
- * Test Data Factory
- * Generates consistent, valid test data for all entities
+ * Test Fixtures - Predefined Test Datasets
+ *
+ * Common test data scenarios that can be reused across tests.
  */
+
+const { TestDataBuilder } = require('../helpers/test-data-builder');
 
 /**
- * Generate a unique ID for test data
+ * Empty dataset (fresh start)
  */
-function generateId() {
-  return `test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-/**
- * Generate ISO timestamp (current or with offset)
- * @param {number} daysOffset - Days to offset from now (negative for past)
- */
-function generateTimestamp(daysOffset = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + daysOffset);
-  return date.toISOString();
-}
-
-/**
- * Generate ISO date (YYYY-MM-DD format)
- * @param {number} daysOffset - Days to offset from now (negative for past)
- */
-function generateDate(daysOffset = 0) {
-  const date = new Date();
-  date.setDate(date.getDate() + daysOffset);
-  return date.toISOString().split('T')[0];
-}
-
-/**
- * Valid injection site values
- */
-const INJECTION_SITES = [
-  'left_thigh',
-  'right_thigh',
-  'left_abdomen',
-  'right_abdomen',
-  'left_arm',
-  'right_arm'
-];
-
-/**
- * Valid vial status values
- */
-const VIAL_STATUSES = ['dry_stock', 'active', 'activated', 'insufficient', 'empty', 'expired'];
-
-/**
- * Valid sync status values
- */
-const SYNC_STATUSES = ['pending', 'synced', 'failed', 'syncing'];
-
-/**
- * Create a valid injection record
- * @param {Object} overrides - Properties to override
- * @returns {Object} Injection object
- */
-function createValidInjection(overrides = {}) {
-  return {
-    id: generateId(),
-    timestamp: generateTimestamp(-1), // yesterday
-    dose_mg: 0.5,
-    injection_site: 'left_thigh',
-    vial_id: null, // Should be set to actual vial ID
-    weight_kg: null,
-    weight_source: null,
-    notes: '',
-    medication_level_at_injection: 0,
-    sync_status: 'pending',
-    ...overrides
-  };
-}
-
-/**
- * Create a valid vial record
- * @param {Object} overrides - Properties to override
- * @returns {Object} Vial object
- */
-function createValidVial(overrides = {}) {
-  const totalMg = overrides.total_mg || 10;
-  const bacWaterMl = overrides.bac_water_ml || 1.0;
-
-  return {
-    vial_id: generateId(),
-    order_date: generateDate(-30), // ordered 30 days ago
-    supplier: 'Test Supplier',
-    lot_number: `LOT-${Date.now()}`,
-    total_mg: totalMg,
-    bac_water_ml: bacWaterMl,
-    concentration_mg_ml: totalMg / bacWaterMl, // auto-calculated
-    reconstitution_date: generateTimestamp(-7), // reconstituted 7 days ago
-    expiration_date: generateTimestamp(23), // expires in 23 days (30 days from reconstitution)
-    remaining_ml: bacWaterMl,
-    current_volume_ml: bacWaterMl, // Phase 1A: both properties
-    doses_used: 0,
-    status: 'active',
-    sync_status: 'pending',
-    ...overrides
-  };
-}
-
-/**
- * Create a dry stock vial (not yet reconstituted)
- * @param {Object} overrides - Properties to override
- * @returns {Object} Vial object
- */
-function createDryStockVial(overrides = {}) {
-  return {
-    vial_id: generateId(),
-    order_date: generateDate(-10), // ordered 10 days ago
-    supplier: 'Test Supplier',
-    lot_number: `LOT-${Date.now()}`,
-    total_mg: 10,
-    bac_water_ml: null,
-    concentration_mg_ml: null,
-    reconstitution_date: null,
-    expiration_date: null,
-    remaining_ml: null,
-    current_volume_ml: null,
-    doses_used: 0,
-    status: 'dry_stock',
-    sync_status: 'pending',
-    ...overrides
-  };
-}
-
-/**
- * Create a valid weight record
- * @param {Object} overrides - Properties to override
- * @returns {Object} Weight object
- */
-function createValidWeight(overrides = {}) {
-  const weightKg = overrides.weight_kg || 80.0;
-
-  return {
-    id: generateId(),
-    timestamp: generateTimestamp(-1), // yesterday
-    weight_kg: weightKg,
-    weight_lbs: weightKg * 2.20462, // auto-calculated
-    source: 'manual',
-    bmi: null, // calculated if height set
-    body_fat_percentage: null,
-    sync_status: 'pending',
-    ...overrides
-  };
-}
-
-/**
- * Create settings object
- * @param {Object} overrides - Properties to override
- * @returns {Object} Settings object
- */
-function createSettings(overrides = {}) {
-  return {
-    heightCm: 175,
-    goalWeightKg: 75.0,
-    units: 'metric',
-    theme: 'dark',
-    notifications_enabled: true,
-    ...overrides
-  };
-}
-
-/**
- * Create a complete test dataset with related records
- * @param {Object} options - Configuration options
- * @returns {Object} Complete dataset
- */
-function createTestDataset(options = {}) {
-  const {
-    numVials = 2,
-    numInjections = 5,
-    numWeights = 10,
-    includeSettings = true
-  } = options;
-
-  // Create vials first
-  const vials = [];
-  for (let i = 0; i < numVials; i++) {
-    vials.push(createValidVial({
-      order_date: generateDate(-30 - i),
-      total_mg: 10 + (i * 5), // varying doses
-      remaining_ml: 1.0 - (i * 0.1) // varying remaining amounts
-    }));
-  }
-
-  // Create injections referencing the vials
-  const injections = [];
-  for (let i = 0; i < numInjections; i++) {
-    const vialIndex = i % vials.length; // rotate through vials
-    injections.push(createValidInjection({
-      timestamp: generateTimestamp(-numInjections + i), // spread over time
-      dose_mg: 0.5 + (i * 0.1), // increasing doses
-      vial_id: vials[vialIndex].vial_id,
-      injection_site: INJECTION_SITES[i % INJECTION_SITES.length]
-    }));
-  }
-
-  // Create weights
-  const weights = [];
-  const startWeight = 90.0;
-  for (let i = 0; i < numWeights; i++) {
-    weights.push(createValidWeight({
-      timestamp: generateTimestamp(-numWeights + i),
-      weight_kg: startWeight - (i * 0.5) // gradual weight loss
-    }));
-  }
-
-  const dataset = {
-    vials,
-    injections,
-    weights
-  };
-
-  if (includeSettings) {
-    dataset.settings = createSettings();
-  }
-
-  return dataset;
-}
-
-/**
- * Create edge case scenarios for testing
- */
-const edgeCases = {
-  // Empty dataset
-  empty: {
-    injections: [],
+const emptyData = {
     vials: [],
+    injections: [],
     weights: [],
-    settings: null
-  },
-
-  // Single records
-  single: {
-    injections: [createValidInjection()],
-    vials: [createValidVial()],
-    weights: [createValidWeight()],
-    settings: createSettings()
-  },
-
-  // Vial with no remaining volume
-  emptyVial: createValidVial({
-    remaining_ml: 0,
-    current_volume_ml: 0,
-    status: 'empty'
-  }),
-
-  // Vial with insufficient volume for standard dose
-  insufficientVial: createValidVial({
-    remaining_ml: 0.05,
-    current_volume_ml: 0.05,
-    status: 'insufficient'
-  }),
-
-  // Expired vial
-  expiredVial: createValidVial({
-    reconstitution_date: generateTimestamp(-35), // 35 days ago
-    expiration_date: generateTimestamp(-5), // expired 5 days ago
-    status: 'expired'
-  }),
-
-  // Future-dated injection (invalid)
-  futureInjection: createValidInjection({
-    timestamp: generateTimestamp(1) // tomorrow
-  }),
-
-  // Invalid dose (too high)
-  highDoseInjection: createValidInjection({
-    dose_mg: 100.0 // exceeds max 50mg
-  }),
-
-  // Invalid dose (negative)
-  negativeDoseInjection: createValidInjection({
-    dose_mg: -0.5
-  }),
-
-  // Injection with invalid site
-  invalidSiteInjection: {
-    ...createValidInjection(),
-    injection_site: 'invalid_site'
-  },
-
-  // Weight with invalid value (too low)
-  lowWeight: createValidWeight({
-    weight_kg: 10.0 // unrealistically low
-  }),
-
-  // Weight with invalid value (too high)
-  highWeight: createValidWeight({
-    weight_kg: 500.0 // unrealistically high
-  }),
-
-  // Duplicate injections (same timestamp, dose, site)
-  duplicateInjections: [
-    createValidInjection({
-      id: 'dup-1',
-      timestamp: '2025-11-07T10:00:00Z',
-      dose_mg: 0.5,
-      injection_site: 'left_thigh'
-    }),
-    createValidInjection({
-      id: 'dup-2',
-      timestamp: '2025-11-07T10:00:00Z',
-      dose_mg: 0.5,
-      injection_site: 'left_thigh'
-    })
-  ]
+    settings: {
+        defaultDose: 2.0,
+        injectionFrequency: 7,
+        heightCm: 175,
+        goalWeightKg: 80,
+        injectionDay: 'Monday'
+    }
 };
 
-// Export all factories and constants
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = {
-    generateId,
-    generateTimestamp,
-    generateDate,
-    INJECTION_SITES,
-    VIAL_STATUSES,
-    SYNC_STATUSES,
-    createValidInjection,
-    createValidVial,
-    createDryStockVial,
-    createValidWeight,
-    createSettings,
-    createTestDataset,
-    edgeCases
-  };
+/**
+ * Single dry stock vial (most basic scenario)
+ */
+const singleDryVial = new TestDataBuilder()
+    .withDryVial()
+    .build();
+
+/**
+ * Single active vial (ready for injections)
+ */
+const singleActiveVial = new TestDataBuilder()
+    .withActiveVial()
+    .build();
+
+/**
+ * Active vial with one injection
+ */
+const vialWithOneInjection = new TestDataBuilder()
+    .withActiveVial()
+    .withInjection(0, { dose_mg: 2.5 })
+    .build();
+
+/**
+ * Active vial with multiple injections
+ */
+const vialWithMultipleInjections = new TestDataBuilder()
+    .withActiveVial({ total_mg: 10, bac_water_ml: 1 })
+    .withInjection(0, { dose_mg: 2.0 })
+    .withInjection(0, { dose_mg: 2.5 })
+    .withInjection(0, { dose_mg: 3.0 })
+    .build();
+
+/**
+ * Nearly empty vial (testing insufficient volume)
+ */
+const nearlyEmptyVial = new TestDataBuilder()
+    .withActiveVial({
+        total_mg: 10,
+        bac_water_ml: 1,
+        current_volume_ml: 0.1,
+        remaining_ml: 0.1,
+        used_volume_ml: 0.9
+    })
+    .build();
+
+/**
+ * Empty vial (used up)
+ */
+const emptyVial = new TestDataBuilder()
+    .withEmptyVial()
+    .build();
+
+/**
+ * Multiple vials in different states
+ */
+const multipleVials = new TestDataBuilder()
+    .withEmptyVial({ order_date: '2024-08-01' })
+    .withEmptyVial({ order_date: '2024-08-01' })
+    .withActiveVial({ order_date: '2024-10-01', current_volume_ml: 0.2 })
+    .withDryVial({ order_date: '2024-10-01' })
+    .withDryVial({ order_date: '2024-10-01' })
+    .build();
+
+/**
+ * Weight loss journey scenario (realistic progression)
+ * Starting weight: 95kg, tracking weekly progress with injections
+ */
+const weightLossJourney = new TestDataBuilder()
+    .withActiveVial({ total_mg: 10, bac_water_ml: 1, order_date: '2024-09-01' })
+    .withWeight({ weightKg: 95.0, daysAgo: 56 })  // Week 0
+    .withInjection(0, { dose_mg: 2.0, daysAgo: 56 })
+    .withWeight({ weightKg: 94.2, daysAgo: 49 })  // Week 1
+    .withInjection(0, { dose_mg: 2.0, daysAgo: 49 })
+    .withWeight({ weightKg: 93.5, daysAgo: 42 })  // Week 2
+    .withInjection(0, { dose_mg: 2.5, daysAgo: 42 })
+    .withWeight({ weightKg: 92.8, daysAgo: 35 })  // Week 3
+    .withInjection(0, { dose_mg: 2.5, daysAgo: 35 })
+    .withWeight({ weightKg: 92.0, daysAgo: 28 })  // Week 4
+    .withInjection(0, { dose_mg: 3.0, daysAgo: 28 })
+    .withWeight({ weightKg: 91.0, daysAgo: 21 })  // Week 5
+    .withInjection(0, { dose_mg: 3.0, daysAgo: 21 })
+    .withWeight({ weightKg: 90.2, daysAgo: 14 })  // Week 6
+    .withInjection(0, { dose_mg: 3.0, daysAgo: 14 })
+    .withWeight({ weightKg: 89.5, daysAgo: 7 })   // Week 7
+    .withInjection(0, { dose_mg: 3.0, daysAgo: 7 })
+    .withWeight({ weightKg: 88.8, daysAgo: 0 })   // Week 8
+    .build();
+
+/**
+ * Complete scenario with multiple vials in rotation
+ * Simulates real-world usage with vial transition
+ */
+const completeScenario = new TestDataBuilder()
+    .withEmptyVial({ order_date: '2024-06-01', total_mg: 10 })  // First vial used up
+    .withActiveVial({ order_date: '2024-08-15', total_mg: 10, current_volume_ml: 0.4 })  // Current vial
+    .withDryVial({ order_date: '2024-10-01', total_mg: 10 })  // Backup vial
+    .withInjection(1, { dose_mg: 2.5, daysAgo: 7 })
+    .withInjection(1, { dose_mg: 2.5, daysAgo: 14 })
+    .withInjection(1, { dose_mg: 2.5, daysAgo: 21 })
+    .withWeight({ weightKg: 92.5, daysAgo: 28 })
+    .withWeight({ weightKg: 91.8, daysAgo: 21 })
+    .withWeight({ weightKg: 91.0, daysAgo: 14 })
+    .withWeight({ weightKg: 90.3, daysAgo: 7 })
+    .withWeight({ weightKg: 89.7, daysAgo: 0 })
+    .build();
+
+/**
+ * Creates large dataset for performance testing
+ * @param {number} vialCount - Number of vials to create
+ * @param {number} injectionsPerVial - Injections per active vial
+ * @param {number} weightCount - Number of weight entries
+ * @returns {Object} Large test dataset
+ */
+function createLargeDataset(vialCount = 100, injectionsPerVial = 50, weightCount = 200) {
+    const builder = new TestDataBuilder();
+
+    // Create mix of vials (30% dry, 50% active, 20% empty)
+    for (let i = 0; i < vialCount; i++) {
+        const rand = Math.random();
+        if (rand < 0.3) {
+            builder.withDryVial({ order_date: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-01` });
+        } else if (rand < 0.8) {
+            builder.withActiveVial({
+                total_mg: 10,
+                bac_water_ml: 1,
+                order_date: `2024-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-01`
+            });
+        } else {
+            builder.withEmptyVial({ order_date: `2024-${String(Math.floor(Math.random() * 6) + 1).padStart(2, '0')}-01` });
+        }
+    }
+
+    // Add injections to active vials
+    const activeVialCount = Math.floor(vialCount * 0.5);
+    for (let vialIdx = 0; vialIdx < activeVialCount; vialIdx++) {
+        for (let injIdx = 0; injIdx < injectionsPerVial; injIdx++) {
+            builder.withInjection(vialIdx, {
+                dose_mg: 2.0 + Math.random() * 2,  // 2.0-4.0mg doses
+                daysAgo: injIdx * 7  // Weekly injections
+            });
+        }
+    }
+
+    // Add weight entries
+    let currentWeight = 95.0;
+    for (let i = 0; i < weightCount; i++) {
+        currentWeight -= (Math.random() * 0.5);  // Gradual weight loss
+        builder.withWeight({
+            weightKg: Math.max(70, currentWeight),  // Don't go below 70kg
+            daysAgo: i * 2  // Every 2 days
+        });
+    }
+
+    return builder.build();
 }
+
+/**
+ * Corrupt data scenarios (for validation/error handling tests)
+ */
+const corruptData = {
+    vials: [
+        { vial_id: 'test-corrupt-1', total_mg: null, status: 'active' },  // Null total_mg
+        { vial_id: 'test-corrupt-2', total_mg: -5, bac_water_ml: 1 },  // Negative value
+        { vial_id: 'test-corrupt-3', total_mg: 10, bac_water_ml: 0 },  // Division by zero
+        { vial_id: 'test-corrupt-4', total_mg: 'ten', bac_water_ml: 1 },  // Wrong type
+        { vial_id: 'test-corrupt-5' },  // Missing required fields
+    ],
+    injections: [
+        { id: 'test-corrupt-inj-1', dose_mg: null, vial_id: 'test-vial-1' },
+        { id: 'test-corrupt-inj-2', dose_mg: -2.5, vial_id: 'test-vial-1' },
+        { id: 'test-corrupt-inj-3', dose_mg: 2.5 },  // Missing vial_id
+        { id: 'test-corrupt-inj-4', vial_id: 'nonexistent-vial', dose_mg: 2.0 },  // Invalid vial reference
+    ],
+    weights: [
+        { id: 'test-corrupt-weight-1', weightKg: null, date: '2024-01-01' },
+        { id: 'test-corrupt-weight-2', weightKg: -80, date: '2024-01-01' },
+        { id: 'test-corrupt-weight-3', weightKg: 'eighty', date: '2024-01-01' },
+    ],
+    settings: {
+        defaultDose: null,  // Should have default fallback
+        injectionFrequency: -7,  // Invalid negative
+        heightCm: 'tall',  // Wrong type
+    }
+};
+
+/**
+ * Unicode and special character data
+ */
+const unicodeData = new TestDataBuilder()
+    .withActiveVial({
+        supplier: 'Тест Supplier 中文 🧪',  // Cyrillic, Chinese, emoji
+        lot_number: 'LOT#123-ABC/2024',
+        notes: 'Special chars: <>&"\' and emoji 💉💊'
+    })
+    .withInjection(0, {
+        dose_mg: 2.5,
+        notes: 'Note with émojis: ✓ ✗ → ← ↑ ↓ and symbols: €£¥'
+    })
+    .build();
+
+/**
+ * Very long strings (boundary testing)
+ */
+const longStringData = new TestDataBuilder()
+    .withActiveVial({
+        supplier: 'A'.repeat(1000),  // 1KB string
+        lot_number: 'B'.repeat(500),
+        notes: 'C'.repeat(5000)  // 5KB note
+    })
+    .withInjection(0, {
+        dose_mg: 2.5,
+        notes: 'D'.repeat(10000)  // 10KB note
+    })
+    .build();
+
+/**
+ * Sync queue scenarios
+ */
+const pendingSyncQueue = {
+    vials: [new TestDataBuilder().withActiveVial().build().vials[0]],
+    injections: [],
+    weights: [],
+    settings: emptyData.settings,
+    syncQueue: [
+        {
+            id: 'sync-1',
+            operation: 'CREATE',
+            entity: 'vial',
+            data: { vial_id: 'test-vial-pending', total_mg: 10 },
+            timestamp: Date.now(),
+            retryCount: 0,
+            status: 'pending'
+        },
+        {
+            id: 'sync-2',
+            operation: 'UPDATE',
+            entity: 'injection',
+            data: { id: 'test-injection-1', dose_mg: 3.0 },
+            timestamp: Date.now() - 5000,
+            retryCount: 0,
+            status: 'pending'
+        }
+    ]
+};
+
+const failedSyncQueue = {
+    vials: [],
+    injections: [],
+    weights: [],
+    settings: emptyData.settings,
+    syncQueue: [
+        {
+            id: 'sync-failed-1',
+            operation: 'CREATE',
+            entity: 'vial',
+            data: { vial_id: 'test-vial-failed', total_mg: 10 },
+            timestamp: Date.now() - 60000,  // 1 minute ago
+            retryCount: 5,  // Max retries reached
+            status: 'failed',
+            lastError: 'Network timeout',
+            nextRetry: null  // No more retries
+        }
+    ]
+};
+
+module.exports = {
+    // Basic scenarios
+    emptyData,
+    singleDryVial,
+    singleActiveVial,
+    vialWithOneInjection,
+    vialWithMultipleInjections,
+    nearlyEmptyVial,
+    emptyVial,
+    multipleVials,
+
+    // Complex scenarios
+    weightLossJourney,
+    completeScenario,
+
+    // Performance testing
+    createLargeDataset,
+
+    // Edge cases
+    corruptData,
+    unicodeData,
+    longStringData,
+
+    // Sync scenarios
+    pendingSyncQueue,
+    failedSyncQueue
+};

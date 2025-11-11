@@ -101,3 +101,7 @@ fix_dates.py
 .cache/
 .parcel-cache/
 .eslintcache
+# Test results
+test-results/
+playwright-report/
+test-results.json
