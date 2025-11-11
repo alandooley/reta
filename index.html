@@ -2813,6 +2813,20 @@
                     </p>
                 </div>
 
+                <!-- Reset Local Data -->
+                <div class="settings-section">
+                    <h3>Reset Local Data</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                        If you're seeing duplicate records or outdated data, reset your local storage and pull fresh data from cloud.
+                    </p>
+                    <button id="reset-local-data-btn" class="btn-danger" style="width: 100%;">
+                        🗑️ Reset Local Data & Sync from Cloud
+                    </button>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        ⚠️ This will delete all local data and reload from cloud. Make sure you're signed in and your data is backed up to cloud first.
+                    </p>
+                </div>
+
                 <!-- Version Information -->
                 <div class="settings-section">
                     <h3>Version Information</h3>
@@ -3036,7 +3050,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-11 09:11:36'
+            timestamp: '2025-11-11 09:22:15'
         };
 
         // ====================================
@@ -5006,6 +5020,11 @@
                     this.createCloudBackup();
                 });
 
+                // Reset local data and sync from cloud
+                document.getElementById('reset-local-data-btn').addEventListener('click', async () => {
+                    await this.resetLocalDataAndSync();
+                });
+
                 // Nuclear Reset
                 document.getElementById('nuclear-reset-btn').addEventListener('click', () => {
                     this.performNuclearReset();
@@ -5367,6 +5386,119 @@
 
                     alert(
                         '❌ Cloud Backup Failed\n\n' +
+                        error.message + '\n\n' +
+                        'Please check your internet connection and try again.'
+                    );
+                }
+            }
+
+            /**
+             * Reset local data and sync fresh from cloud
+             * Use this to fix duplicate records or data inconsistencies
+             */
+            async resetLocalDataAndSync() {
+                try {
+                    // Check if authenticated
+                    if (!authManager.isAuthenticated()) {
+                        alert('Please sign in first before resetting local data.\n\nGo to Settings → Cloud Sync section.');
+                        return;
+                    }
+
+                    // Confirm with user
+                    const confirmed = confirm(
+                        '⚠️ Reset Local Data\n\n' +
+                        'This will:\n' +
+                        '• Delete ALL local data (localStorage)\n' +
+                        '• Pull fresh data from cloud (DynamoDB)\n\n' +
+                        'Make sure your important data is backed up to cloud first!\n\n' +
+                        'Continue?'
+                    );
+
+                    if (!confirmed) {
+                        return;
+                    }
+
+                    // Show loading state
+                    const button = document.getElementById('reset-local-data-btn');
+                    const originalText = button.textContent;
+                    button.textContent = '🔄 Resetting...';
+                    button.disabled = true;
+
+                    console.log('🗑️ Nuking localStorage...');
+
+                    // Step 1: Clear ALL localStorage (nuclear option)
+                    localStorage.clear();
+                    console.log('✅ localStorage cleared');
+
+                    // Step 2: Clear IndexedDB (browser backup system)
+                    try {
+                        const dbRequest = indexedDB.deleteDatabase('InjectionTrackerDB');
+                        await new Promise((resolve, reject) => {
+                            dbRequest.onsuccess = resolve;
+                            dbRequest.onerror = reject;
+                        });
+                        console.log('✅ IndexedDB cleared');
+                    } catch (e) {
+                        console.warn('IndexedDB clear failed (may not exist):', e);
+                    }
+
+                    // Step 3: Reset in-memory data to empty state
+                    this.data = {
+                        injections: [],
+                        weights: [],
+                        vials: [],
+                        settings: {
+                            defaultDose: 2.0,
+                            injectionFrequency: 7,
+                            heightCm: 175,
+                            goalWeightKg: 80,
+                            injectionDay: 'Monday'
+                        }
+                    };
+                    console.log('✅ In-memory data reset');
+
+                    // Step 4: Force sync from cloud (with retry)
+                    console.log('☁️ Syncing fresh data from cloud...');
+
+                    // Reset sync guards to allow immediate sync
+                    this._isSyncing = false;
+                    this._lastSyncTime = 0;
+
+                    await this.syncFromCloud();
+
+                    // Also sync settings
+                    await this.syncSettingsFromCloud();
+
+                    console.log('✅ Cloud sync complete');
+
+                    // Step 5: Update UI
+                    this.updateUI();
+
+                    // Reset button
+                    button.textContent = originalText;
+                    button.disabled = false;
+
+                    // Show success message
+                    alert(
+                        '✅ Local Data Reset Complete!\n\n' +
+                        `Injections: ${this.data.injections.length}\n` +
+                        `Vials: ${this.data.vials.length}\n` +
+                        `Weights: ${this.data.weights.length}\n\n` +
+                        'Your app now shows fresh data from cloud.'
+                    );
+
+                    console.log('🎉 Reset complete!');
+
+                } catch (error) {
+                    console.error('Failed to reset local data:', error);
+
+                    // Reset button
+                    const button = document.getElementById('reset-local-data-btn');
+                    button.textContent = '🗑️ Reset Local Data & Sync from Cloud';
+                    button.disabled = false;
+
+                    alert(
+                        '❌ Reset Failed\n\n' +
                         error.message + '\n\n' +
                         'Please check your internet connection and try again.'
                     );
