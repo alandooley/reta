@@ -2363,13 +2363,10 @@
         <header id="app-header">
         <div class="header-content">
             <button id="menu-btn" class="menu-btn">☰</button>
-            <!-- Phase 1B: Sync Status Indicator -->
-            <div id="sync-status" class="sync-status" title="Click to view sync queue">
-                <span class="sync-icon">⟳</span>
-                <span class="sync-text">Synced</span>
-                <span class="sync-badge" id="sync-badge"></span>
+            <div class="date-display">
+                <div id="current-date"></div>
+                <div id="build-timestamp" style="font-size: 10px; color: var(--text-muted); margin-top: 2px;"></div>
             </div>
-            <div class="date-display" id="current-date"></div>
             <button id="add-shot-btn" class="add-shot-btn">+ Shot</button>
         </div>
     </header>
@@ -3050,7 +3047,7 @@
         // ====================================
         const APP_VERSION = {
             frontend: '1.3.0',
-            timestamp: '2025-11-11 09:22:15'
+            timestamp: '2025-11-11 09:26:27'
         };
 
         // ====================================
@@ -4817,6 +4814,12 @@
                         console.error('Error fetching backend version:', error);
                         backendVersionEl.textContent = 'Not available';
                     }
+                }
+
+                // Display build timestamp in header
+                const buildTimestampEl = document.getElementById('build-timestamp');
+                if (buildTimestampEl && APP_VERSION.timestamp) {
+                    buildTimestampEl.textContent = `Build: ${APP_VERSION.timestamp}`;
                 }
             }
 
