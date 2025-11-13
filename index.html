@@ -2736,24 +2736,6 @@
                         </div>
                     </label>
                     <label>
-                        Injection Day:
-                        <div class="setting-input-wrapper">
-                            <select id="day-of-dose">
-                                <option value="0">Sunday</option>
-                                <option value="1">Monday</option>
-                                <option value="2">Tuesday</option>
-                                <option value="3">Wednesday</option>
-                                <option value="4">Thursday</option>
-                                <option value="5">Friday</option>
-                                <option value="6" selected>Saturday</option>
-                            </select>
-                            <span class="save-indicator">Saved</span>
-                        </div>
-                    </label>
-                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
-                        Preferred day of the week for injections (primarily used for weekly schedules)
-                    </p>
-                    <label>
                         Height (cm):
                         <div class="setting-input-wrapper">
                             <input type="number" id="user-height" step="0.1" min="0" max="300" placeholder="Enter height">
@@ -2772,16 +2754,6 @@
                     <h3>Data Management</h3>
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
                     <button id="import-data-btn" class="btn-secondary">Import Data from File</button>
-                    <div style="margin-top: 20px; padding: 12px; background-color: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: var(--border-radius-sm);">
-                        <h4 style="color: #ef4444; margin: 0 0 8px 0; font-size: 14px;">⚠️ Nuclear Reset</h4>
-                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
-                            This will permanently delete ALL local data (localStorage, IndexedDB, caches) and reload the page.
-                            Use this if you're experiencing data sync issues or phantom records.
-                        </p>
-                        <button id="nuclear-reset-btn" class="btn-secondary" style="background-color: #ef4444; color: white; border: none;">
-                            Nuclear Reset
-                        </button>
-                    </div>
                 </div>
                 <div class="settings-section">
                     <h3>☁️ Cloud Backup</h3>
@@ -2810,32 +2782,31 @@
                     </p>
                 </div>
 
-                <!-- Reset Local Data -->
-                <div class="settings-section">
-                    <h3>Reset Local Data</h3>
-                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
-                        If you're seeing duplicate records or outdated data, reset your local storage and pull fresh data from cloud.
-                    </p>
-                    <button id="reset-local-data-btn" class="btn-danger" style="width: 100%;">
-                        🗑️ Reset Local Data & Sync from Cloud
-                    </button>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-                        ⚠️ This will delete all local data and reload from cloud. Make sure you're signed in and your data is backed up to cloud first.
-                    </p>
-                </div>
+                <!-- Danger Zone: Reset Options -->
+                <div class="settings-section" style="background-color: rgba(239, 68, 68, 0.05); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: var(--border-radius);">
+                    <h3 style="color: #ef4444; margin-bottom: var(--spacing-md);">⚠️ Danger Zone</h3>
 
-                <!-- Version Information -->
-                <div class="settings-section">
-                    <h3>Version Information</h3>
-                    <div style="background-color: var(--secondary-bg); border-radius: var(--border-radius-sm); padding: 12px;">
-                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                            <span style="color: var(--text-secondary);">Frontend:</span>
-                            <span id="frontend-version" style="font-family: monospace; color: var(--text-primary);">-</span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                            <span style="color: var(--text-secondary);">Backend:</span>
-                            <span id="backend-version" style="font-family: monospace; color: var(--text-primary);">-</span>
-                        </div>
+                    <div style="margin-bottom: 20px; padding: 12px; background-color: rgba(255, 255, 255, 0.5); border-radius: var(--border-radius-sm);">
+                        <h4 style="color: var(--text-primary); margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Reset Local Data & Sync from Cloud</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                            Delete all local data and reload from cloud. Use this if you're seeing duplicate records or outdated data.
+                        </p>
+                        <button id="reset-local-data-btn" class="btn-danger" style="width: 100%;">
+                            🗑️ Reset Local Data & Sync from Cloud
+                        </button>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px; font-style: italic;">
+                            ⚠️ Make sure you're signed in and your data is backed up to cloud first.
+                        </p>
+                    </div>
+
+                    <div style="padding: 12px; background-color: rgba(255, 255, 255, 0.5); border-radius: var(--border-radius-sm);">
+                        <h4 style="color: var(--text-primary); margin: 0 0 8px 0; font-size: 14px; font-weight: 600;">Nuclear Reset</h4>
+                        <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 12px;">
+                            Permanently delete ALL local data (localStorage, IndexedDB, caches) and reload the page. Use this for severe data sync issues or phantom records.
+                        </p>
+                        <button id="nuclear-reset-btn" class="btn-secondary" style="background-color: #ef4444; color: white; border: none; width: 100%;">
+                            💣 Nuclear Reset
+                        </button>
                     </div>
                 </div>
             </div>
@@ -3073,7 +3044,6 @@
                     settings: {
                         injectionFrequency: 7,
                         defaultDose: 2.0,
-                        dayOfDose: 6, // Saturday (0=Sunday, 6=Saturday)
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
@@ -4382,29 +4352,30 @@
                 if (totalDoses <= 0) return 0;
 
                 const today = new Date();
-                const targetDayOfWeek = this.data.settings.dayOfDose || 6; // Default to Saturday
                 const injectionFrequency = this.data.settings.injectionFrequency || 7;
 
-                // Find the next dose day from today
-                const daysUntilNextDose = (targetDayOfWeek - today.getDay() + 7) % 7;
-                const nextDoseDate = new Date(today);
-                nextDoseDate.setDate(today.getDate() + daysUntilNextDose);
+                // Find the last injection date
+                let nextDoseDate = new Date(today);
 
-                // If the next dose day is today and we haven't taken it yet, use today
-                // Otherwise, calculate from the next occurrence
-                if (daysUntilNextDose === 0) {
-                    // Check if we've already dosed today
-                    const todayString = today.toISOString().split('T')[0];
-                    const dosedToday = this.data.injections.some(inj =>
-                        inj.timestamp.startsWith(todayString)
+                if (this.data.injections && this.data.injections.length > 0) {
+                    // Get the most recent injection
+                    const sortedInjections = [...this.data.injections].sort((a, b) =>
+                        new Date(b.timestamp) - new Date(a.timestamp)
                     );
-                    if (!dosedToday) {
-                        // Haven't dosed yet today, so start from today
-                        nextDoseDate.setTime(today.getTime());
-                    } else {
-                        // Already dosed today, next dose is in injectionFrequency days
+                    const lastInjection = new Date(sortedInjections[0].timestamp);
+
+                    // Calculate next dose based on last injection + frequency
+                    nextDoseDate = new Date(lastInjection);
+                    nextDoseDate.setDate(lastInjection.getDate() + injectionFrequency);
+
+                    // If next dose is in the past, calculate from today
+                    if (nextDoseDate < today) {
+                        nextDoseDate = new Date(today);
                         nextDoseDate.setDate(today.getDate() + injectionFrequency);
                     }
+                } else {
+                    // No injections yet, assume starting from today
+                    nextDoseDate.setDate(today.getDate() + injectionFrequency);
                 }
 
                 // Calculate when the last dose will be taken
@@ -4775,11 +4746,6 @@
                     document.getElementById('default-dose').value = this.data.settings.defaultDose;
                 }
 
-                // Update day of dose
-                if (this.data.settings.dayOfDose !== undefined) {
-                    document.getElementById('day-of-dose').value = this.data.settings.dayOfDose;
-                }
-
                 // Update user height
                 if (this.data.settings.heightCm) {
                     document.getElementById('user-height').value = this.data.settings.heightCm;
@@ -4789,52 +4755,7 @@
                 if (this.data.settings.goalWeightKg) {
                     document.getElementById('goal-weight').value = this.data.settings.goalWeightKg;
                 }
-
-                // Update version information
-                this.updateVersionInfo();
             }
-
-            async updateVersionInfo() {
-                // Display frontend version
-                const frontendVersionEl = document.getElementById('frontend-version');
-                if (frontendVersionEl) {
-                    frontendVersionEl.textContent = APP_VERSION.frontend;
-                }
-
-                // Fetch backend version (no auth required for version endpoint)
-                const backendVersionEl = document.getElementById('backend-version');
-                if (backendVersionEl) {
-                    try {
-                        // Use apiClient baseURL (apiClient is a global from api-client.js)
-                        if (typeof apiClient !== 'undefined' && apiClient.baseURL) {
-                            const response = await fetch(`${apiClient.baseURL}/v1/version`, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            if (response.ok) {
-                                const data = await response.json();
-                                backendVersionEl.textContent = data.version || 'Unknown';
-                            } else {
-                                backendVersionEl.textContent = 'Not available';
-                            }
-                        } else {
-                            backendVersionEl.textContent = 'API not configured';
-                        }
-                    } catch (error) {
-                        console.error('Error fetching backend version:', error);
-                        backendVersionEl.textContent = 'Not available';
-                    }
-                }
-
-                // Display build timestamp in header
-                const buildTimestampEl = document.getElementById('build-timestamp');
-                if (buildTimestampEl && APP_VERSION.timestamp) {
-                    buildTimestampEl.textContent = `Build: ${APP_VERSION.timestamp}`;
-                }
-            }
-
 
             calculateNextShotDays() {
                 if (this.data.injections.length === 0) return 0;
@@ -5023,14 +4944,6 @@
                 // Default dose handler
                 document.getElementById('default-dose').addEventListener('change', (e) => {
                     this.data.settings.defaultDose = parseFloat(e.target.value);
-                    this.saveData();
-                    this.updateUI();
-                    this.showSettingSaveIndicator(e.target);
-                });
-
-                // Day of dose handler
-                document.getElementById('day-of-dose').addEventListener('change', (e) => {
-                    this.data.settings.dayOfDose = parseInt(e.target.value);
                     this.saveData();
                     this.updateUI();
                     this.showSettingSaveIndicator(e.target);
@@ -5508,8 +5421,7 @@
                             defaultDose: 2.0,
                             injectionFrequency: 7,
                             heightCm: 175,
-                            goalWeightKg: 80,
-                            injectionDay: 'Monday'
+                            goalWeightKg: 80
                         }
                     };
                     console.log('✅ In-memory data reset');
