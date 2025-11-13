@@ -3121,6 +3121,7 @@
                     this.setupEventListeners();
                     this.setupUXEnhancements(); // NEW: Setup all UX improvements
                     this.updateUI();
+                    this.updateHeaderTimestamp(); // Update build timestamp in header
                     this.startCountdownTimer();
                     this.validateDataIntegrity();
                     this.updateWeeklyInsights(); // NEW: Update insights on load
@@ -4754,6 +4755,14 @@
                 // Update goal weight
                 if (this.data.settings.goalWeightKg) {
                     document.getElementById('goal-weight').value = this.data.settings.goalWeightKg;
+                }
+            }
+
+            updateHeaderTimestamp() {
+                // Display build timestamp in header
+                const buildTimestampEl = document.getElementById('build-timestamp');
+                if (buildTimestampEl && APP_VERSION.timestamp) {
+                    buildTimestampEl.textContent = `Build: ${APP_VERSION.timestamp}`;
                 }
             }
 
