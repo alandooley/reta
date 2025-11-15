@@ -6321,6 +6321,10 @@
                 const remainingMl = vial.remaining_ml || vial.current_volume_ml || 0;
                 const remainingDoses = vial.concentration_mg_ml ? ((remainingMl * vial.concentration_mg_ml) / defaultDose).toFixed(1) : 0;
 
+                // Calculate actual doses used by counting injections from this vial
+                const vialId = this.getVialId(vial);
+                const actualDosesUsed = this.data.injections.filter(inj => inj.vial_id === vialId).length;
+
                 div.innerHTML = `
                     <div class="vial-content">
                         <div class="vial-header">
@@ -6358,7 +6362,7 @@
                             ${vial.concentration_mg_ml ? `
                             <div class="vial-detail-row">
                                 <span>Doses Used:</span>
-                                <span>${vial.doses_used}</span>
+                                <span>${actualDosesUsed}</span>
                             </div>
                             ` : ''}
                         </div>
