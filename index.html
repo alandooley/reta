@@ -2404,11 +2404,6 @@
                         <span class="insight-trend" id="insight-weight-trend">--</span>
                     </div>
                     <div class="insight-stat">
-                        <span class="insight-label">Adherence</span>
-                        <span class="insight-value" id="insight-adherence">--</span>
-                        <span class="insight-trend" id="insight-adherence-trend">--</span>
-                    </div>
-                    <div class="insight-stat">
                         <span class="insight-label">Avg Dose/Shot</span>
                         <span class="insight-value" id="insight-avg-dose">--</span>
                         <span class="insight-trend">--</span>
@@ -3612,46 +3607,6 @@
                     document.getElementById('insight-weight-change').textContent = '--';
                     document.getElementById('insight-weight-trend').textContent = '--';
                 }
-
-                // Adherence - based on historical injection pattern
-                let adherenceText = '--';
-                let trendText = '--';
-
-                if (this.data.injections.length >= 2) {
-                    // Calculate average days between injections from history
-                    const sortedInjections = [...this.data.injections]
-                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-                    let totalDaysBetween = 0;
-                    let intervals = 0;
-
-                    for (let i = 1; i < sortedInjections.length; i++) {
-                        const daysBetween = (new Date(sortedInjections[i].timestamp) -
-                                            new Date(sortedInjections[i-1].timestamp)) / (1000 * 60 * 60 * 24);
-                        totalDaysBetween += daysBetween;
-                        intervals++;
-                    }
-
-                    const avgDaysBetween = totalDaysBetween / intervals;
-                    const expectedInWeek = 7 / avgDaysBetween;
-                    const adherencePercent = expectedInWeek > 0 ?
-                        Math.round((weekInjections.length / expectedInWeek) * 100) : 0;
-
-                    // Show actual vs expected as ratio
-                    adherenceText = `${weekInjections.length}/${Math.round(expectedInWeek)}`;
-
-                    // Trend based on pattern consistency
-                    if (adherencePercent >= 90 && adherencePercent <= 110) {
-                        trendText = '✓ Consistent';
-                    } else if (adherencePercent > 110) {
-                        trendText = `↑ ${adherencePercent}% of usual`;
-                    } else {
-                        trendText = `↓ ${adherencePercent}% of usual`;
-                    }
-                }
-
-                document.getElementById('insight-adherence').textContent = adherenceText;
-                document.getElementById('insight-adherence-trend').textContent = trendText;
 
                 // Average dose
                 if (weekInjections.length > 0) {
@@ -8601,20 +8556,6 @@
                             });
                         }
                     });
-                }
-
-                // Perfect adherence week
-                const now = new Date();
-                const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-                const weekInjections = this.data.injections.filter(i => new Date(i.timestamp) >= oneWeekAgo);
-                const expectedInjections = Math.floor(7 / this.data.settings.injectionFrequency);
-
-                if (weekInjections.length >= expectedInjections && expectedInjections > 0) {
-                    const weekKey = `week-${now.getFullYear()}-${now.getMonth()}-${Math.floor(now.getDate() / 7)}`;
-                    if (!localStorage.getItem(`adherence-${weekKey}`)) {
-                        localStorage.setItem(`adherence-${weekKey}`, 'true');
-                        this.triggerConfetti('ontrack');
-                    }
                 }
             }
 
