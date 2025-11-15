@@ -2735,6 +2735,19 @@
                             <span class="save-indicator">Saved</span>
                         </div>
                     </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        Used for calculating remaining doses in vials and pre-filling new injection entries
+                    </p>
+                    <label>
+                        Pre-fill New Injection Dose From:
+                        <div class="setting-input-wrapper">
+                            <select id="prefill-dose-from">
+                                <option value="last">Last injection dose</option>
+                                <option value="default">Default dose</option>
+                            </select>
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
                     <label>
                         Height (cm):
                         <div class="setting-input-wrapper">
@@ -3044,6 +3057,7 @@
                     settings: {
                         injectionFrequency: 7,
                         defaultDose: 2.0,
+                        prefillDoseFrom: 'last', // 'last' or 'default'
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
@@ -3956,7 +3970,7 @@
                 try {
                     console.log('Syncing settings to cloud...');
                     await apiClient.updateSettings({
-                        defaultDose: this.data.settings.defaultDose || 2.5,
+                        defaultDose: this.data.settings.defaultDose || 2.0,
                         injectionFrequencyDays: this.data.settings.injectionFrequencyDays || 7,
                         heightCm: this.data.settings.heightCm || null,
                         goalWeightKg: this.data.settings.goalWeightKg || null,
@@ -4747,6 +4761,11 @@
                     document.getElementById('default-dose').value = this.data.settings.defaultDose;
                 }
 
+                // Update prefill dose from
+                if (this.data.settings.prefillDoseFrom) {
+                    document.getElementById('prefill-dose-from').value = this.data.settings.prefillDoseFrom;
+                }
+
                 // Update user height
                 if (this.data.settings.heightCm) {
                     document.getElementById('user-height').value = this.data.settings.heightCm;
@@ -4951,10 +4970,18 @@
                 });
 
                 // Default dose handler
-                document.getElementById('default-dose').addEventListener('change', (e) => {
+                document.getElementById('default-dose').addEventListener('change', async (e) => {
                     this.data.settings.defaultDose = parseFloat(e.target.value);
                     this.saveData();
                     this.updateUI();
+                    this.showSettingSaveIndicator(e.target);
+                    await this.syncSettingsToCloud();
+                });
+
+                // Pre-fill dose from handler
+                document.getElementById('prefill-dose-from').addEventListener('change', (e) => {
+                    this.data.settings.prefillDoseFrom = e.target.value;
+                    this.saveData();
                     this.showSettingSaveIndicator(e.target);
                 });
 
@@ -5428,6 +5455,7 @@
                         vials: [],
                         settings: {
                             defaultDose: 2.0,
+                            prefillDoseFrom: 'last',
                             injectionFrequency: 7,
                             heightCm: 175,
                             goalWeightKg: 80
@@ -5663,17 +5691,28 @@
                         if (nextDate <= now && nextDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
                             const nextDateTime = new Date(nextDate.getTime() - nextDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
                             document.getElementById('shot-date').value = nextDateTime;
-
-                            // Pre-fill last dose if available
-                            const lastDose = document.getElementById('shot-dose');
-                            if (lastDose && lastInjection.dose_mg) {
-                                lastDose.value = lastInjection.dose_mg;
-                            }
                         } else {
                             document.getElementById('shot-date').value = localDateTime;
                         }
                     } else {
                         document.getElementById('shot-date').value = localDateTime;
+                    }
+
+                    // Pre-fill dose based on user preference
+                    const shotDoseInput = document.getElementById('shot-dose');
+                    const prefillFrom = this.data.settings.prefillDoseFrom || 'last';
+
+                    if (shotDoseInput) {
+                        if (prefillFrom === 'default') {
+                            // Always use default dose
+                            shotDoseInput.value = this.data.settings.defaultDose || 2.0;
+                        } else if (prefillFrom === 'last' && lastInjection && lastInjection.dose_mg) {
+                            // Use last injection's dose if available
+                            shotDoseInput.value = lastInjection.dose_mg;
+                        } else {
+                            // Fallback to default dose if no last injection
+                            shotDoseInput.value = this.data.settings.defaultDose || 2.0;
+                        }
                     }
 
                     this.populateVialSelect();
