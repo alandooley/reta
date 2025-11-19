@@ -2105,38 +2105,6 @@
             max-width: 300px;
         }
 
-        /* Floating Action Button (FAB) */
-        .fab {
-            position: fixed;
-            bottom: 90px;
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #007AFF, #0051a8);
-            color: white;
-            border: none;
-            font-size: 28px;
-            font-weight: 300;
-            line-height: 1;
-            box-shadow: 0 4px 16px rgba(0, 122, 255, 0.4);
-            z-index: 99;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .fab:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 20px rgba(0, 122, 255, 0.5);
-        }
-
-        .fab:active {
-            transform: scale(0.95);
-        }
-
         /* Form Validation */
         .form-group input:invalid:not(:focus):not(:placeholder-shown),
         .form-group select:invalid:not(:focus) {
@@ -2408,9 +2376,6 @@
             ⚠️ Offline - Changes saved locally
         </div>
 
-        <!-- Floating Action Button -->
-        <button id="fab-button" class="fab" title="Quick Add Shot">+</button>
-
         <!-- Header -->
         <header id="app-header">
         <div class="header-content">
@@ -2544,7 +2509,7 @@
                 <div class="shots-header">
                     <h2>Shot History</h2>
                     <div class="shots-header-actions">
-                        <button id="skip-week-btn" class="skip-week-btn">Skip Week</button>
+                        <button id="skip-week-btn" class="skip-week-btn">Skip</button>
                         <button id="add-shot-modal-btn" class="btn-primary">Add Shot</button>
                     </div>
                 </div>
@@ -2559,7 +2524,7 @@
                 <div class="results-header">
                     <h2>Results</h2>
                     <div class="shots-header-actions">
-                        <button class="skip-week-btn" onclick="app.showSkipWeekModal()">Skip Week</button>
+                        <button class="skip-week-btn" onclick="app.showSkipWeekModal()">Skip</button>
                         <button class="add-shot-btn-results" onclick="app.showAddInjectionModal()">
                             + Add shot
                         </button>
@@ -2972,7 +2937,7 @@
         <!-- Skip Week Modal -->
         <div id="skip-shot-modal" class="modal" style="display: none;">
             <div class="modal-header">
-                <h3 class="modal-title">Skip Week</h3>
+                <h3 class="modal-title">Skip Week/Dose</h3>
                 <button class="modal-close" data-modal="skip-shot-modal">&times;</button>
             </div>
             <form id="skip-shot-form">
