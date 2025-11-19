@@ -2508,10 +2508,7 @@
             <div class="container">
                 <div class="shots-header">
                     <h2>Shot History</h2>
-                    <div class="shots-header-actions">
-                        <button id="skip-week-btn" class="skip-week-btn">Skip</button>
-                        <button id="add-shot-modal-btn" class="btn-primary">Add Shot</button>
-                    </div>
+                    <button id="skip-week-btn" class="skip-week-btn">Skip</button>
                 </div>
                 <div id="shots-list" class="shots-list"></div>
             </div>
@@ -2523,12 +2520,7 @@
                 <!-- Results Header -->
                 <div class="results-header">
                     <h2>Results</h2>
-                    <div class="shots-header-actions">
-                        <button class="skip-week-btn" onclick="app.showSkipWeekModal()">Skip</button>
-                        <button class="add-shot-btn-results" onclick="app.showAddInjectionModal()">
-                            + Add shot
-                        </button>
-                    </div>
+                    <button class="skip-week-btn" onclick="app.showSkipWeekModal()">Skip</button>
                 </div>
 
                 <!-- Time Period Segmented Control -->
@@ -4900,11 +4892,8 @@
                 const overlay = document.getElementById('modal-overlay');
                 const modals = document.querySelectorAll('.modal');
 
-                // Add Shot Button handlers
+                // Add Shot Button handler
                 document.getElementById('add-shot-btn').addEventListener('click', () => {
-                    this.openModal('add-shot-modal');
-                });
-                document.getElementById('add-shot-modal-btn').addEventListener('click', () => {
                     this.openModal('add-shot-modal');
                 });
 
