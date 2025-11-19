@@ -37,16 +37,26 @@ exports.handler = async (event) => {
     const result = await docClient.send(new QueryCommand(params));
 
     // Transform DynamoDB items to application format
-    const injections = result.Items?.map(item => ({
-      id: item.SK.replace('INJECTION#', ''),
-      timestamp: item.timestamp,
-      doseMg: item.doseMg,
-      site: item.site,
-      notes: item.notes || '',
-      vialId: item.vialId || null,
-      createdAt: item.createdAt,
-      updatedAt: item.updatedAt,
-    })) || [];
+    const injections = result.Items?.map(item => {
+      const injection = {
+        id: item.SK.replace('INJECTION#', ''),
+        timestamp: item.timestamp,
+        doseMg: item.doseMg,
+        site: item.site,
+        notes: item.notes || '',
+        vialId: item.vialId || null,
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+        skipped: item.skipped || false,
+      };
+
+      // Add plannedDoseMg if present (for skipped injections)
+      if (item.plannedDoseMg) {
+        injection.plannedDoseMg = item.plannedDoseMg;
+      }
+
+      return injection;
+    }) || [];
 
     console.log(`Retrieved ${injections.length} injections for user ${userId}`);
 

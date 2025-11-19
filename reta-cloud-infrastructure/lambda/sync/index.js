@@ -86,6 +86,8 @@ exports.handler = async (event) => {
               createdAt: injection.createdAt || now,
               updatedAt: now,
               entityType: 'INJECTION',
+              skipped: injection.skipped || false,
+              ...(injection.plannedDoseMg && { plannedDoseMg: injection.plannedDoseMg }),
             },
           },
         };

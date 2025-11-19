@@ -844,11 +844,36 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: var(--spacing-lg);
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
         }
 
         .shots-header h2 {
             font-size: 24px;
             font-weight: 700;
+        }
+
+        .shots-header-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .skip-week-btn {
+            background-color: var(--card-bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--border-radius-sm);
+            padding: var(--spacing-sm) var(--spacing-md);
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .skip-week-btn:hover {
+            background-color: #333;
+            color: var(--text-primary);
         }
 
         .shots-list, .weights-list {
@@ -902,6 +927,33 @@
             gap: var(--spacing-sm);
             font-size: 14px;
             color: var(--text-secondary);
+        }
+
+        /* Skipped Shot Styling */
+        .shot-item.skipped {
+            background-color: rgba(42, 42, 42, 0.5);
+            border-color: rgba(51, 51, 51, 0.5);
+            opacity: 0.7;
+        }
+
+        .shot-item.skipped:hover {
+            background-color: rgba(53, 53, 53, 0.6);
+        }
+
+        .shot-item.skipped .shot-dose {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .shot-item.skipped .skipped-badge {
+            display: inline-block;
+            background-color: rgba(136, 136, 136, 0.2);
+            color: var(--text-muted);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
         }
 
         /* Results Header */
@@ -2491,7 +2543,10 @@
             <div class="container">
                 <div class="shots-header">
                     <h2>Shot History</h2>
-                    <button id="add-shot-modal-btn" class="btn-primary">Add Shot</button>
+                    <div class="shots-header-actions">
+                        <button id="skip-week-btn" class="skip-week-btn">Skip Week</button>
+                        <button id="add-shot-modal-btn" class="btn-primary">Add Shot</button>
+                    </div>
                 </div>
                 <div id="shots-list" class="shots-list"></div>
             </div>
@@ -2503,9 +2558,12 @@
                 <!-- Results Header -->
                 <div class="results-header">
                     <h2>Results</h2>
-                    <button class="add-shot-btn-results" onclick="app.showAddInjectionModal()">
-                        + Add shot
-                    </button>
+                    <div class="shots-header-actions">
+                        <button class="skip-week-btn" onclick="app.showSkipWeekModal()">Skip Week</button>
+                        <button class="add-shot-btn-results" onclick="app.showAddInjectionModal()">
+                            + Add shot
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Time Period Segmented Control -->
@@ -2907,6 +2965,38 @@
                 <div class="form-group">
                     <button type="submit" id="shot-submit-btn" class="btn-primary">Add Shot</button>
                     <button type="button" class="btn-secondary" data-modal="add-shot-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Skip Week Modal -->
+        <div id="skip-shot-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 class="modal-title">Skip Week</h3>
+                <button class="modal-close" data-modal="skip-shot-modal">&times;</button>
+            </div>
+            <form id="skip-shot-form">
+                <div class="form-group">
+                    <label for="skip-shot-date">Date & Time</label>
+                    <input type="datetime-local" id="skip-shot-date" required>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        When was this dose scheduled?
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="skip-planned-dose">Planned Dose (mg)</label>
+                    <input type="number" id="skip-planned-dose" step="0.1" min="0" max="50" required readonly>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        This is the dose you would have taken (for reference)
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="skip-reason">Reason - Optional</label>
+                    <textarea id="skip-reason" placeholder="e.g., Traveling, side effects, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">Confirm Skip</button>
+                    <button type="button" class="btn-secondary" data-modal="skip-shot-modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -4062,12 +4152,19 @@
                     injection_site: injection.injection_site,
                     vial_id: injection.vial_id,
                     notes: injection.notes || '',
-                    medication_level_at_injection: this.calculateCurrentMedicationLevel(injection.timestamp).value || 0
+                    medication_level_at_injection: this.calculateCurrentMedicationLevel(injection.timestamp).value || 0,
+                    skipped: injection.skipped || false,
+                    planned_dose_mg: injection.planned_dose_mg || null
                 };
 
                 this.data.injections.push(newInjection);
                 this.data.injections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                await this.updateVialUsage(injection.vial_id, injection.dose_mg);
+
+                // Skip vial usage update if this is a skipped injection
+                if (!injection.skipped) {
+                    await this.updateVialUsage(injection.vial_id, injection.dose_mg);
+                }
+
                 this.saveData();
                 this.updateUI();
 
@@ -4086,7 +4183,9 @@
                             doseMg: newInjection.dose_mg,
                             site: newInjection.injection_site,
                             vialId: newInjection.vial_id,
-                            notes: newInjection.notes
+                            notes: newInjection.notes,
+                            skipped: newInjection.skipped || false,
+                            plannedDoseMg: newInjection.planned_dose_mg || null
                         }
                     });
                     console.log('Injection added to sync queue');
@@ -4630,9 +4729,9 @@
                 if (lastInjection && lastInjection.vial_id) {
                     const vial = this.data.vials.find(v => v.id === lastInjection.vial_id);
                     if (vial) {
-                        // Calculate total used from this vial
+                        // Calculate total used from this vial (excluding skipped injections)
                         const injectionsFromVial = this.data.injections
-                            .filter(inj => inj.vial_id === vial.id)
+                            .filter(inj => inj.vial_id === vial.id && !inj.skipped)
                             .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                         const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
@@ -4844,6 +4943,11 @@
                     this.openModal('add-shot-modal');
                 });
 
+                // Skip Week Button handler
+                document.getElementById('skip-week-btn').addEventListener('click', () => {
+                    this.showSkipWeekModal();
+                });
+
                 // Add Vial Button handler
                 document.getElementById('add-vial-btn').addEventListener('click', () => {
                     this.openModal('add-vial-modal');
@@ -4921,6 +5025,12 @@
 
                 shotDoseInput.addEventListener('input', updateDoseMlHelper);
                 shotVialSelect.addEventListener('change', updateDoseMlHelper);
+
+                // Skip Shot Form
+                document.getElementById('skip-shot-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleSkipShot();
+                });
 
                 // Add Vial Form
                 document.getElementById('add-vial-form').addEventListener('submit', (e) => {
@@ -5845,6 +5955,50 @@
                 document.body.style.overflow = 'hidden';
             }
 
+            showAddInjectionModal() {
+                this.openModal('add-shot-modal');
+            }
+
+            showSkipWeekModal() {
+                // Trigger haptic feedback
+                this.triggerHaptic('light');
+
+                // Calculate next expected shot date
+                const now = new Date();
+                const lastInjection = this.data.injections[0];
+                let nextDate = now;
+
+                if (lastInjection) {
+                    const lastDate = new Date(lastInjection.timestamp);
+                    nextDate = new Date(lastDate.getTime() + this.data.settings.injectionFrequency * 24 * 60 * 60 * 1000);
+
+                    // If next date is more than a week in the future or past, use current time
+                    if (nextDate > new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) ||
+                        nextDate < new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)) {
+                        nextDate = now;
+                    }
+                }
+
+                // Pre-fill form
+                const nextDateTime = new Date(nextDate.getTime() - nextDate.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+                document.getElementById('skip-shot-date').value = nextDateTime;
+
+                // Pre-fill planned dose
+                const prefillFrom = this.data.settings.prefillDoseFrom || 'last';
+                let plannedDose = this.data.settings.defaultDose || 2.0;
+
+                if (prefillFrom === 'last' && lastInjection && lastInjection.dose_mg) {
+                    plannedDose = lastInjection.dose_mg;
+                }
+
+                document.getElementById('skip-planned-dose').value = plannedDose;
+
+                // Show modal
+                document.getElementById('modal-overlay').style.display = 'flex';
+                document.getElementById('skip-shot-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
             populateVialSelect() {
                 const select = document.getElementById('shot-vial');
                 select.innerHTML = '<option value="">Select vial</option>';
@@ -5922,6 +6076,45 @@
                 } catch (error) {
                     console.error('Error adding shot:', error);
                     alert('Shot saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
+            }
+
+            async handleSkipShot() {
+                try {
+                    const form = document.getElementById('skip-shot-form');
+
+                    // Validate form before processing
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const plannedDose = parseFloat(document.getElementById('skip-planned-dose').value);
+
+                    // Create skipped injection record
+                    const injection = {
+                        timestamp: new Date(document.getElementById('skip-shot-date').value).toISOString(),
+                        dose_mg: 0,
+                        injection_site: null,
+                        vial_id: null,
+                        notes: document.getElementById('skip-reason').value || 'Skipped',
+                        skipped: true,
+                        planned_dose_mg: plannedDose
+                    };
+
+                    await this.addInjection(injection);
+
+                    // Reset form after successful submission
+                    form.reset();
+
+                } catch (error) {
+                    console.error('Error recording skipped shot:', error);
+                    alert('Skip recorded locally. Cloud sync will retry automatically.');
                 } finally {
                     // Always close modal, even on error
                     setTimeout(() => {
@@ -6213,20 +6406,49 @@
 
             createShotListItem(injection) {
                 const div = document.createElement('div');
-                div.className = 'shot-item';
+                div.className = injection.skipped ? 'shot-item skipped' : 'shot-item';
                 div.setAttribute('data-item-id', injection.id);
                 div.setAttribute('data-timestamp', injection.timestamp);
-                div.innerHTML = `
-                    <div class="shot-content">
-                        <div class="shot-header">
-                            <div class="shot-dose">${injection.dose_mg} mg</div>
-                            <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+
+                if (injection.skipped) {
+                    // Skipped injection display
+                    const plannedDose = injection.planned_dose_mg || injection.dose_mg || 0;
+                    div.innerHTML = `
+                        <div class="shot-content">
+                            <div class="shot-header">
+                                <div class="shot-dose">
+                                    ${plannedDose} mg
+                                    <span class="skipped-badge">SKIPPED</span>
+                                </div>
+                                <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+                            </div>
+                            <div class="shot-details">
+                                <div>Reason: ${injection.notes || 'Not specified'}</div>
+                            </div>
                         </div>
-                        <div class="shot-details">
-                            <div>Site: ${this.formatInjectionSite(injection.injection_site)}</div>
+                        <div class="item-actions">
+                            <button class="delete-btn" aria-label="Delete skipped entry" title="Delete this skipped entry">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                            </button>
                         </div>
-                    </div>
-                    <div class="item-actions">
+                        <div class="delete-action">Delete</div>
+                    `;
+                } else {
+                    // Normal injection display
+                    div.innerHTML = `
+                        <div class="shot-content">
+                            <div class="shot-header">
+                                <div class="shot-dose">${injection.dose_mg} mg</div>
+                                <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+                            </div>
+                            <div class="shot-details">
+                                <div>Site: ${this.formatInjectionSite(injection.injection_site)}</div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
                         <button class="edit-btn" data-entity-type="injection" data-entity-id="${injection.id}" aria-label="Edit injection" title="Edit this injection">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
@@ -6239,9 +6461,10 @@
                                 <path d="M10 11v6M14 11v6"/>
                             </svg>
                         </button>
-                    </div>
-                    <div class="delete-action">Delete</div>
-                `;
+                        </div>
+                        <div class="delete-action">Delete</div>
+                    `;
+                }
 
                 // Add swipe to delete handlers
                 this.addSwipeToDeleteHandlers(div);
@@ -6774,12 +6997,18 @@
                             date: dateKey,
                             timestamp: injection.timestamp, // Use first injection's timestamp for positioning
                             totalDose: 0,
-                            injections: []
+                            injections: [],
+                            hasSkipped: false
                         });
                     }
 
                     const group = injectionsByDate.get(dateKey);
-                    group.totalDose += injection.dose_mg;
+                    // Only count actual doses, not skipped ones
+                    if (!injection.skipped) {
+                        group.totalDose += injection.dose_mg;
+                    } else {
+                        group.hasSkipped = true;
+                    }
                     group.injections.push(injection);
                 });
 
@@ -6908,7 +7137,9 @@
                             const y = yScale.getPixelForValue(matchingWeight.weight_kg);
 
                             // Show summed dose for all injections on this date
-                            const label = `${group.totalDose}mg`;
+                            // Check if this group contains only skipped injections
+                            const allSkipped = group.injections.every(inj => inj.skipped);
+                            const label = allSkipped ? 'SKIPPED' : `${group.totalDose}mg`;
 
                             // No staggering needed since we only show shots with weights (naturally spaced)
                             const staggerOffset = 0;
@@ -6919,15 +7150,15 @@
                             const pillX = x - pillWidth / 2;
                             const pillY = y - yOffset - staggerOffset;
 
-                            // Cycle through color palette for variety
-                            const color = colorPalette[index % colorPalette.length];
+                            // Use gray color for skipped doses, normal color palette otherwise
+                            const color = allSkipped ? 'rgba(136, 136, 136, 0.5)' : colorPalette[index % colorPalette.length];
                             ctx.fillStyle = color;
                             ctx.beginPath();
                             ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
                             ctx.fill();
 
                             // Draw text
-                            ctx.fillStyle = '#FFFFFF';
+                            ctx.fillStyle = allSkipped ? 'rgba(255, 255, 255, 0.6)' : '#FFFFFF';
                             ctx.fillText(label, x, pillY + pillHeight - 3);
                         });
 
@@ -8574,8 +8805,8 @@
                 this.data.vials.forEach(vial => {
                     // Check if vial has been used more than its capacity
                     if (vial.status === 'active' && vial.concentration_mg_ml > 0) {
-                        // Calculate total used by summing actual injection doses from this vial
-                        const injectionsFromVial = this.data.injections.filter(inj => inj.vial_id === vial.vial_id);
+                        // Calculate total used by summing actual injection doses from this vial (excluding skipped)
+                        const injectionsFromVial = this.data.injections.filter(inj => inj.vial_id === vial.vial_id && !inj.skipped);
                         const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
                         const calculatedRemainingMg = vial.total_mg - totalUsedMg;
                         const reportedRemainingMg = vial.remaining_ml * vial.concentration_mg_ml;

@@ -28,45 +28,74 @@ exports.handler = async (event) => {
     const body = JSON.parse(event.body || '{}');
 
     // Validate required fields
-    const { id, timestamp, doseMg, site } = body;
-    if (!timestamp || !doseMg || !site) {
+    const { id, timestamp, doseMg, site, skipped, plannedDoseMg } = body;
+    if (!timestamp) {
       return {
         statusCode: 400,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           success: false,
-          error: 'Missing required fields: timestamp, doseMg, site',
+          error: 'Missing required field: timestamp',
         }),
       };
     }
 
-    // Validate doseMg is a positive number
-    if (typeof doseMg !== 'number' || doseMg <= 0) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: false,
-          error: 'doseMg must be a positive number',
-        }),
-      };
-    }
+    // Check if this is a skipped injection
+    const isSkipped = skipped === true;
 
-    // Validate site is valid injection site
-    const validSites = [
-      'left_thigh', 'right_thigh',
-      'left_arm', 'right_arm',
-      'abdomen_left', 'abdomen_right'
-    ];
-    if (!validSites.includes(site)) {
-      return {
-        statusCode: 400,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          success: false,
-          error: `site must be one of: ${validSites.join(', ')}`,
-        }),
-      };
+    if (isSkipped) {
+      // Skipped injection validation
+      if (doseMg !== 0 && typeof doseMg !== 'undefined') {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: 'Skipped injections must have doseMg = 0',
+          }),
+        };
+      }
+    } else {
+      // Normal injection validation
+      if (!doseMg || !site) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: 'Missing required fields: doseMg, site',
+          }),
+        };
+      }
+
+      // Validate doseMg is a positive number
+      if (typeof doseMg !== 'number' || doseMg <= 0) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: 'doseMg must be a positive number',
+          }),
+        };
+      }
+
+      // Validate site is valid injection site
+      const validSites = [
+        'left_thigh', 'right_thigh',
+        'left_arm', 'right_arm',
+        'abdomen_left', 'abdomen_right'
+      ];
+      if (!validSites.includes(site)) {
+        return {
+          statusCode: 400,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            success: false,
+            error: `site must be one of: ${validSites.join(', ')}`,
+          }),
+        };
+      }
     }
 
     // Use provided ID or generate new one
@@ -80,14 +109,20 @@ exports.handler = async (event) => {
       GSI1PK: `USER#${userId}`,
       GSI1SK: `TIMESTAMP#${timestamp}`,
       timestamp,
-      doseMg,
-      site,
+      doseMg: isSkipped ? 0 : doseMg,
+      site: isSkipped ? null : site,
       notes: body.notes || '',
-      vialId: body.vialId || null,
+      vialId: isSkipped ? null : (body.vialId || null),
       createdAt: now,
       updatedAt: now,
       entityType: 'INJECTION',
+      skipped: isSkipped,
     };
+
+    // Add plannedDoseMg for skipped injections
+    if (isSkipped && plannedDoseMg) {
+      item.plannedDoseMg = plannedDoseMg;
+    }
 
     // Save to DynamoDB
     await docClient.send(new PutCommand({
@@ -98,6 +133,23 @@ exports.handler = async (event) => {
     console.log(`Created injection ${injectionId} for user ${userId}`);
 
     // Return created injection
+    const responseData = {
+      id: injectionId,
+      timestamp,
+      doseMg: isSkipped ? 0 : doseMg,
+      site: isSkipped ? null : site,
+      notes: body.notes || '',
+      vialId: isSkipped ? null : (body.vialId || null),
+      createdAt: now,
+      updatedAt: now,
+      skipped: isSkipped,
+    };
+
+    // Add plannedDoseMg for skipped injections
+    if (isSkipped && plannedDoseMg) {
+      responseData.plannedDoseMg = plannedDoseMg;
+    }
+
     return {
       statusCode: 201,
       headers: {
@@ -106,16 +158,7 @@ exports.handler = async (event) => {
       },
       body: JSON.stringify({
         success: true,
-        data: {
-          id: injectionId,
-          timestamp,
-          doseMg,
-          site,
-          notes: body.notes || '',
-          vialId: body.vialId || null,
-          createdAt: now,
-          updatedAt: now,
-        },
+        data: responseData,
       }),
     };
 
