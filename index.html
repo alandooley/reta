@@ -250,6 +250,44 @@
             text-align: center;
         }
 
+        /* App Switcher */
+        .app-switcher {
+            display: flex;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 3px;
+        }
+
+        .app-switcher-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 6px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .app-switcher-btn.active {
+            background-color: var(--accent-color);
+            color: white;
+        }
+
+        .app-switcher-btn:hover:not(.active) {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 480px) {
+            .app-switcher-btn {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+
         .sync-badge:not(:empty) {
             display: inline-block;
         }
@@ -2380,9 +2418,9 @@
         <header id="app-header">
         <div class="header-content">
             <button id="menu-btn" class="menu-btn">☰</button>
-            <div class="date-display">
-                <div id="current-date"></div>
-                <div id="build-timestamp" style="font-size: 10px; color: var(--text-muted); margin-top: 2px;"></div>
+            <div class="app-switcher">
+                <button class="app-switcher-btn active" data-app="reta">Reta</button>
+                <button class="app-switcher-btn" data-app="trt">TRT</button>
             </div>
             <button id="add-shot-btn" class="add-shot-btn">+ Shot</button>
         </div>
@@ -2834,6 +2872,172 @@
                 </div>
             </div>
         </div>
+
+        <!-- TRT TABS (hidden by default) -->
+
+        <!-- TRT Dashboard Tab -->
+        <div id="trt-dashboard-tab" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: var(--spacing-lg);">TRT Dashboard</h2>
+
+            <!-- Current Protocol Card -->
+            <div class="card">
+                <h3>📊 Current Protocol</h3>
+                <div id="trt-protocol-summary"></div>
+            </div>
+
+            <!-- Next Injection Card -->
+            <div class="card">
+                <h3>💉 Next Injection</h3>
+                <div id="trt-next-injection"></div>
+            </div>
+
+            <!-- Supply Forecast Card -->
+            <div class="card">
+                <h3>📦 Supply Forecast</h3>
+                <div id="trt-supply-forecast"></div>
+            </div>
+
+            <!-- Recent Symptoms Card -->
+            <div class="card">
+                <h3>📝 Recent Symptoms</h3>
+                <div id="trt-recent-symptoms"></div>
+            </div>
+        </div>
+
+        <!-- TRT Shots Tab -->
+        <div id="trt-shots-tab" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: var(--spacing-lg);">TRT Injections</h2>
+
+            <!-- Injection Site Rotation Warning -->
+            <div id="trt-site-rotation-warning" style="display: none; margin-bottom: var(--spacing-md);"></div>
+
+            <!-- Injection List -->
+            <div id="trt-injections-list"></div>
+
+            <div id="trt-no-injections" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <p>No TRT injections recorded yet.</p>
+                <p style="font-size: 14px; margin-top: 8px;">Tap "+ Shot" to add your first injection.</p>
+            </div>
+        </div>
+
+        <!-- TRT Symptoms Tab -->
+        <div id="trt-symptoms-tab" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: var(--spacing-lg);">Symptom Tracking</h2>
+
+            <!-- Quick Check-in Card -->
+            <div class="card">
+                <h3>📝 Today's Check-in</h3>
+                <div id="trt-symptom-form">
+                    <div class="symptom-slider">
+                        <label>Energy Level</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">Low</span>
+                            <input type="range" id="trt-energy" min="1" max="10" value="5" style="flex: 1;">
+                            <span style="font-size: 12px; color: var(--text-muted);">High</span>
+                            <span id="trt-energy-value" style="font-weight: 600; min-width: 30px; text-align: right;">5</span>
+                        </div>
+                    </div>
+
+                    <div class="symptom-slider" style="margin-top: var(--spacing-md);">
+                        <label>Mood</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">Low</span>
+                            <input type="range" id="trt-mood" min="1" max="10" value="5" style="flex: 1;">
+                            <span style="font-size: 12px; color: var(--text-muted);">High</span>
+                            <span id="trt-mood-value" style="font-weight: 600; min-width: 30px; text-align: right;">5</span>
+                        </div>
+                    </div>
+
+                    <div class="symptom-slider" style="margin-top: var(--spacing-md);">
+                        <label>Libido</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">Low</span>
+                            <input type="range" id="trt-libido" min="1" max="10" value="5" style="flex: 1;">
+                            <span style="font-size: 12px; color: var(--text-muted);">High</span>
+                            <span id="trt-libido-value" style="font-weight: 600; min-width: 30px; text-align: right;">5</span>
+                        </div>
+                    </div>
+
+                    <div class="symptom-slider" style="margin-top: var(--spacing-md);">
+                        <label>Sleep Quality</label>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 8px;">
+                            <span style="font-size: 12px; color: var(--text-muted);">Poor</span>
+                            <input type="range" id="trt-sleep" min="1" max="10" value="5" style="flex: 1;">
+                            <span style="font-size: 12px; color: var(--text-muted);">Great</span>
+                            <span id="trt-sleep-value" style="font-weight: 600; min-width: 30px; text-align: right;">5</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: var(--spacing-md);">
+                        <label for="trt-symptom-notes">Notes (optional)</label>
+                        <textarea id="trt-symptom-notes" style="width: 100%; min-height: 80px; margin-top: 8px; padding: 12px; background: var(--secondary-bg); border: 1px solid var(--border-color); border-radius: var(--border-radius-sm); color: var(--text-primary); font-family: inherit; resize: vertical;" placeholder="Any other symptoms or observations..."></textarea>
+                    </div>
+
+                    <button id="trt-save-symptom-btn" class="btn-primary" style="width: 100%; margin-top: var(--spacing-md);">
+                        Save Check-in
+                    </button>
+                </div>
+            </div>
+
+            <!-- Symptom History -->
+            <div class="card" style="margin-top: var(--spacing-md);">
+                <h3>📊 Symptom History</h3>
+                <div id="trt-symptoms-list"></div>
+                <div id="trt-no-symptoms" style="text-align: center; padding: 20px; color: var(--text-muted); font-size: 14px;">
+                    No symptom check-ins yet. Track your daily symptoms above.
+                </div>
+            </div>
+        </div>
+
+        <!-- TRT Inventory Tab -->
+        <div id="trt-inventory-tab" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: var(--spacing-lg);">TRT Vial Inventory</h2>
+
+            <button id="trt-add-vial-btn" class="btn-primary" style="width: 100%; margin-bottom: var(--spacing-lg);">
+                + Add Vial
+            </button>
+
+            <div id="trt-vials-list"></div>
+
+            <div id="trt-no-vials" style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+                <p>No vials in inventory yet.</p>
+                <p style="font-size: 14px; margin-top: 8px;">Add your first vial above to start tracking.</p>
+            </div>
+        </div>
+
+        <!-- TRT Settings Tab -->
+        <div id="trt-settings-tab" class="tab-content" style="display: none;">
+            <h2 style="margin-bottom: var(--spacing-lg);">TRT Settings</h2>
+
+            <div class="settings-section">
+                <h3>Injection Settings</h3>
+
+                <div class="setting-group">
+                    <label for="trt-injection-frequency">Injection Frequency (days)</label>
+                    <input type="number" id="trt-injection-frequency" min="1" max="14" step="0.5" placeholder="e.g., 3.5 for twice weekly">
+                </div>
+
+                <div class="setting-group">
+                    <label for="trt-default-dose-mg">Default Dose (mg)</label>
+                    <input type="number" id="trt-default-dose-mg" min="1" step="1" placeholder="e.g., 100">
+                </div>
+
+                <div class="setting-group">
+                    <label for="trt-default-dose-ml">Default Dose (ml)</label>
+                    <input type="number" id="trt-default-dose-ml" min="0.1" step="0.05" placeholder="e.g., 0.5">
+                </div>
+
+                <div class="setting-group">
+                    <label for="trt-concentration">Testosterone Concentration (mg/ml)</label>
+                    <input type="number" id="trt-concentration" min="1" step="1" placeholder="e.g., 200">
+                </div>
+
+                <button id="trt-save-settings-btn" class="btn-primary" style="width: 100%; margin-top: var(--spacing-md);">
+                    Save TRT Settings
+                </button>
+            </div>
+        </div>
+
     </main>
 
     <!-- Bottom Navigation -->
@@ -2869,6 +3073,45 @@
             <span class="nav-label">Inventory</span>
         </button>
         <button class="nav-btn" data-tab="settings">
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.25m4.24 4.24l4.24 4.25M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.25"/>
+            </svg>
+            <span class="nav-label">Settings</span>
+        </button>
+
+        <!-- TRT Navigation (hidden by default) -->
+        <button class="nav-btn" data-tab="trt-dashboard" style="display: none;">
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M3 9h18M9 21V9"/>
+            </svg>
+            <span class="nav-label">Dashboard</span>
+        </button>
+        <button class="nav-btn" data-tab="trt-shots" style="display: none;">
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 2l4 4-4 4M10 8l-2 2 2 2"/>
+                <path d="M22 6H10a8 8 0 00-8 8v0a2 2 0 002 2h10"/>
+                <circle cx="18" cy="18" r="3"/>
+            </svg>
+            <span class="nav-label">Shots</span>
+        </button>
+        <button class="nav-btn" data-tab="trt-symptoms" style="display: none;">
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span class="nav-label">Symptoms</span>
+        </button>
+        <button class="nav-btn" data-tab="trt-inventory" style="display: none;">
+            <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/>
+                <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+            <span class="nav-label">Inventory</span>
+        </button>
+        <button class="nav-btn" data-tab="trt-settings" style="display: none;">
             <svg class="nav-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M12 1v6m0 6v6M5.64 5.64l4.24 4.25m4.24 4.24l4.24 4.25M1 12h6m6 0h6M5.64 18.36l4.24-4.24m4.24-4.24l4.24-4.25"/>
@@ -3092,7 +3335,11 @@
 
         class InjectionTracker {
             constructor() {
+                // App mode state
+                this.currentApp = localStorage.getItem('currentApp') || 'reta'; // 'reta' or 'trt'
+
                 this.data = {
+                    // Retatrutide tracking
                     injections: [],
                     vials: [],
                     weights: [],
@@ -3103,6 +3350,18 @@
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
+                        lastSync: null
+                    },
+                    // TRT tracking
+                    trtInjections: [],
+                    trtVials: [],
+                    trtSymptoms: [],
+                    trtSettings: {
+                        injectionFrequency: 3.5, // Common TRT: 2x per week
+                        defaultDoseMl: 0.5,
+                        defaultDoseMg: 100,
+                        concentrationMgMl: 200, // Default: 200mg/ml
+                        injectionSites: ['left_ventrogluteal', 'right_ventrogluteal', 'left_deltoid', 'right_deltoid', 'left_vastus_lateralis', 'right_vastus_lateralis'],
                         lastSync: null
                     }
                 };
@@ -4848,10 +5107,127 @@
             // ====================================
 
             setupEventListeners() {
+                this.setupAppSwitcher();
                 this.setupNavigation();
                 this.setupModalHandlers();
                 this.setupFormHandlers();
                 this.setupEditHandlers();
+            }
+
+            // App Switcher between Reta and TRT
+            setupAppSwitcher() {
+                const switcherButtons = document.querySelectorAll('.app-switcher-btn');
+
+                switcherButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const targetApp = btn.dataset.app;
+                        if (targetApp === this.currentApp) return; // Already on this app
+
+                        // Update UI
+                        switcherButtons.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+
+                        // Switch app mode
+                        this.currentApp = targetApp;
+                        localStorage.setItem('currentApp', targetApp);
+
+                        // Update URL hash
+                        window.location.hash = targetApp;
+
+                        // Reload UI for new app
+                        this.switchApp(targetApp);
+                    });
+                });
+
+                // Restore app switcher state on load
+                const activeBtn = document.querySelector(`.app-switcher-btn[data-app="${this.currentApp}"]`);
+                if (activeBtn) {
+                    switcherButtons.forEach(b => b.classList.remove('active'));
+                    activeBtn.classList.add('active');
+                }
+
+                // Handle hash changes
+                window.addEventListener('hashchange', () => {
+                    const hash = window.location.hash.replace('#', '');
+                    if (hash && (hash === 'reta' || hash === 'trt') && hash !== this.currentApp) {
+                        const btn = document.querySelector(`.app-switcher-btn[data-app="${hash}"]`);
+                        if (btn) btn.click();
+                    }
+                });
+
+                // Initialize from hash on load
+                const initialHash = window.location.hash.replace('#', '');
+                if (initialHash === 'trt' || initialHash === 'reta') {
+                    this.currentApp = initialHash;
+                    localStorage.setItem('currentApp', initialHash);
+                    const activeBtn = document.querySelector(`.app-switcher-btn[data-app="${initialHash}"]`);
+                    if (activeBtn) {
+                        switcherButtons.forEach(b => b.classList.remove('active'));
+                        activeBtn.classList.add('active');
+                    }
+                }
+            }
+
+            switchApp(appMode) {
+                console.log(`[APP-SWITCH] Switching to ${appMode}`);
+
+                if (appMode === 'reta') {
+                    // Show Reta navigation and content
+                    this.showRetaApp();
+                } else if (appMode === 'trt') {
+                    // Show TRT navigation and content
+                    this.showTrtApp();
+                }
+
+                // Reload UI
+                this.updateUI();
+            }
+
+            showRetaApp() {
+                const bottomNav = document.getElementById('bottom-nav');
+                const addShotBtn = document.getElementById('add-shot-btn');
+
+                // Show Reta tabs, hide TRT tabs
+                document.querySelectorAll('.nav-btn[data-tab^="trt-"]').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                document.querySelectorAll('.nav-btn:not([data-tab^="trt-"])').forEach(btn => {
+                    btn.style.display = 'flex';
+                });
+
+                // Update add button text
+                if (addShotBtn) addShotBtn.textContent = '+ Shot';
+
+                // Show first Reta tab
+                document.getElementById('summary-tab').style.display = 'block';
+                document.querySelectorAll('.tab-content[id^="trt-"]').forEach(tab => {
+                    tab.style.display = 'none';
+                });
+            }
+
+            showTrtApp() {
+                const bottomNav = document.getElementById('bottom-nav');
+                const addShotBtn = document.getElementById('add-shot-btn');
+
+                // Hide Reta tabs, show TRT tabs
+                document.querySelectorAll('.nav-btn:not([data-tab^="trt-"])').forEach(btn => {
+                    btn.style.display = 'none';
+                });
+                document.querySelectorAll('.nav-btn[data-tab^="trt-"]').forEach(btn => {
+                    btn.style.display = 'flex';
+                });
+
+                // Update add button text
+                if (addShotBtn) addShotBtn.textContent = '+ Shot';
+
+                // Show first TRT tab
+                const trtDashboard = document.getElementById('trt-dashboard-tab');
+                if (trtDashboard) {
+                    trtDashboard.style.display = 'block';
+                }
+                document.querySelectorAll('.tab-content:not([id^="trt-"])').forEach(tab => {
+                    tab.style.display = 'none';
+                });
             }
 
             setupNavigation() {
