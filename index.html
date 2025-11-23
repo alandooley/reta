@@ -6938,6 +6938,37 @@
                 return div;
             }
 
+            // Calculate skip rate from historical injection data
+            calculateSkipRate() {
+                const injections = this.data.injections || [];
+                if (injections.length < 2) {
+                    return { skipRate: 0, totalWeeks: 0, skippedWeeks: 0 };
+                }
+
+                // Sort by date
+                const sorted = [...injections].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const firstDate = new Date(sorted[0].timestamp);
+                const lastDate = new Date(sorted[sorted.length - 1].timestamp);
+
+                // Calculate total calendar weeks tracked
+                const daysDiff = (lastDate - firstDate) / (1000 * 60 * 60 * 24);
+                const totalWeeks = daysDiff / 7;
+
+                // Count skipped injections
+                const skippedCount = injections.filter(inj => inj.skipped === true).length;
+
+                // Calculate skip rate (what percentage of weeks are skipped)
+                const skipRate = totalWeeks > 0 ? skippedCount / totalWeeks : 0;
+
+                console.log(`[SkipRate] ${skippedCount} skips over ${totalWeeks.toFixed(1)} weeks = ${(skipRate * 100).toFixed(1)}% skip rate`);
+
+                return {
+                    skipRate,
+                    totalWeeks,
+                    skippedWeeks: skippedCount
+                };
+            }
+
             // Phase 2: Extract calculation logic with validation
             calculateSupplyForecast(plannedWeeklyDose = 4.0) {
                 // Validate input data
@@ -7021,16 +7052,31 @@
 
                 console.log(`Total remaining supply: ${totalSupplyMg.toFixed(1)}mg (${validActiveCount} active + ${validDryStockCount} dry stock)`);
 
-                // Calculate duration
-                const weeksRemaining = dose > 0 ? Math.floor(totalSupplyMg / dose) : 0;
-                const daysRemaining = Math.floor((totalSupplyMg / dose) * 7);
+                // Calculate active weeks (doses needed)
+                const activeWeeksRemaining = dose > 0 ? Math.floor(totalSupplyMg / dose) : 0;
+
+                // Calculate skip rate from historical data
+                const skipData = this.calculateSkipRate();
+
+                // Adjust calendar duration to account for skip pattern
+                // If user skips 20% of weeks, then N active weeks = N / 0.8 calendar weeks
+                let calendarWeeksRemaining = activeWeeksRemaining;
+                if (skipData.skipRate > 0 && skipData.skipRate < 1) {
+                    calendarWeeksRemaining = Math.floor(activeWeeksRemaining / (1 - skipData.skipRate));
+                }
+
+                const calendarDaysRemaining = Math.floor(calendarWeeksRemaining * 7);
+
+                console.log(`[SupplyForecast] ${activeWeeksRemaining} active weeks → ${calendarWeeksRemaining} calendar weeks (skip rate: ${(skipData.skipRate * 100).toFixed(1)}%)`);
 
                 // Return structured result
                 return {
                     success: true,
                     totalSupplyMg,
-                    weeksRemaining,
-                    daysRemaining,
+                    weeksRemaining: calendarWeeksRemaining,
+                    daysRemaining: calendarDaysRemaining,
+                    activeWeeksRemaining,
+                    skipRate: skipData.skipRate,
                     activeVialCount: validActiveCount,
                     dryStockCount: validDryStockCount,
                     invalidActiveCount,
@@ -7906,10 +7952,23 @@
                 // Calculate percent change
                 const percentChange = (weightChangeKg / startWeightKg) * 100;
 
-                // Calculate weekly average
+                // Calculate weekly average accounting for skip weeks
                 const daysDiff = (lastWeight.timestamp - firstWeight.timestamp) / (1000 * 60 * 60 * 24);
-                const weeks = daysDiff / 7;
-                const weeklyAvgKg = weeks > 0 ? (weightChangeKg / weeks) : 0;
+                const calendarWeeks = daysDiff / 7;
+
+                // Get skip data to calculate active weeks
+                const skipData = this.calculateSkipRate();
+
+                // Calculate active weeks (weeks where medication was actually taken)
+                let activeWeeks = calendarWeeks;
+                if (skipData.skipRate > 0 && skipData.skipRate < 1) {
+                    // If 20% skip rate, then 80% of calendar weeks are active
+                    activeWeeks = calendarWeeks * (1 - skipData.skipRate);
+                }
+
+                const weeklyAvgKg = activeWeeks > 0 ? (weightChangeKg / activeWeeks) : 0;
+
+                console.log(`[WeightStats] ${calendarWeeks.toFixed(1)} calendar weeks → ${activeWeeks.toFixed(1)} active weeks (skip rate: ${(skipData.skipRate * 100).toFixed(1)}%)`);
 
                 // Calculate goal progress
                 let goalProgress = null;
@@ -7930,7 +7989,8 @@
                         weeklyAvgKg,
                         goalProgress,
                         daysDiff,
-                        weeks
+                        weeks: calendarWeeks,
+                        activeWeeks
                     },
                     validCount,
                     invalidCount,
@@ -7949,7 +8009,8 @@
                     weeklyAvgKg: 0,
                     goalProgress: null,
                     daysDiff: 0,
-                    weeks: 0
+                    weeks: 0,
+                    activeWeeks: 0
                 };
             }
 
