@@ -2879,16 +2879,24 @@
         <div id="trt-dashboard-tab" class="tab-content" style="display: none;">
             <h2 style="margin-bottom: var(--spacing-lg);">TRT Dashboard</h2>
 
-            <!-- Current Protocol Card -->
-            <div class="card">
-                <h3>📊 Current Protocol</h3>
-                <div id="trt-protocol-summary"></div>
-            </div>
-
-            <!-- Next Injection Card -->
-            <div class="card">
-                <h3>💉 Next Injection</h3>
-                <div id="trt-next-injection"></div>
+            <!-- Summary Metrics -->
+            <div class="metrics-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--spacing-md); margin-bottom: var(--spacing-lg);">
+                <div class="metric-card card" style="padding: var(--spacing-md); text-align: center;">
+                    <div class="metric-label" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Total Injections</div>
+                    <div class="metric-value" id="trt-total-injections" style="font-size: 24px; font-weight: 600;">0</div>
+                </div>
+                <div class="metric-card card" style="padding: var(--spacing-md); text-align: center;">
+                    <div class="metric-label" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Last Dose</div>
+                    <div class="metric-value" id="trt-last-dose" style="font-size: 24px; font-weight: 600;">0 mg</div>
+                </div>
+                <div class="metric-card card" style="padding: var(--spacing-md); text-align: center;">
+                    <div class="metric-label" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Next Injection</div>
+                    <div class="metric-value" id="trt-next-injection" style="font-size: 24px; font-weight: 600;">-</div>
+                </div>
+                <div class="metric-card card" style="padding: var(--spacing-md); text-align: center;">
+                    <div class="metric-label" style="font-size: 12px; color: var(--text-secondary); margin-bottom: 4px;">Supply</div>
+                    <div class="metric-value" id="trt-supply-remaining" style="font-size: 24px; font-weight: 600;">0 weeks</div>
+                </div>
             </div>
 
             <!-- Supply Forecast Card -->
@@ -2897,10 +2905,12 @@
                 <div id="trt-supply-forecast"></div>
             </div>
 
-            <!-- Recent Symptoms Card -->
+            <!-- Current Protocol Card -->
             <div class="card">
-                <h3>📝 Recent Symptoms</h3>
-                <div id="trt-recent-symptoms"></div>
+                <h3>📊 Current Protocol</h3>
+                <div id="trt-protocol-summary">
+                    <p style="color: var(--text-secondary); font-size: 14px;">No protocol data yet. Add injections to see your protocol summary.</p>
+                </div>
             </div>
         </div>
 
@@ -5974,10 +5984,22 @@
                         });
                         document.getElementById(targetTab + '-tab').style.display = 'block';
 
-                        // Update charts when switching tabs
+                        // Update Reta tabs
                         if (targetTab === 'summary') this.updateSupplyForecast();
                         if (targetTab === 'results') this.updateWeightChart();
                         if (targetTab === 'settings') this.updateSettingsTab();
+
+                        // Update TRT tabs
+                        if (targetTab === 'trt-dashboard') {
+                            this.updateTrtDashboard();
+                            this.updateTrtSupplyForecast();
+                        }
+                        if (targetTab === 'trt-shots') {
+                            this.updateTrtInjectionsList();
+                        }
+                        if (targetTab === 'trt-inventory') {
+                            this.updateTrtVialsList();
+                        }
                     });
                 });
             }
