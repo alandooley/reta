@@ -8146,19 +8146,16 @@
                 // Calculate active weeks (doses needed)
                 const activeWeeksRemaining = dose > 0 ? Math.floor(totalSupplyMg / dose) : 0;
 
-                // Calculate skip rate from historical data
+                // Count skipped weeks for direct 1:1 extension
                 const skipData = this.calculateSkipRate();
+                const skippedWeeks = skipData.skippedWeeks;
 
-                // Adjust calendar duration to account for skip pattern
-                // If user skips 20% of weeks, then N active weeks = N / 0.8 calendar weeks
-                let calendarWeeksRemaining = activeWeeksRemaining;
-                if (skipData.skipRate > 0 && skipData.skipRate < 1) {
-                    calendarWeeksRemaining = Math.floor(activeWeeksRemaining / (1 - skipData.skipRate));
-                }
-
+                // Direct 1:1 formula: calendar weeks = active weeks + skipped weeks
+                // If you skip 1 week, you get 1 extra week of calendar time
+                const calendarWeeksRemaining = activeWeeksRemaining + skippedWeeks;
                 const calendarDaysRemaining = Math.floor(calendarWeeksRemaining * 7);
 
-                console.log(`[SupplyForecast] ${activeWeeksRemaining} active weeks → ${calendarWeeksRemaining} calendar weeks (skip rate: ${(skipData.skipRate * 100).toFixed(1)}%)`);
+                console.log(`[SupplyForecast] ${activeWeeksRemaining} active weeks + ${skippedWeeks} skipped weeks = ${calendarWeeksRemaining} calendar weeks (direct 1:1)`);
 
                 // Return structured result
                 return {
@@ -8167,6 +8164,7 @@
                     weeksRemaining: calendarWeeksRemaining,
                     daysRemaining: calendarDaysRemaining,
                     activeWeeksRemaining,
+                    skippedWeeks,
                     skipRate: skipData.skipRate,
                     activeVialCount: validActiveCount,
                     dryStockCount: validDryStockCount,
@@ -8217,7 +8215,15 @@
 
                 // Update display
                 document.getElementById('total-supply').textContent = `${totalSupplyMg.toFixed(1)} mg`;
-                document.getElementById('supply-duration').textContent = `${weeksRemaining} weeks (${daysRemaining} days)`;
+
+                // Show breakdown: active weeks + skipped weeks = calendar weeks
+                const activeWeeks = forecast.activeWeeksRemaining || 0;
+                const skippedWeeks = forecast.skippedWeeks || 0;
+                const breakdownText = skippedWeeks > 0
+                    ? `${weeksRemaining} weeks (${activeWeeks} active + ${skippedWeeks} skipped)`
+                    : `${weeksRemaining} weeks`;
+                document.getElementById('supply-duration').textContent = breakdownText;
+
                 document.getElementById('run-out-date').textContent = daysRemaining > 0 ? runOutDate.toLocaleDateString() : 'No supply';
                 document.getElementById('reorder-days').textContent = reorderDays > 0 ? `${reorderDays} days` : 'Order now!';
 
