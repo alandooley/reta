@@ -5332,11 +5332,11 @@
                 this.saveData();
                 this.updateUI();
 
-                // Push to sync queue if authenticated
+                // Push to cloud if authenticated
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        // Cloud sync for symptoms would go here (future feature)
-                        console.log('Symptom saved, cloud sync pending implementation');
+                        await cloudStorage.saveTrtSymptom(newSymptom);
+                        console.log('TRT symptom synced to cloud successfully');
                     } catch (error) {
                         console.warn('Failed to sync TRT symptom to cloud:', error);
                     }
@@ -5355,10 +5355,11 @@
                 this.saveData();
                 this.updateUI();
 
-                // Cloud deletion would go here (future feature)
+                // Delete from cloud if authenticated
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        console.log('Symptom deleted, cloud sync pending implementation');
+                        await cloudStorage.deleteTrtSymptom(symptomId);
+                        console.log('TRT symptom deleted from cloud successfully');
                     } catch (error) {
                         console.warn('Failed to delete TRT symptom from cloud:', error);
                     }

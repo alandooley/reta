@@ -324,6 +324,27 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'patch.handler',
     });
 
+    const getTrtSymptomsFn = new lambda.Function(this, 'GetTrtSymptomsFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-get-trt-symptoms',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/symptoms')),
+      handler: 'get.handler',
+    });
+
+    const createTrtSymptomFn = new lambda.Function(this, 'CreateTrtSymptomFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-create-trt-symptom',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/symptoms')),
+      handler: 'post.handler',
+    });
+
+    const deleteTrtSymptomFn = new lambda.Function(this, 'DeleteTrtSymptomFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-delete-trt-symptom',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/symptoms')),
+      handler: 'delete.handler',
+    });
+
     // HTTP API Gateway (Budget: 60% cheaper than REST API)
     const httpApi = new HttpApi(this, 'RetatrutideHttpApi', {
       apiName: 'retatrutide-tracker-api',
@@ -520,6 +541,28 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       path: `${v1}/trt/vials/{vialId}`,
       methods: [HttpMethod.PATCH],
       integration: new HttpLambdaIntegration('UpdateTrtVialIntegration', updateTrtVialFn),
+      authorizer,
+    });
+
+    // TRT Symptoms
+    httpApi.addRoutes({
+      path: `${v1}/trt/symptoms`,
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetTrtSymptomsIntegration', getTrtSymptomsFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/symptoms`,
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('CreateTrtSymptomIntegration', createTrtSymptomFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/symptoms/{symptomId}`,
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration('DeleteTrtSymptomIntegration', deleteTrtSymptomFn),
       authorizer,
     });
 

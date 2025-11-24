@@ -315,6 +315,34 @@ class APIClient {
         const response = await this.request('DELETE', `/v1/trt/vials/${vialId}`);
         return response.success;
     }
+
+    // ========================================
+    // TRT SYMPTOMS
+    // ========================================
+
+    /**
+     * Get all TRT symptoms
+     */
+    async getTrtSymptoms() {
+        const response = await this.request('GET', '/v1/trt/symptoms');
+        return response.data || [];
+    }
+
+    /**
+     * Create TRT symptom check-in
+     */
+    async createTrtSymptom(symptom) {
+        const response = await this.request('POST', '/v1/trt/symptoms', symptom);
+        return response.data;
+    }
+
+    /**
+     * Delete TRT symptom
+     */
+    async deleteTrtSymptom(symptomId) {
+        const response = await this.request('DELETE', `/v1/trt/symptoms/${symptomId}`);
+        return response.success;
+    }
 }
 
 // Export singleton instance

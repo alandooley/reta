@@ -1,0 +1,10 @@
+{
+  "name": "trt-symptoms-lambda",
+  "version": "1.0.0",
+  "description": "TRT symptom tracking Lambda functions",
+  "main": "get.js",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.511.0",
+    "@aws-sdk/lib-dynamodb": "^3.511.0"
+  }
+}
