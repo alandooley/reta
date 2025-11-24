@@ -4878,6 +4878,335 @@
             }
 
             // ====================================
+            // TRT INJECTION MANAGEMENT
+            // ====================================
+
+            async addTrtInjection(injection) {
+                const newInjection = {
+                    id: this.generateId(),
+                    timestamp: injection.timestamp || new Date().toISOString(),
+                    volume_ml: parseFloat(injection.volume_ml),
+                    concentration_mg_ml: parseFloat(injection.concentration_mg_ml),
+                    dose_mg: parseFloat(injection.volume_ml) * parseFloat(injection.concentration_mg_ml),
+                    injection_site: injection.injection_site,
+                    time_of_day: injection.time_of_day || null,
+                    technique_notes: injection.technique_notes || '',
+                    notes: injection.notes || '',
+                    vial_id: injection.vial_id || null,
+                    skipped: injection.skipped || false,
+                    planned_volume_ml: injection.planned_volume_ml || null,
+                    planned_dose_mg: injection.planned_dose_mg || null
+                };
+
+                this.data.trtInjections.push(newInjection);
+                this.data.trtInjections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Update vial usage if not skipped and vial specified
+                if (!injection.skipped && injection.vial_id) {
+                    await this.updateTrtVialUsage(injection.vial_id, injection.volume_ml);
+                }
+
+                this.saveData();
+                this.updateUI();
+
+                // Push to sync queue if authenticated
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtInjection(newInjection);
+                    } catch (error) {
+                        console.warn('Failed to sync TRT injection to cloud:', error);
+                    }
+                }
+
+                return newInjection;
+            }
+
+            async updateTrtInjection(injectionId, updates) {
+                const injectionIndex = this.data.trtInjections.findIndex(inj => inj.id === injectionId);
+                if (injectionIndex === -1) {
+                    throw new Error('TRT injection not found');
+                }
+
+                const oldInjection = this.data.trtInjections[injectionIndex];
+                const oldVolume = oldInjection.volume_ml;
+                const oldVialId = oldInjection.vial_id;
+
+                const updatedInjection = {
+                    ...oldInjection,
+                    timestamp: updates.timestamp || oldInjection.timestamp,
+                    volume_ml: parseFloat(updates.volume_ml),
+                    concentration_mg_ml: parseFloat(updates.concentration_mg_ml),
+                    dose_mg: parseFloat(updates.volume_ml) * parseFloat(updates.concentration_mg_ml),
+                    injection_site: updates.injection_site,
+                    time_of_day: updates.time_of_day || null,
+                    technique_notes: updates.technique_notes || '',
+                    notes: updates.notes || ''
+                };
+
+                this.data.trtInjections[injectionIndex] = updatedInjection;
+                this.data.trtInjections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Handle vial usage changes
+                if (oldVialId === updates.vial_id) {
+                    if (oldVolume !== updates.volume_ml) {
+                        await this.reverseTrtVialUsage(oldVialId, oldVolume);
+                        await this.updateTrtVialUsage(updates.vial_id, updates.volume_ml);
+                    }
+                } else {
+                    await this.reverseTrtVialUsage(oldVialId, oldVolume);
+                    await this.updateTrtVialUsage(updates.vial_id, updates.volume_ml);
+                }
+
+                this.saveData();
+                this.updateUI();
+
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtInjection(updatedInjection);
+                    } catch (error) {
+                        console.warn('Failed to sync TRT injection update to cloud:', error);
+                    }
+                }
+
+                return updatedInjection;
+            }
+
+            async deleteTrtInjection(injectionId) {
+                const injectionIndex = this.data.trtInjections.findIndex(inj => inj.id === injectionId);
+                if (injectionIndex === -1) {
+                    throw new Error('TRT injection not found');
+                }
+
+                const injection = this.data.trtInjections[injectionIndex];
+
+                // Restore vial volume if injection used a vial
+                if (injection.vial_id && !injection.skipped) {
+                    await this.reverseTrtVialUsage(injection.vial_id, injection.volume_ml);
+                }
+
+                this.data.trtInjections.splice(injectionIndex, 1);
+                this.saveData();
+                this.updateUI();
+
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.deleteTrtInjection(injectionId);
+                    } catch (error) {
+                        console.warn('Failed to delete TRT injection from cloud:', error);
+                    }
+                }
+            }
+
+            // ====================================
+            // TRT VIAL MANAGEMENT
+            // ====================================
+
+            async addTrtVial(vial) {
+                const newVial = {
+                    id: this.generateId(),
+                    concentration_mg_ml: parseFloat(vial.concentration_mg_ml),
+                    volume_ml: parseFloat(vial.volume_ml),
+                    remaining_ml: parseFloat(vial.remaining_ml || vial.volume_ml),
+                    lot_number: vial.lot_number || '',
+                    expiry_date: vial.expiry_date,
+                    opened_date: vial.opened_date || null,
+                    status: vial.status || 'dry_stock',
+                    notes: vial.notes || ''
+                };
+
+                this.data.trtVials.push(newVial);
+                this.saveData();
+                this.updateUI();
+
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtVial(newVial);
+                    } catch (error) {
+                        console.warn('Failed to sync TRT vial to cloud:', error);
+                    }
+                }
+
+                return newVial;
+            }
+
+            async updateTrtVial(vialId, updates) {
+                const vialIndex = this.data.trtVials.findIndex(v => v.id === vialId);
+                if (vialIndex === -1) {
+                    throw new Error('TRT vial not found');
+                }
+
+                const updatedVial = {
+                    ...this.data.trtVials[vialIndex],
+                    ...updates
+                };
+
+                this.data.trtVials[vialIndex] = updatedVial;
+                this.saveData();
+                this.updateUI();
+
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtVial(updatedVial);
+                    } catch (error) {
+                        console.warn('Failed to sync TRT vial update to cloud:', error);
+                    }
+                }
+
+                return updatedVial;
+            }
+
+            async deleteTrtVial(vialId) {
+                const vialIndex = this.data.trtVials.findIndex(v => v.id === vialId);
+                if (vialIndex === -1) {
+                    throw new Error('TRT vial not found');
+                }
+
+                this.data.trtVials.splice(vialIndex, 1);
+                this.saveData();
+                this.updateUI();
+
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.deleteTrtVial(vialId);
+                    } catch (error) {
+                        console.warn('Failed to delete TRT vial from cloud:', error);
+                    }
+                }
+            }
+
+            async updateTrtVialUsage(vialId, volumeMl) {
+                if (!vialId) return;
+
+                const vial = this.data.trtVials.find(v => v.id === vialId);
+                if (!vial) {
+                    console.warn('TRT vial not found:', vialId);
+                    return;
+                }
+
+                vial.remaining_ml = Math.max(0, vial.remaining_ml - volumeMl);
+
+                // Mark as empty if no volume remaining
+                if (vial.remaining_ml === 0) {
+                    vial.status = 'empty';
+                }
+
+                this.saveData();
+            }
+
+            async reverseTrtVialUsage(vialId, volumeMl) {
+                if (!vialId) return;
+
+                const vial = this.data.trtVials.find(v => v.id === vialId);
+                if (!vial) {
+                    console.warn('TRT vial not found:', vialId);
+                    return;
+                }
+
+                vial.remaining_ml = Math.min(vial.volume_ml, vial.remaining_ml + volumeMl);
+
+                // Restore status if was empty
+                if (vial.status === 'empty' && vial.remaining_ml > 0) {
+                    vial.status = 'active';
+                }
+
+                this.saveData();
+            }
+
+            // ====================================
+            // TRT CALCULATIONS
+            // ====================================
+
+            calculateTrtDose(volumeMl, concentrationMgMl) {
+                return parseFloat(volumeMl) * parseFloat(concentrationMgMl);
+            }
+
+            calculateTrtWeeklyDose() {
+                const recentInjections = this.data.trtInjections
+                    .filter(inj => !inj.skipped)
+                    .slice(0, 4); // Last 4 injections
+
+                if (recentInjections.length === 0) {
+                    return this.data.trtSettings.defaultDoseMg;
+                }
+
+                const totalDose = recentInjections.reduce((sum, inj) => sum + inj.dose_mg, 0);
+                const avgDose = totalDose / recentInjections.length;
+
+                // Calculate average days between injections
+                if (recentInjections.length > 1) {
+                    let totalDays = 0;
+                    for (let i = 0; i < recentInjections.length - 1; i++) {
+                        const days = (new Date(recentInjections[i].timestamp) - new Date(recentInjections[i + 1].timestamp)) / (24 * 60 * 60 * 1000);
+                        totalDays += days;
+                    }
+                    const avgDaysBetween = totalDays / (recentInjections.length - 1);
+                    const weeklyDose = (avgDose * 7) / avgDaysBetween;
+                    return weeklyDose;
+                }
+
+                // Fallback: use frequency from settings
+                return (avgDose * 7) / this.data.trtSettings.injectionFrequency;
+            }
+
+            calculateTrtSupplyForecast() {
+                const activeVials = this.data.trtVials.filter(v => v.status === 'active');
+                if (activeVials.length === 0) {
+                    return {
+                        totalSupplyMl: 0,
+                        totalSupplyMg: 0,
+                        activeWeeksRemaining: 0,
+                        skippedWeeksCount: 0,
+                        calendarWeeksRemaining: 0,
+                        adjustmentText: '',
+                        runOutDate: null,
+                        reorderDate: null,
+                        daysUntilReorder: 0
+                    };
+                }
+
+                const totalRemainingMl = activeVials.reduce((sum, v) => sum + v.remaining_ml, 0);
+                const avgConcentration = activeVials.reduce((sum, v) => sum + v.concentration_mg_ml, 0) / activeVials.length;
+                const totalSupplyMg = totalRemainingMl * avgConcentration;
+
+                const weeklyDoseMg = this.calculateTrtWeeklyDose();
+                const activeWeeks = Math.floor(totalSupplyMg / weeklyDoseMg);
+
+                // Add skipped weeks (direct 1:1 extension)
+                const skippedWeeks = this.data.trtInjections.filter(inj => inj.skipped).length;
+                const calendarWeeks = activeWeeks + skippedWeeks;
+
+                const today = new Date();
+                const runOutDate = new Date(today.getTime() + calendarWeeks * 7 * 24 * 60 * 60 * 1000);
+                const reorderDate = new Date(runOutDate.getTime() - 14 * 24 * 60 * 60 * 1000); // 2 weeks before
+
+                return {
+                    totalSupplyMl: totalRemainingMl.toFixed(1),
+                    totalSupplyMg: totalSupplyMg.toFixed(0),
+                    activeWeeksRemaining: activeWeeks,
+                    skippedWeeksCount: skippedWeeks,
+                    calendarWeeksRemaining: calendarWeeks,
+                    adjustmentText: skippedWeeks > 0 ? `+${skippedWeeks} weeks from skips` : '',
+                    runOutDate: runOutDate.toISOString().split('T')[0],
+                    reorderDate: reorderDate.toISOString().split('T')[0],
+                    daysUntilReorder: Math.ceil((reorderDate - today) / (24 * 60 * 60 * 1000))
+                };
+            }
+
+            getTrtNextInjectionDate() {
+                const lastInjection = this.data.trtInjections
+                    .filter(inj => !inj.skipped)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                if (!lastInjection) {
+                    return new Date().toISOString();
+                }
+
+                const lastDate = new Date(lastInjection.timestamp);
+                const nextDate = new Date(lastDate.getTime() + this.data.trtSettings.injectionFrequency * 24 * 60 * 60 * 1000);
+                return nextDate.toISOString();
+            }
+
+            // ====================================
             // UTILITY FUNCTIONS
             // ====================================
 
