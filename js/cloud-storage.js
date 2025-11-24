@@ -373,6 +373,78 @@ class CloudStorage {
     }
 
     // ========================================
+    // TRT SYMPTOMS
+    // ========================================
+
+    /**
+     * Get all TRT symptoms (local or cloud)
+     */
+    async getTrtSymptoms() {
+        if (this.isCloudAvailable()) {
+            try {
+                return await this.apiClient.getTrtSymptoms();
+            } catch (error) {
+                console.warn('Cloud fetch failed, using local:', error);
+                return await this.localStorage.getTrtSymptoms();
+            }
+        }
+        return await this.localStorage.getTrtSymptoms();
+    }
+
+    /**
+     * Save TRT symptom (local + cloud)
+     */
+    async saveTrtSymptom(symptom) {
+        // Save locally first (for offline support)
+        const savedLocal = await this.localStorage.saveTrtSymptom(symptom);
+
+        // Sync to cloud if authenticated
+        if (this.isCloudAvailable()) {
+            try {
+                const cloudSymptom = await this.apiClient.createTrtSymptom({
+                    id: symptom.id,
+                    timestamp: symptom.timestamp,
+                    energyLevel: symptom.energyLevel,
+                    mood: symptom.mood,
+                    libido: symptom.libido,
+                    sleepQuality: symptom.sleepQuality,
+                    notes: symptom.notes || '',
+                });
+
+                // Update local with cloud confirmation
+                savedLocal.cloudSynced = true;
+                await this.localStorage.saveTrtSymptom(savedLocal);
+
+                return cloudSymptom;
+            } catch (error) {
+                console.warn('Cloud save failed, saved locally:', error);
+                savedLocal.cloudSynced = false;
+                return savedLocal;
+            }
+        }
+
+        savedLocal.cloudSynced = false;
+        return savedLocal;
+    }
+
+    /**
+     * Delete TRT symptom (local + cloud)
+     */
+    async deleteTrtSymptom(symptomId) {
+        // Delete from cloud first
+        if (this.isCloudAvailable()) {
+            try {
+                await this.apiClient.deleteTrtSymptom(symptomId);
+            } catch (error) {
+                console.warn('Cloud delete failed:', error);
+            }
+        }
+
+        // Always delete locally
+        await this.localStorage.deleteTrtSymptom(symptomId);
+    }
+
+    // ========================================
     // SYNC OPERATIONS
     // ========================================
 

@@ -4452,6 +4452,18 @@
                         injectionFrequencyDays: this.data.settings.injectionFrequencyDays || 7,
                         heightCm: this.data.settings.heightCm || null,
                         goalWeightKg: this.data.settings.goalWeightKg || null,
+                        prefillDoseFrom: this.data.settings.prefillDoseFrom || 'lastShot',
+                        trtSettings: {
+                            injectionFrequency: this.data.trtSettings.injectionFrequency || 3.5,
+                            defaultDoseMl: this.data.trtSettings.defaultDoseMl || 0.5,
+                            defaultDoseMg: this.data.trtSettings.defaultDoseMg || 100,
+                            concentrationMgMl: this.data.trtSettings.concentrationMgMl || 200,
+                            injectionSites: this.data.trtSettings.injectionSites || [
+                                'left_ventrogluteal', 'right_ventrogluteal',
+                                'left_deltoid', 'right_deltoid',
+                                'left_vastus_lateralis', 'right_vastus_lateralis'
+                            ],
+                        },
                     });
                     console.log('Settings synced to cloud successfully');
                 } catch (error) {
@@ -5320,11 +5332,11 @@
                 this.saveData();
                 this.updateUI();
 
-                // Push to sync queue if authenticated
+                // Push to cloud if authenticated
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        // Cloud sync for symptoms would go here (future feature)
-                        console.log('Symptom saved, cloud sync pending implementation');
+                        await cloudStorage.saveTrtSymptom(newSymptom);
+                        console.log('TRT symptom synced to cloud successfully');
                     } catch (error) {
                         console.warn('Failed to sync TRT symptom to cloud:', error);
                     }
@@ -5343,10 +5355,11 @@
                 this.saveData();
                 this.updateUI();
 
-                // Cloud deletion would go here (future feature)
+                // Delete from cloud if authenticated
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        console.log('Symptom deleted, cloud sync pending implementation');
+                        await cloudStorage.deleteTrtSymptom(symptomId);
+                        console.log('TRT symptom deleted from cloud successfully');
                     } catch (error) {
                         console.warn('Failed to delete TRT symptom from cloud:', error);
                     }
@@ -5722,6 +5735,29 @@
                 const supplyRemainingEl = document.getElementById('trt-supply-remaining');
                 if (supplyRemainingEl) {
                     supplyRemainingEl.textContent = `${supplyForecast.calendarWeeksRemaining} weeks`;
+                }
+            }
+
+            updateTrtSettingsTab() {
+                // Load TRT settings into form fields
+                const injectionFrequencyEl = document.getElementById('trt-injection-frequency');
+                if (injectionFrequencyEl) {
+                    injectionFrequencyEl.value = this.data.trtSettings.injectionFrequency || 3.5;
+                }
+
+                const defaultDoseMgEl = document.getElementById('trt-default-dose-mg');
+                if (defaultDoseMgEl) {
+                    defaultDoseMgEl.value = this.data.trtSettings.defaultDoseMg || 100;
+                }
+
+                const defaultDoseMlEl = document.getElementById('trt-default-dose-ml');
+                if (defaultDoseMlEl) {
+                    defaultDoseMlEl.value = this.data.trtSettings.defaultDoseMl || 0.5;
+                }
+
+                const concentrationEl = document.getElementById('trt-concentration');
+                if (concentrationEl) {
+                    concentrationEl.value = this.data.trtSettings.concentrationMgMl || 200;
                 }
             }
 
@@ -6345,6 +6381,9 @@
                         if (targetTab === 'trt-inventory') {
                             this.updateTrtVialsList();
                         }
+                        if (targetTab === 'trt-settings') {
+                            this.updateTrtSettingsTab();
+                        }
                     });
                 });
             }
@@ -6610,6 +6649,15 @@
                     saveTrtSymptomBtn.addEventListener('click', (e) => {
                         e.preventDefault();
                         this.handleAddTrtSymptom();
+                    });
+                }
+
+                // TRT Settings save button
+                const saveTrtSettingsBtn = document.getElementById('trt-save-settings-btn');
+                if (saveTrtSettingsBtn) {
+                    saveTrtSettingsBtn.addEventListener('click', async (e) => {
+                        e.preventDefault();
+                        await this.handleSaveTrtSettings();
                     });
                 }
 
@@ -8170,6 +8218,47 @@
                     console.error('Error adding TRT symptom:', error);
                     if (window.deleteManager && window.deleteManager.notificationManager) {
                         window.deleteManager.notificationManager.show('error', 'Failed to save symptom check-in');
+                    }
+                }
+            }
+
+            async handleSaveTrtSettings() {
+                try {
+                    // Get values from form
+                    const injectionFrequency = parseFloat(document.getElementById('trt-injection-frequency').value);
+                    const defaultDoseMg = parseFloat(document.getElementById('trt-default-dose-mg').value);
+                    const defaultDoseMl = parseFloat(document.getElementById('trt-default-dose-ml').value);
+                    const concentration = parseFloat(document.getElementById('trt-concentration').value);
+
+                    // Validate inputs
+                    if (!injectionFrequency || !defaultDoseMg || !defaultDoseMl || !concentration) {
+                        if (window.deleteManager && window.deleteManager.notificationManager) {
+                            window.deleteManager.notificationManager.show('error', 'Please fill in all TRT settings fields');
+                        }
+                        return;
+                    }
+
+                    // Update local data
+                    this.data.trtSettings.injectionFrequency = injectionFrequency;
+                    this.data.trtSettings.defaultDoseMg = defaultDoseMg;
+                    this.data.trtSettings.defaultDoseMl = defaultDoseMl;
+                    this.data.trtSettings.concentrationMgMl = concentration;
+
+                    // Save to localStorage
+                    this.saveData();
+
+                    // Sync to cloud
+                    await this.syncSettingsToCloud();
+
+                    // Show success notification
+                    if (window.deleteManager && window.deleteManager.notificationManager) {
+                        window.deleteManager.notificationManager.show('success', 'TRT settings saved successfully');
+                    }
+
+                } catch (error) {
+                    console.error('Error saving TRT settings:', error);
+                    if (window.deleteManager && window.deleteManager.notificationManager) {
+                        window.deleteManager.notificationManager.show('error', 'Failed to save TRT settings');
                     }
                 }
             }
