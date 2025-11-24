@@ -3004,6 +3004,17 @@
                 </div>
             </div>
 
+            <!-- Symptom Trend Graph -->
+            <div class="card" style="margin-top: var(--spacing-md);">
+                <h3>📈 Symptom Trends</h3>
+                <div id="trt-symptom-graph-container" style="position: relative; height: 300px; margin-top: 16px;">
+                    <canvas id="trt-symptom-graph"></canvas>
+                </div>
+                <div id="trt-no-symptom-data" style="display: none; text-align: center; padding: 60px 20px; color: var(--text-muted); font-size: 14px;">
+                    Add at least 2 symptom check-ins to see trend graphs.
+                </div>
+            </div>
+
             <!-- Symptom History -->
             <div class="card" style="margin-top: var(--spacing-md);">
                 <h3>📊 Symptom History</h3>
@@ -5289,6 +5300,60 @@
             }
 
             // ====================================
+            // TRT SYMPTOM MANAGEMENT
+            // ====================================
+
+            async addTrtSymptom(symptom) {
+                const newSymptom = {
+                    id: this.generateId(),
+                    timestamp: symptom.timestamp || new Date().toISOString(),
+                    energyLevel: parseInt(symptom.energyLevel),
+                    mood: parseInt(symptom.mood),
+                    libido: parseInt(symptom.libido),
+                    sleepQuality: parseInt(symptom.sleepQuality),
+                    notes: symptom.notes || ''
+                };
+
+                this.data.trtSymptoms.push(newSymptom);
+                this.data.trtSymptoms.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                this.saveData();
+                this.updateUI();
+
+                // Push to sync queue if authenticated
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        // Cloud sync for symptoms would go here (future feature)
+                        console.log('Symptom saved, cloud sync pending implementation');
+                    } catch (error) {
+                        console.warn('Failed to sync TRT symptom to cloud:', error);
+                    }
+                }
+
+                return newSymptom;
+            }
+
+            async deleteTrtSymptom(symptomId) {
+                const symptomIndex = this.data.trtSymptoms.findIndex(s => s.id === symptomId);
+                if (symptomIndex === -1) {
+                    throw new Error('TRT symptom not found');
+                }
+
+                this.data.trtSymptoms.splice(symptomIndex, 1);
+                this.saveData();
+                this.updateUI();
+
+                // Cloud deletion would go here (future feature)
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        console.log('Symptom deleted, cloud sync pending implementation');
+                    } catch (error) {
+                        console.warn('Failed to delete TRT symptom from cloud:', error);
+                    }
+                }
+            }
+
+            // ====================================
             // TRT CALCULATIONS
             // ====================================
 
@@ -5433,6 +5498,8 @@
                 } else if (this.currentApp === 'trt') {
                     this.updateTrtDashboard();
                     this.updateTrtInjectionsList();
+                    this.updateTrtSymptomsList();
+                    this.updateTrtSymptomsGraph();
                     this.updateTrtVialsList();
                     this.updateTrtSupplyForecast();
                 }
@@ -5756,6 +5823,261 @@
                     'right_front_thigh': 'Right Front Thigh'
                 };
                 return siteMap[site] || site;
+            }
+
+            updateTrtSymptomsList() {
+                const symptomsList = document.getElementById('trt-symptoms-list');
+                const noSymptoms = document.getElementById('trt-no-symptoms');
+                if (!symptomsList) return;
+
+                symptomsList.innerHTML = '';
+
+                // Sort symptoms by date (newest first)
+                const sortedSymptoms = [...this.data.trtSymptoms].sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                if (sortedSymptoms.length === 0) {
+                    if (noSymptoms) noSymptoms.style.display = 'block';
+                    return;
+                }
+
+                if (noSymptoms) noSymptoms.style.display = 'none';
+
+                sortedSymptoms.forEach(symptom => {
+                    const symptomItem = this.createTrtSymptomListItem(symptom);
+                    symptomsList.appendChild(symptomItem);
+                });
+            }
+
+            createTrtSymptomListItem(symptom) {
+                const div = document.createElement('div');
+                div.className = 'shot-item';
+                div.style.cssText = 'margin-bottom: 12px; padding: 16px; background: var(--secondary-bg); border-radius: var(--border-radius); border: 1px solid var(--border-color);';
+                div.setAttribute('data-item-id', symptom.id);
+                div.setAttribute('data-timestamp', symptom.timestamp);
+
+                const getScoreColor = (score) => {
+                    if (score >= 8) return 'var(--success-color)';
+                    if (score >= 6) return 'var(--warning-color)';
+                    return 'var(--danger-color)';
+                };
+
+                const avgScore = ((symptom.energyLevel + symptom.mood + symptom.libido + symptom.sleepQuality) / 4).toFixed(1);
+                const avgColor = getScoreColor(parseFloat(avgScore));
+
+                div.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <div style="font-weight: 600; color: var(--text-primary);">${this.formatDate(symptom.timestamp)}</div>
+                        <div style="font-weight: 600; color: ${avgColor}; font-size: 18px;">Avg: ${avgScore}/10</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 14px;">
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Energy:</span>
+                            <span style="color: ${getScoreColor(symptom.energyLevel)}; font-weight: 600;">${symptom.energyLevel}/10</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Mood:</span>
+                            <span style="color: ${getScoreColor(symptom.mood)}; font-weight: 600;">${symptom.mood}/10</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Libido:</span>
+                            <span style="color: ${getScoreColor(symptom.libido)}; font-weight: 600;">${symptom.libido}/10</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="color: var(--text-secondary);">Sleep:</span>
+                            <span style="color: ${getScoreColor(symptom.sleepQuality)}; font-weight: 600;">${symptom.sleepQuality}/10</span>
+                        </div>
+                    </div>
+                    ${symptom.notes ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">${symptom.notes}</div>` : ''}
+                    <button class="delete-symptom-btn" style="margin-top: 12px; padding: 6px 12px; background: var(--danger-color); color: white; border: none; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 13px; width: 100%;">Delete</button>
+                `;
+
+                // Add delete handler
+                const deleteBtn = div.querySelector('.delete-symptom-btn');
+                deleteBtn.addEventListener('click', async () => {
+                    if (confirm('Delete this symptom check-in?')) {
+                        await this.deleteTrtSymptom(symptom.id);
+                    }
+                });
+
+                return div;
+            }
+
+            updateTrtSymptomsGraph() {
+                const canvas = document.getElementById('trt-symptom-graph');
+                const container = document.getElementById('trt-symptom-graph-container');
+                const noDataMessage = document.getElementById('trt-no-symptom-data');
+
+                if (!canvas || !container) return;
+
+                // Need at least 2 data points to show a graph
+                if (this.data.trtSymptoms.length < 2) {
+                    container.style.display = 'none';
+                    if (noDataMessage) noDataMessage.style.display = 'block';
+                    return;
+                }
+
+                container.style.display = 'block';
+                if (noDataMessage) noDataMessage.style.display = 'none';
+
+                // Destroy existing chart if it exists
+                if (this.charts && this.charts.trtSymptomsChart) {
+                    this.charts.trtSymptomsChart.destroy();
+                }
+
+                // Sort symptoms by date (oldest first for chart)
+                const sortedSymptoms = [...this.data.trtSymptoms].sort((a, b) =>
+                    new Date(a.timestamp) - new Date(b.timestamp)
+                );
+
+                // Prepare datasets for each symptom type
+                const symptomTypes = [
+                    { key: 'energyLevel', label: 'Energy', color: '#34C759' },      // Green
+                    { key: 'mood', label: 'Mood', color: '#5AC8FA' },               // Cyan
+                    { key: 'libido', label: 'Libido', color: '#FF6B6B' },           // Red
+                    { key: 'sleepQuality', label: 'Sleep', color: '#AF52DE' }       // Purple
+                ];
+
+                const datasets = symptomTypes.map(symptom => ({
+                    label: symptom.label,
+                    data: sortedSymptoms.map(s => ({
+                        x: s.timestamp,
+                        y: s[symptom.key]
+                    })),
+                    borderColor: symptom.color,
+                    backgroundColor: symptom.color,
+                    fill: false,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointHitRadius: 10,
+                    pointBackgroundColor: symptom.color,
+                    pointBorderColor: symptom.color,
+                    pointBorderWidth: 2
+                }));
+
+                // Responsive font sizing
+                const isMobile = window.innerWidth < 768;
+                const fontSize = {
+                    legend: isMobile ? 11 : 12,
+                    tick: isMobile ? 10 : 11,
+                    title: isMobile ? 11 : 12
+                };
+
+                // Calculate date range with padding
+                const firstTimestamp = new Date(sortedSymptoms[0].timestamp).getTime();
+                const lastTimestamp = new Date(sortedSymptoms[sortedSymptoms.length - 1].timestamp).getTime();
+                const dayInMs = 24 * 60 * 60 * 1000;
+                const padding = 2 * dayInMs; // 2 days padding
+
+                // Get canvas context and create chart
+                const ctx = canvas.getContext('2d');
+
+                // Initialize charts object if it doesn't exist
+                if (!this.charts) {
+                    this.charts = {};
+                }
+
+                this.charts.trtSymptomsChart = new Chart(ctx, {
+                    type: 'line',
+                    data: { datasets },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        layout: {
+                            padding: {
+                                top: 10,
+                                left: 10,
+                                right: 10,
+                                bottom: 5
+                            }
+                        },
+                        interaction: {
+                            mode: 'index',
+                            intersect: false
+                        },
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: {
+                                    color: '#ffffff',
+                                    font: { size: fontSize.legend },
+                                    padding: isMobile ? 8 : 12,
+                                    boxWidth: isMobile ? 25 : 30,
+                                    usePointStyle: true
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(42, 42, 42, 0.95)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#ffffff',
+                                borderColor: '#333333',
+                                borderWidth: 1,
+                                padding: isMobile ? 10 : 12,
+                                titleFont: { size: isMobile ? 12 : 13 },
+                                bodyFont: { size: isMobile ? 12 : 13 },
+                                callbacks: {
+                                    title: function(context) {
+                                        const date = new Date(context[0].parsed.x);
+                                        return date.toLocaleDateString();
+                                    },
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y}/10`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day',
+                                    displayFormats: {
+                                        day: isMobile ? 'M/d' : 'MMM d'
+                                    }
+                                },
+                                min: new Date(firstTimestamp - padding).toISOString(),
+                                max: new Date(lastTimestamp + padding).toISOString(),
+                                grid: {
+                                    color: '#333333'
+                                },
+                                ticks: {
+                                    color: '#cccccc',
+                                    font: { size: fontSize.tick },
+                                    maxTicksLimit: isMobile ? 5 : 8,
+                                    maxRotation: isMobile ? 45 : 0,
+                                    minRotation: isMobile ? 45 : 0
+                                }
+                            },
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                min: 0,
+                                max: 10,
+                                grid: {
+                                    color: '#333333'
+                                },
+                                ticks: {
+                                    color: '#cccccc',
+                                    font: { size: fontSize.tick },
+                                    stepSize: 2,
+                                    callback: function(value) {
+                                        return value;
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Score (1-10)',
+                                    color: '#cccccc',
+                                    font: { size: fontSize.title }
+                                }
+                            }
+                        }
+                    }
+                });
             }
 
             updateTrtVialsList() {
@@ -6261,6 +6583,33 @@
                     skipTrtInjectionForm.addEventListener('submit', (e) => {
                         e.preventDefault();
                         this.handleSkipTrtInjection();
+                    });
+                }
+
+                // TRT Symptom tracking - slider value updates
+                const symptomSliders = [
+                    { slider: 'trt-energy', display: 'trt-energy-value' },
+                    { slider: 'trt-mood', display: 'trt-mood-value' },
+                    { slider: 'trt-libido', display: 'trt-libido-value' },
+                    { slider: 'trt-sleep', display: 'trt-sleep-value' }
+                ];
+
+                symptomSliders.forEach(({ slider, display }) => {
+                    const sliderEl = document.getElementById(slider);
+                    const displayEl = document.getElementById(display);
+                    if (sliderEl && displayEl) {
+                        sliderEl.addEventListener('input', (e) => {
+                            displayEl.textContent = e.target.value;
+                        });
+                    }
+                });
+
+                // TRT Symptom save button
+                const saveTrtSymptomBtn = document.getElementById('trt-save-symptom-btn');
+                if (saveTrtSymptomBtn) {
+                    saveTrtSymptomBtn.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        this.handleAddTrtSymptom();
                     });
                 }
 
@@ -7777,6 +8126,51 @@
                     setTimeout(() => {
                         this.closeModal();
                     }, 300);
+                }
+            }
+
+            async handleAddTrtSymptom() {
+                try {
+                    // Get form values
+                    const energyLevel = parseInt(document.getElementById('trt-energy').value);
+                    const mood = parseInt(document.getElementById('trt-mood').value);
+                    const libido = parseInt(document.getElementById('trt-libido').value);
+                    const sleepQuality = parseInt(document.getElementById('trt-sleep').value);
+                    const notes = document.getElementById('trt-symptom-notes').value || '';
+
+                    // Create symptom entry
+                    const symptom = {
+                        timestamp: new Date().toISOString(),
+                        energyLevel: energyLevel,
+                        mood: mood,
+                        libido: libido,
+                        sleepQuality: sleepQuality,
+                        notes: notes
+                    };
+
+                    await this.addTrtSymptom(symptom);
+
+                    // Show success notification
+                    if (window.deleteManager && window.deleteManager.notificationManager) {
+                        window.deleteManager.notificationManager.show('success', 'Symptom check-in saved successfully');
+                    }
+
+                    // Reset form to default values
+                    document.getElementById('trt-energy').value = 5;
+                    document.getElementById('trt-energy-value').textContent = '5';
+                    document.getElementById('trt-mood').value = 5;
+                    document.getElementById('trt-mood-value').textContent = '5';
+                    document.getElementById('trt-libido').value = 5;
+                    document.getElementById('trt-libido-value').textContent = '5';
+                    document.getElementById('trt-sleep').value = 5;
+                    document.getElementById('trt-sleep-value').textContent = '5';
+                    document.getElementById('trt-symptom-notes').value = '';
+
+                } catch (error) {
+                    console.error('Error adding TRT symptom:', error);
+                    if (window.deleteManager && window.deleteManager.notificationManager) {
+                        window.deleteManager.notificationManager.show('error', 'Failed to save symptom check-in');
+                    }
                 }
             }
 
