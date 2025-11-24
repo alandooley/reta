@@ -157,6 +157,13 @@
             background-color: #0056b3;
         }
 
+        .build-timestamp {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-align: center;
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+        }
+
         .date-display {
             font-weight: 600;
             font-size: 16px;
@@ -250,13 +257,24 @@
             text-align: center;
         }
 
-        /* App Switcher */
+        /* App Switcher - Floating above bottom nav */
+        .app-switcher-container {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 99;
+            pointer-events: none;
+        }
+
         .app-switcher {
             display: flex;
             background-color: var(--card-bg);
             border-radius: 8px;
             padding: 3px;
             gap: 3px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            pointer-events: all;
         }
 
         .app-switcher-btn {
@@ -2418,10 +2436,7 @@
         <header id="app-header">
         <div class="header-content">
             <button id="menu-btn" class="menu-btn">☰</button>
-            <div class="app-switcher">
-                <button class="app-switcher-btn active" data-app="reta">Reta</button>
-                <button class="app-switcher-btn" data-app="trt">TRT</button>
-            </div>
+            <div id="build-timestamp" class="build-timestamp"></div>
             <button id="add-shot-btn" class="add-shot-btn">+ Shot</button>
         </div>
     </header>
@@ -3049,6 +3064,14 @@
         </div>
 
     </main>
+
+    <!-- Floating App Switcher -->
+    <div class="app-switcher-container">
+        <div class="app-switcher">
+            <button class="app-switcher-btn active" data-app="reta">Reta</button>
+            <button class="app-switcher-btn" data-app="trt">TRT</button>
+        </div>
+    </div>
 
     <!-- Bottom Navigation -->
     <nav id="bottom-nav" class="bottom-nav">
