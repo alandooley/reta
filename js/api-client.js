@@ -229,6 +229,92 @@ class APIClient {
         const response = await this.request('GET', `/v1/backup?key=${encodeURIComponent(backupKey)}`);
         return response.data;
     }
+
+    // ========================================
+    // TRT INJECTIONS
+    // ========================================
+
+    /**
+     * Get all TRT injections
+     */
+    async getTrtInjections() {
+        const response = await this.request('GET', '/v1/trt/injections');
+        return response.data || [];
+    }
+
+    /**
+     * Create TRT injection
+     */
+    async createTrtInjection(injection) {
+        const response = await this.request('POST', '/v1/trt/injections', injection);
+        return response.data;
+    }
+
+    /**
+     * Update TRT injection (uses POST with existing ID for upsert)
+     */
+    async updateTrtInjection(injectionId, injection) {
+        const response = await this.request('POST', '/v1/trt/injections', {
+            id: injectionId,
+            ...injection
+        });
+        return response.data;
+    }
+
+    /**
+     * Delete TRT injection
+     */
+    async deleteTrtInjection(injectionId) {
+        const response = await this.request('DELETE', `/v1/trt/injections/${injectionId}`);
+        return response.success;
+    }
+
+    // ========================================
+    // TRT VIALS
+    // ========================================
+
+    /**
+     * Get all TRT vials
+     */
+    async getTrtVials() {
+        const response = await this.request('GET', '/v1/trt/vials');
+        return response.data || [];
+    }
+
+    /**
+     * Create TRT vial
+     */
+    async createTrtVial(vial) {
+        const response = await this.request('POST', '/v1/trt/vials', vial);
+        return response.data;
+    }
+
+    /**
+     * Update TRT vial (uses POST with existing ID for upsert)
+     */
+    async updateTrtVial(vialId, vial) {
+        const response = await this.request('POST', '/v1/trt/vials', {
+            id: vialId,
+            ...vial
+        });
+        return response.data;
+    }
+
+    /**
+     * Patch TRT vial (partial update)
+     */
+    async patchTrtVial(vialId, updates) {
+        const response = await this.request('PATCH', `/v1/trt/vials/${vialId}`, updates);
+        return response.data;
+    }
+
+    /**
+     * Delete TRT vial
+     */
+    async deleteTrtVial(vialId) {
+        const response = await this.request('DELETE', `/v1/trt/vials/${vialId}`);
+        return response.success;
+    }
 }
 
 // Export singleton instance

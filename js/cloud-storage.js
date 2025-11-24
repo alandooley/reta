@@ -221,6 +221,158 @@ class CloudStorage {
     }
 
     // ========================================
+    // TRT INJECTIONS
+    // ========================================
+
+    /**
+     * Get all TRT injections (local or cloud)
+     */
+    async getTrtInjections() {
+        if (this.isCloudAvailable()) {
+            try {
+                return await this.apiClient.getTrtInjections();
+            } catch (error) {
+                console.warn('Cloud fetch failed, using local:', error);
+                return await this.localStorage.getTrtInjections();
+            }
+        }
+        return await this.localStorage.getTrtInjections();
+    }
+
+    /**
+     * Save TRT injection (local + cloud)
+     */
+    async saveTrtInjection(injection) {
+        // Save locally first (for offline support)
+        const savedLocal = await this.localStorage.saveTrtInjection(injection);
+
+        // Sync to cloud if authenticated
+        if (this.isCloudAvailable()) {
+            try {
+                const cloudInjection = await this.apiClient.createTrtInjection({
+                    timestamp: injection.timestamp,
+                    volumeMl: injection.volumeMl,
+                    concentrationMgMl: injection.concentrationMgMl,
+                    doseMg: injection.doseMg,
+                    injectionSite: injection.injectionSite,
+                    timeOfDay: injection.timeOfDay || null,
+                    techniqueNotes: injection.techniqueNotes || '',
+                    notes: injection.notes || '',
+                    vialId: injection.vialId || null,
+                    skipped: injection.skipped || false,
+                    plannedVolumeMl: injection.plannedVolumeMl || null,
+                    plannedDoseMg: injection.plannedDoseMg || null,
+                });
+
+                // Update local with cloud ID
+                savedLocal.id = cloudInjection.id;
+                savedLocal.cloudSynced = true;
+                await this.localStorage.saveTrtInjection(savedLocal);
+
+                return cloudInjection;
+            } catch (error) {
+                console.warn('Cloud save failed, saved locally:', error);
+                savedLocal.cloudSynced = false;
+                return savedLocal;
+            }
+        }
+
+        savedLocal.cloudSynced = false;
+        return savedLocal;
+    }
+
+    /**
+     * Delete TRT injection (local + cloud)
+     */
+    async deleteTrtInjection(injectionId) {
+        // Delete from cloud first
+        if (this.isCloudAvailable()) {
+            try {
+                await this.apiClient.deleteTrtInjection(injectionId);
+            } catch (error) {
+                console.warn('Cloud delete failed:', error);
+            }
+        }
+
+        // Always delete locally
+        await this.localStorage.deleteTrtInjection(injectionId);
+    }
+
+    // ========================================
+    // TRT VIALS
+    // ========================================
+
+    /**
+     * Get all TRT vials (local or cloud)
+     */
+    async getTrtVials() {
+        if (this.isCloudAvailable()) {
+            try {
+                return await this.apiClient.getTrtVials();
+            } catch (error) {
+                console.warn('Cloud fetch failed, using local:', error);
+                return await this.localStorage.getTrtVials();
+            }
+        }
+        return await this.localStorage.getTrtVials();
+    }
+
+    /**
+     * Save TRT vial (local + cloud)
+     */
+    async saveTrtVial(vial) {
+        // Save locally first (for offline support)
+        const savedLocal = await this.localStorage.saveTrtVial(vial);
+
+        // Sync to cloud if authenticated
+        if (this.isCloudAvailable()) {
+            try {
+                const cloudVial = await this.apiClient.createTrtVial({
+                    concentrationMgMl: vial.concentrationMgMl,
+                    volumeMl: vial.volumeMl,
+                    remainingMl: vial.remainingMl,
+                    lotNumber: vial.lotNumber || '',
+                    expiryDate: vial.expiryDate,
+                    openedDate: vial.openedDate || null,
+                    status: vial.status,
+                    notes: vial.notes || '',
+                });
+
+                // Update local with cloud ID
+                savedLocal.id = cloudVial.id;
+                savedLocal.cloudSynced = true;
+                await this.localStorage.saveTrtVial(savedLocal);
+
+                return cloudVial;
+            } catch (error) {
+                console.warn('Cloud save failed, saved locally:', error);
+                savedLocal.cloudSynced = false;
+                return savedLocal;
+            }
+        }
+
+        savedLocal.cloudSynced = false;
+        return savedLocal;
+    }
+
+    /**
+     * Delete TRT vial (local + cloud)
+     */
+    async deleteTrtVial(vialId) {
+        // Delete from cloud first
+        if (this.isCloudAvailable()) {
+            try {
+                await this.apiClient.deleteTrtVial(vialId);
+            } catch (error) {
+                console.warn('Cloud delete failed:', error);
+            }
+        }
+
+        // Always delete locally
+        await this.localStorage.deleteTrtVial(vialId);
+    }
+
+    // ========================================
     // SYNC OPERATIONS
     // ========================================
 
