@@ -274,6 +274,56 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       handler: 'index.handler',
     });
 
+    // ===== TRT Lambda Functions =====
+    const getTrtInjectionsFn = new lambda.Function(this, 'GetTrtInjectionsFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-get-trt-injections',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/injections')),
+      handler: 'get.handler',
+    });
+
+    const createTrtInjectionFn = new lambda.Function(this, 'CreateTrtInjectionFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-create-trt-injection',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/injections')),
+      handler: 'post.handler',
+    });
+
+    const deleteTrtInjectionFn = new lambda.Function(this, 'DeleteTrtInjectionFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-delete-trt-injection',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/injections')),
+      handler: 'delete.handler',
+    });
+
+    const getTrtVialsFn = new lambda.Function(this, 'GetTrtVialsFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-get-trt-vials',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/vials')),
+      handler: 'get.handler',
+    });
+
+    const createTrtVialFn = new lambda.Function(this, 'CreateTrtVialFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-create-trt-vial',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/vials')),
+      handler: 'post.handler',
+    });
+
+    const deleteTrtVialFn = new lambda.Function(this, 'DeleteTrtVialFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-delete-trt-vial',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/vials')),
+      handler: 'delete.handler',
+    });
+
+    const updateTrtVialFn = new lambda.Function(this, 'UpdateTrtVialFunction', {
+      ...commonLambdaProps,
+      functionName: 'reta-update-trt-vial',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/trt/vials')),
+      handler: 'patch.handler',
+    });
+
     // HTTP API Gateway (Budget: 60% cheaper than REST API)
     const httpApi = new HttpApi(this, 'RetatrutideHttpApi', {
       apiName: 'retatrutide-tracker-api',
@@ -418,6 +468,58 @@ export class RetaCloudInfrastructureStack extends cdk.Stack {
       path: `${v1}/settings`,
       methods: [HttpMethod.POST],
       integration: new HttpLambdaIntegration('UpdateSettingsIntegration', settingsFn),
+      authorizer,
+    });
+
+    // ===== TRT API Routes =====
+    // TRT Injections
+    httpApi.addRoutes({
+      path: `${v1}/trt/injections`,
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetTrtInjectionsIntegration', getTrtInjectionsFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/injections`,
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('CreateTrtInjectionIntegration', createTrtInjectionFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/injections/{injectionId}`,
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration('DeleteTrtInjectionIntegration', deleteTrtInjectionFn),
+      authorizer,
+    });
+
+    // TRT Vials
+    httpApi.addRoutes({
+      path: `${v1}/trt/vials`,
+      methods: [HttpMethod.GET],
+      integration: new HttpLambdaIntegration('GetTrtVialsIntegration', getTrtVialsFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/vials`,
+      methods: [HttpMethod.POST],
+      integration: new HttpLambdaIntegration('CreateTrtVialIntegration', createTrtVialFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/vials/{vialId}`,
+      methods: [HttpMethod.DELETE],
+      integration: new HttpLambdaIntegration('DeleteTrtVialIntegration', deleteTrtVialFn),
+      authorizer,
+    });
+
+    httpApi.addRoutes({
+      path: `${v1}/trt/vials/{vialId}`,
+      methods: [HttpMethod.PATCH],
+      integration: new HttpLambdaIntegration('UpdateTrtVialIntegration', updateTrtVialFn),
       authorizer,
     });
 
