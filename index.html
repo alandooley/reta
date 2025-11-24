@@ -3318,6 +3318,149 @@
                 </div>
             </form>
         </div>
+
+        <!-- TRT Add Injection Modal -->
+        <div id="add-trt-injection-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 id="add-trt-injection-modal-title" class="modal-title">Add TRT Injection</h3>
+                <button class="modal-close" data-modal="add-trt-injection-modal">&times;</button>
+            </div>
+            <form id="add-trt-injection-form">
+                <div class="form-group">
+                    <label for="trt-injection-date">Date & Time</label>
+                    <input type="datetime-local" id="trt-injection-date" required>
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-vial">Vial</label>
+                    <select id="trt-injection-vial" required>
+                        <option value="">Select vial</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-volume">Volume (ml)</label>
+                    <input type="number" id="trt-injection-volume" step="0.05" min="0.1" max="2" required placeholder="0.5">
+                </div>
+                <div id="trt-dose-display" style="background: var(--secondary-bg); padding: 12px; border-radius: var(--border-radius-sm); margin-bottom: var(--spacing-md); display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <span style="color: var(--text-secondary);">Concentration:</span>
+                        <span id="trt-concentration-display" style="font-weight: 600;">--</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                        <span style="color: var(--text-secondary);">Calculated Dose:</span>
+                        <span id="trt-calculated-dose" style="font-weight: 600; color: var(--primary-color); font-size: 18px;">--</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-site">Injection Site</label>
+                    <select id="trt-injection-site" required>
+                        <option value="">Select site</option>
+                        <option value="left_front_thigh">Left Front Thigh</option>
+                        <option value="right_front_thigh">Right Front Thigh</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-time-of-day">Time of Day</label>
+                    <select id="trt-injection-time-of-day">
+                        <option value="">Select time (optional)</option>
+                        <option value="morning">Morning</option>
+                        <option value="afternoon">Afternoon</option>
+                        <option value="evening">Evening</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-technique">Technique Notes - Optional</label>
+                    <input type="text" id="trt-injection-technique" placeholder="e.g., 25g 1in IM">
+                </div>
+                <div class="form-group">
+                    <label for="trt-injection-notes">Notes - Optional</label>
+                    <textarea id="trt-injection-notes" placeholder="How you felt, side effects, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="trt-injection-submit-btn" class="btn-primary">Add Injection</button>
+                    <button type="button" class="btn-secondary" data-modal="add-trt-injection-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TRT Add Vial Modal -->
+        <div id="add-trt-vial-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 id="add-trt-vial-modal-title" class="modal-title">Add TRT Vial</h3>
+                <button class="modal-close" data-modal="add-trt-vial-modal">&times;</button>
+            </div>
+            <form id="add-trt-vial-form">
+                <div class="form-group">
+                    <label for="trt-vial-concentration">Testosterone Concentration (mg/ml)</label>
+                    <input type="number" id="trt-vial-concentration" step="1" min="1" required placeholder="200" value="200">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Common: 200mg/ml or 250mg/ml
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="trt-vial-volume">Total Volume (ml)</label>
+                    <input type="number" id="trt-vial-volume" step="0.1" min="0.1" required placeholder="10" value="10">
+                </div>
+                <div class="form-group">
+                    <label for="trt-vial-lot">Lot Number - Optional</label>
+                    <input type="text" id="trt-vial-lot" placeholder="LOT123456">
+                </div>
+                <div class="form-group">
+                    <label for="trt-vial-expiry">Expiry Date</label>
+                    <input type="date" id="trt-vial-expiry" required>
+                </div>
+                <div class="form-group">
+                    <label for="trt-vial-status">Status</label>
+                    <select id="trt-vial-status" required>
+                        <option value="dry_stock">Dry Stock (Unopened)</option>
+                        <option value="active">Active (In Use)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="trt-vial-opened-group" style="display: none;">
+                    <label for="trt-vial-opened">Opened Date</label>
+                    <input type="date" id="trt-vial-opened">
+                </div>
+                <div class="form-group">
+                    <label for="trt-vial-notes">Notes - Optional</label>
+                    <textarea id="trt-vial-notes" placeholder="Storage location, batch info, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" id="trt-vial-submit-btn" class="btn-primary">Add Vial</button>
+                    <button type="button" class="btn-secondary" data-modal="add-trt-vial-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- TRT Skip Week Modal -->
+        <div id="skip-trt-injection-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 class="modal-title">Skip TRT Injection</h3>
+                <button class="modal-close" data-modal="skip-trt-injection-modal">&times;</button>
+            </div>
+            <form id="skip-trt-injection-form">
+                <div class="form-group">
+                    <label for="skip-trt-injection-date">Date & Time</label>
+                    <input type="datetime-local" id="skip-trt-injection-date" required>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        When was this injection scheduled?
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="skip-trt-planned-dose">Planned Dose (mg)</label>
+                    <input type="number" id="skip-trt-planned-dose" step="1" min="0" required readonly>
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        This is the dose you would have taken (for reference)
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="skip-trt-reason">Reason - Optional</label>
+                    <textarea id="skip-trt-reason" placeholder="e.g., Traveling, labs needed, etc."></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">Confirm Skip</button>
+                    <button type="button" class="btn-secondary" data-modal="skip-trt-injection-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -5597,19 +5740,32 @@
                 const overlay = document.getElementById('modal-overlay');
                 const modals = document.querySelectorAll('.modal');
 
+                // RETA Modal Handlers
                 // Add Shot Button handler
                 document.getElementById('add-shot-btn').addEventListener('click', () => {
-                    this.openModal('add-shot-modal');
+                    if (this.currentApp === 'reta') {
+                        this.openModal('add-shot-modal');
+                    } else {
+                        this.openModal('add-trt-injection-modal');
+                    }
                 });
 
                 // Skip Week Button handler
                 document.getElementById('skip-week-btn').addEventListener('click', () => {
-                    this.showSkipWeekModal();
+                    if (this.currentApp === 'reta') {
+                        this.showSkipWeekModal();
+                    } else {
+                        this.showSkipTrtInjectionModal();
+                    }
                 });
 
                 // Add Vial Button handler
                 document.getElementById('add-vial-btn').addEventListener('click', () => {
-                    this.openModal('add-vial-modal');
+                    if (this.currentApp === 'reta') {
+                        this.openModal('add-vial-modal');
+                    } else {
+                        this.openModal('add-trt-vial-modal');
+                    }
                 });
 
                 // Activate Vial Button handler
@@ -5617,7 +5773,27 @@
                     this.openModal('activate-vial-modal');
                 });
 
-                // Note: Add shot button is now in the Results header (no need to dynamically create it)
+                // TRT Modal Handlers (if TRT-specific buttons exist)
+                const addTrtInjectionBtn = document.getElementById('add-trt-injection-btn');
+                if (addTrtInjectionBtn) {
+                    addTrtInjectionBtn.addEventListener('click', () => {
+                        this.openModal('add-trt-injection-modal');
+                    });
+                }
+
+                const addTrtVialBtn = document.getElementById('add-trt-vial-btn');
+                if (addTrtVialBtn) {
+                    addTrtVialBtn.addEventListener('click', () => {
+                        this.openModal('add-trt-vial-modal');
+                    });
+                }
+
+                const skipTrtWeekBtn = document.getElementById('skip-trt-week-btn');
+                if (skipTrtWeekBtn) {
+                    skipTrtWeekBtn.addEventListener('click', () => {
+                        this.showSkipTrtInjectionModal();
+                    });
+                }
 
                 // Close modal handlers
                 document.querySelectorAll('.modal-close, [data-modal]').forEach(btn => {
@@ -5637,6 +5813,7 @@
             }
 
             setupFormHandlers() {
+                // RETA Form Handlers
                 // Add Shot Form
                 document.getElementById('add-shot-form').addEventListener('submit', (e) => {
                     e.preventDefault();
@@ -5714,6 +5891,77 @@
                     e.preventDefault();
                     this.handleAddWeight();
                 });
+
+                // TRT Form Handlers
+                // Add TRT Injection Form
+                const addTrtInjectionForm = document.getElementById('add-trt-injection-form');
+                if (addTrtInjectionForm) {
+                    addTrtInjectionForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleAddTrtInjection();
+                    });
+                }
+
+                // Live dose calculation for TRT injection
+                const trtVolumeInput = document.getElementById('trt-injection-volume');
+                const trtVialSelect = document.getElementById('trt-injection-vial');
+                if (trtVolumeInput && trtVialSelect) {
+                    const updateTrtDoseDisplay = () => {
+                        const volumeMl = parseFloat(trtVolumeInput.value);
+                        const vialId = trtVialSelect.value;
+                        const doseDisplay = document.getElementById('trt-dose-display');
+                        const calculatedDose = document.getElementById('trt-calculated-dose');
+
+                        if (!volumeMl || !vialId || volumeMl <= 0) {
+                            doseDisplay.style.display = 'none';
+                            return;
+                        }
+
+                        const vial = this.findTrtVialById(vialId);
+                        if (!vial) {
+                            doseDisplay.style.display = 'none';
+                            return;
+                        }
+
+                        const doseMg = volumeMl * vial.concentration_mg_ml;
+                        calculatedDose.textContent = `${doseMg.toFixed(1)}mg`;
+                        doseDisplay.style.display = 'block';
+                    };
+
+                    trtVolumeInput.addEventListener('input', updateTrtDoseDisplay);
+                    trtVialSelect.addEventListener('change', updateTrtDoseDisplay);
+                }
+
+                // Add TRT Vial Form
+                const addTrtVialForm = document.getElementById('add-trt-vial-form');
+                if (addTrtVialForm) {
+                    addTrtVialForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleAddTrtVial();
+                    });
+                }
+
+                // TRT Vial status change handler (show/hide opened date)
+                const trtVialStatus = document.getElementById('trt-vial-status');
+                const trtOpenedDateGroup = document.getElementById('trt-opened-date-group');
+                if (trtVialStatus && trtOpenedDateGroup) {
+                    trtVialStatus.addEventListener('change', (e) => {
+                        if (e.target.value === 'active') {
+                            trtOpenedDateGroup.style.display = 'block';
+                        } else {
+                            trtOpenedDateGroup.style.display = 'none';
+                        }
+                    });
+                }
+
+                // Skip TRT Injection Form
+                const skipTrtInjectionForm = document.getElementById('skip-trt-injection-form');
+                if (skipTrtInjectionForm) {
+                    skipTrtInjectionForm.addEventListener('submit', (e) => {
+                        e.preventDefault();
+                        this.handleSkipTrtInjection();
+                    });
+                }
 
                 // Settings form handlers
                 document.getElementById('injection-frequency').addEventListener('change', (e) => {
@@ -6477,6 +6725,22 @@
                     this.populateActivateVialDropdown();
                 } else if (modalId === 'add-weight-modal') {
                     document.getElementById('weight-date').value = localDateTime;
+                } else if (modalId === 'add-trt-injection-modal') {
+                    // Set default date/time
+                    document.getElementById('trt-injection-date').value = localDateTime;
+                    // Populate TRT vial dropdown
+                    this.populateTrtVialSelect();
+                } else if (modalId === 'add-trt-vial-modal') {
+                    // Set default expiry date (1 year from now)
+                    const oneYearFromNow = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+                    document.getElementById('trt-vial-expiry').value = oneYearFromNow.toISOString().split('T')[0];
+                    // Hide opened date group by default
+                    const openedDateGroup = document.getElementById('trt-opened-date-group');
+                    if (openedDateGroup) {
+                        openedDateGroup.style.display = 'none';
+                    }
+                } else if (modalId === 'skip-trt-injection-modal') {
+                    document.getElementById('skip-trt-injection-date').value = now.toISOString().split('T')[0];
                 }
 
                 overlay.style.display = 'flex';
@@ -6495,6 +6759,34 @@
                     option.textContent = `${vial.total_mg}mg from ${vial.supplier || 'Unknown'} (${new Date(vial.order_date).toLocaleDateString()})`;
                     select.appendChild(option);
                 });
+            }
+
+            populateTrtVialSelect() {
+                const select = document.getElementById('trt-injection-vial');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">Select a vial...</option>';
+
+                // Filter active TRT vials only
+                const activeVials = this.data.trtVials.filter(v => v.status === 'active' && v.remaining_ml > 0);
+
+                activeVials.forEach(vial => {
+                    const option = document.createElement('option');
+                    option.value = vial.id;
+                    option.textContent = `${vial.concentration_mg_ml}mg/ml - ${vial.remaining_ml.toFixed(2)}ml remaining`;
+                    if (vial.lot_number) {
+                        option.textContent += ` (Lot: ${vial.lot_number})`;
+                    }
+                    select.appendChild(option);
+                });
+
+                if (activeVials.length === 0) {
+                    const option = document.createElement('option');
+                    option.value = '';
+                    option.textContent = 'No active vials available - add one first';
+                    option.disabled = true;
+                    select.appendChild(option);
+                }
             }
 
             closeModal() {
@@ -7062,6 +7354,198 @@
                     }, 300);
                 }
             }
+
+            // ====================================
+            // TRT FORM HANDLERS
+            // ====================================
+
+            async handleAddTrtInjection() {
+                try {
+                    const form = document.getElementById('add-trt-injection-form');
+
+                    // Validate form before processing
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const volumeMl = parseFloat(document.getElementById('trt-injection-volume').value);
+                    const vialId = document.getElementById('trt-injection-vial').value;
+
+                    if (isNaN(volumeMl) || volumeMl <= 0) {
+                        alert('Please enter a valid volume');
+                        return;
+                    }
+
+                    if (!vialId) {
+                        alert('Please select a vial');
+                        return;
+                    }
+
+                    const vial = this.findTrtVialById(vialId);
+                    if (!vial) {
+                        alert('Vial not found');
+                        return;
+                    }
+
+                    const injection = {
+                        timestamp: new Date(document.getElementById('trt-injection-date').value).toISOString(),
+                        volume_ml: volumeMl,
+                        concentration_mg_ml: vial.concentration_mg_ml,
+                        injection_site: document.getElementById('trt-injection-site').value,
+                        time_of_day: document.getElementById('trt-injection-time-of-day').value || null,
+                        technique_notes: document.getElementById('trt-injection-technique-notes').value || '',
+                        notes: document.getElementById('trt-injection-notes').value || '',
+                        vial_id: vialId,
+                        skipped: false
+                    };
+
+                    await this.addTrtInjection(injection);
+
+                    // Reset form after successful submission
+                    form.reset();
+
+                } catch (error) {
+                    console.error('Error adding TRT injection:', error);
+                    alert('TRT injection saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
+            }
+
+            async handleAddTrtVial() {
+                try {
+                    const form = document.getElementById('add-trt-vial-form');
+
+                    // Validate form before processing
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const concentrationMgMl = parseFloat(document.getElementById('trt-vial-concentration').value);
+                    const volumeMl = parseFloat(document.getElementById('trt-vial-volume').value);
+                    const expiryDate = document.getElementById('trt-vial-expiry').value;
+                    const status = document.getElementById('trt-vial-status').value;
+
+                    if (isNaN(concentrationMgMl) || concentrationMgMl <= 0) {
+                        alert('Please enter a valid concentration');
+                        return;
+                    }
+
+                    if (isNaN(volumeMl) || volumeMl <= 0) {
+                        alert('Please enter a valid volume');
+                        return;
+                    }
+
+                    if (!expiryDate) {
+                        alert('Please enter an expiry date');
+                        return;
+                    }
+
+                    const vial = {
+                        concentration_mg_ml: concentrationMgMl,
+                        volume_ml: volumeMl,
+                        lot_number: document.getElementById('trt-vial-lot').value || '',
+                        expiry_date: new Date(expiryDate).toISOString(),
+                        status: status,
+                        notes: document.getElementById('trt-vial-notes').value || ''
+                    };
+
+                    // Add opened date if status is active
+                    if (status === 'active') {
+                        const openedDate = document.getElementById('trt-vial-opened-date').value;
+                        if (openedDate) {
+                            vial.opened_date = new Date(openedDate).toISOString();
+                        }
+                    }
+
+                    await this.addTrtVial(vial);
+
+                    // Reset form after successful submission
+                    form.reset();
+
+                } catch (error) {
+                    console.error('Error adding TRT vial:', error);
+                    alert('TRT vial saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
+            }
+
+            async handleSkipTrtInjection() {
+                try {
+                    const form = document.getElementById('skip-trt-injection-form');
+
+                    // Validate form before processing
+                    if (!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const scheduledDate = document.getElementById('skip-trt-injection-date').value;
+                    const reason = document.getElementById('skip-trt-injection-reason').value;
+
+                    // Get user's typical dose to show what was skipped
+                    const weeklyDose = this.calculateTrtWeeklyDose();
+
+                    const injection = {
+                        timestamp: new Date(scheduledDate).toISOString(),
+                        volume_ml: 0,
+                        concentration_mg_ml: 0,
+                        injection_site: null,
+                        vial_id: null,
+                        notes: reason || 'Skipped injection',
+                        skipped: true,
+                        planned_dose_mg: weeklyDose // Store what was planned
+                    };
+
+                    await this.addTrtInjection(injection);
+
+                    // Reset form after successful submission
+                    form.reset();
+
+                } catch (error) {
+                    console.error('Error recording skipped TRT injection:', error);
+                    alert('Skip recorded locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
+            }
+
+            showSkipTrtInjectionModal() {
+                // Populate planned dose
+                const weeklyDose = this.calculateTrtWeeklyDose();
+                const plannedDoseEl = document.getElementById('skip-trt-planned-dose');
+                if (plannedDoseEl) {
+                    plannedDoseEl.value = weeklyDose.toFixed(1);
+                }
+
+                // Set default date to today
+                const dateInput = document.getElementById('skip-trt-injection-date');
+                if (dateInput && !dateInput.value) {
+                    dateInput.value = new Date().toISOString().split('T')[0];
+                }
+
+                this.openModal('skip-trt-injection-modal');
+            }
+
+            findTrtVialById(vialId) {
+                return this.data.trtVials.find(v => v.id === vialId);
+            }
+
+            // ====================================
+            // END TRT FORM HANDLERS
+            // ====================================
 
             createShotListItem(injection) {
                 const div = document.createElement('div');
