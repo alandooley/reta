@@ -5391,11 +5391,18 @@
             // ====================================
 
             updateUI() {
-                this.updateSummaryTab();
-                this.updateShotsTab();
-                this.updateResultsTab();
-                this.updateInventoryTab();
-                this.updateSettingsTab();
+                if (this.currentApp === 'reta') {
+                    this.updateSummaryTab();
+                    this.updateShotsTab();
+                    this.updateResultsTab();
+                    this.updateInventoryTab();
+                    this.updateSettingsTab();
+                } else if (this.currentApp === 'trt') {
+                    this.updateTrtDashboard();
+                    this.updateTrtInjectionsList();
+                    this.updateTrtVialsList();
+                    this.updateTrtSupplyForecast();
+                }
             }
 
             getMostRecentInjection() {
@@ -5573,6 +5580,255 @@
 
                 return Math.max(0, diffDays);
             }
+
+            // ====================================
+            // TRT UI UPDATE FUNCTIONS
+            // ====================================
+
+            updateTrtDashboard() {
+                // Update dashboard summary cards
+                const totalInjections = this.data.trtInjections.filter(inj => !inj.skipped).length;
+                const lastInjection = this.data.trtInjections
+                    .filter(inj => !inj.skipped)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                // Calculate next injection date
+                const nextInjectionDate = this.getTrtNextInjectionDate();
+
+                // Get supply forecast
+                const supplyForecast = this.calculateTrtSupplyForecast();
+
+                // Update DOM elements (will be added in dashboard HTML)
+                const totalInjectionsEl = document.getElementById('trt-total-injections');
+                if (totalInjectionsEl) {
+                    totalInjectionsEl.textContent = totalInjections;
+                }
+
+                const lastDoseEl = document.getElementById('trt-last-dose');
+                if (lastDoseEl && lastInjection) {
+                    lastDoseEl.textContent = `${lastInjection.dose_mg.toFixed(1)} mg`;
+                }
+
+                const nextInjectionEl = document.getElementById('trt-next-injection');
+                if (nextInjectionEl) {
+                    if (nextInjectionDate) {
+                        const daysUntil = Math.ceil((new Date(nextInjectionDate) - new Date()) / (1000 * 60 * 60 * 24));
+                        nextInjectionEl.textContent = daysUntil > 0 ? `${daysUntil} days` : 'Today';
+                    } else {
+                        nextInjectionEl.textContent = 'Not scheduled';
+                    }
+                }
+
+                const supplyRemainingEl = document.getElementById('trt-supply-remaining');
+                if (supplyRemainingEl) {
+                    supplyRemainingEl.textContent = `${supplyForecast.calendarWeeksRemaining} weeks`;
+                }
+            }
+
+            updateTrtInjectionsList() {
+                const injectionsList = document.getElementById('trt-injections-list');
+                if (!injectionsList) return;
+
+                injectionsList.innerHTML = '';
+
+                // Sort injections by date (newest first)
+                const sortedInjections = [...this.data.trtInjections].sort((a, b) =>
+                    new Date(b.timestamp) - new Date(a.timestamp)
+                );
+
+                if (sortedInjections.length === 0) {
+                    injectionsList.innerHTML = '<div class="empty-state">No TRT injections recorded yet. Add your first injection to get started!</div>';
+                    return;
+                }
+
+                sortedInjections.forEach(injection => {
+                    const injectionItem = this.createTrtInjectionListItem(injection);
+                    injectionsList.appendChild(injectionItem);
+                });
+            }
+
+            createTrtInjectionListItem(injection) {
+                const div = document.createElement('div');
+                div.className = injection.skipped ? 'shot-item skipped' : 'shot-item';
+                div.setAttribute('data-item-id', injection.id);
+                div.setAttribute('data-timestamp', injection.timestamp);
+
+                if (injection.skipped) {
+                    // Skipped injection display
+                    div.innerHTML = `
+                        <div class="shot-content">
+                            <div class="shot-header">
+                                <div class="shot-dose">
+                                    ${injection.planned_dose_mg ? injection.planned_dose_mg.toFixed(1) : '0'} mg
+                                    <span class="skipped-badge">SKIPPED</span>
+                                </div>
+                                <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
+                            </div>
+                            <div class="shot-details">
+                                <div>Reason: ${injection.notes || 'Not specified'}</div>
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="delete-btn" aria-label="Delete skipped entry" title="Delete this skipped entry">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="delete-action">Delete</div>
+                    `;
+                } else {
+                    // Normal injection display
+                    const timeOfDay = injection.time_of_day ? ` (${injection.time_of_day})` : '';
+                    div.innerHTML = `
+                        <div class="shot-content">
+                            <div class="shot-header">
+                                <div class="shot-dose">${injection.dose_mg.toFixed(1)} mg (${injection.volume_ml.toFixed(2)}ml)</div>
+                                <div class="shot-date">${this.formatDate(injection.timestamp)}${timeOfDay}</div>
+                            </div>
+                            <div class="shot-details">
+                                <div>Site: ${this.formatTrtInjectionSite(injection.injection_site)}</div>
+                                ${injection.technique_notes ? `<div>Technique: ${injection.technique_notes}</div>` : ''}
+                                ${injection.notes ? `<div>Notes: ${injection.notes}</div>` : ''}
+                            </div>
+                        </div>
+                        <div class="item-actions">
+                            <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="delete-action">Delete</div>
+                    `;
+                }
+
+                // Add delete handler
+                const deleteBtn = div.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', async () => {
+                    if (confirm('Delete this injection?')) {
+                        await this.deleteTrtInjection(injection.id);
+                    }
+                });
+
+                return div;
+            }
+
+            formatTrtInjectionSite(site) {
+                if (!site) return 'Not specified';
+                const siteMap = {
+                    'left_front_thigh': 'Left Front Thigh',
+                    'right_front_thigh': 'Right Front Thigh'
+                };
+                return siteMap[site] || site;
+            }
+
+            updateTrtVialsList() {
+                const vialsList = document.getElementById('trt-vials-list');
+                if (!vialsList) return;
+
+                vialsList.innerHTML = '';
+
+                // Sort vials: Active first, then dry stock, then expired
+                const sortedVials = [...this.data.trtVials].sort((a, b) => {
+                    const priorityMap = { 'active': 1, 'dry_stock': 2, 'empty': 3, 'expired': 4 };
+                    return priorityMap[a.status] - priorityMap[b.status];
+                });
+
+                if (sortedVials.length === 0) {
+                    vialsList.innerHTML = '<div class="empty-state">No TRT vials in inventory. Add a vial to track your supply!</div>';
+                    return;
+                }
+
+                sortedVials.forEach(vial => {
+                    const vialItem = this.createTrtVialListItem(vial);
+                    vialsList.appendChild(vialItem);
+                });
+            }
+
+            createTrtVialListItem(vial) {
+                const div = document.createElement('div');
+                div.className = `vial-item status-${vial.status}`;
+                div.setAttribute('data-item-id', vial.id);
+
+                const statusBadges = {
+                    'active': '<span class="status-badge active">Active</span>',
+                    'dry_stock': '<span class="status-badge dry-stock">Dry Stock</span>',
+                    'empty': '<span class="status-badge empty">Empty</span>',
+                    'expired': '<span class="status-badge expired">Expired</span>'
+                };
+
+                div.innerHTML = `
+                    <div class="vial-content">
+                        <div class="vial-header">
+                            <div class="vial-title">
+                                ${vial.concentration_mg_ml}mg/ml - ${vial.volume_ml}ml
+                                ${statusBadges[vial.status] || ''}
+                            </div>
+                            ${vial.lot_number ? `<div class="vial-lot">Lot: ${vial.lot_number}</div>` : ''}
+                        </div>
+                        <div class="vial-details">
+                            ${vial.status === 'active' ? `<div>Remaining: ${vial.remaining_ml.toFixed(2)}ml</div>` : ''}
+                            ${vial.status === 'active' && vial.opened_date ? `<div>Opened: ${this.formatDate(vial.opened_date)}</div>` : ''}
+                            <div>Expires: ${this.formatDate(vial.expiry_date)}</div>
+                            ${vial.notes ? `<div>Notes: ${vial.notes}</div>` : ''}
+                        </div>
+                    </div>
+                    <div class="item-actions">
+                        <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                <path d="M10 11v6M14 11v6"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="delete-action">Delete</div>
+                `;
+
+                // Add delete handler
+                const deleteBtn = div.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', async () => {
+                    if (confirm('Delete this vial?')) {
+                        await this.deleteTrtVial(vial.id);
+                    }
+                });
+
+                return div;
+            }
+
+            updateTrtSupplyForecast() {
+                const forecastEl = document.getElementById('trt-supply-forecast');
+                if (!forecastEl) return;
+
+                const forecast = this.calculateTrtSupplyForecast();
+
+                forecastEl.innerHTML = `
+                    <div class="forecast-summary">
+                        <div class="forecast-item">
+                            <div class="forecast-label">Total Supply</div>
+                            <div class="forecast-value">${forecast.totalSupplyMg.toFixed(1)} mg</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-label">Active Weeks</div>
+                            <div class="forecast-value">${forecast.activeWeeksRemaining}</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-label">Calendar Weeks</div>
+                            <div class="forecast-value">${forecast.calendarWeeksRemaining}</div>
+                        </div>
+                        <div class="forecast-item">
+                            <div class="forecast-label">Runs Out</div>
+                            <div class="forecast-value">${forecast.runoutDate ? this.formatDate(forecast.runoutDate) : 'Unknown'}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // ====================================
+            // END TRT UI UPDATE FUNCTIONS
+            // ====================================
 
             // ====================================
             // EVENT LISTENERS
