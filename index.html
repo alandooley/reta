@@ -3387,9 +3387,18 @@
                         <option value="">Select vial</option>
                     </select>
                 </div>
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; padding: 12px; background: var(--secondary-bg); border-radius: var(--border-radius-sm); margin-bottom: var(--spacing-md);">
+                    <input type="checkbox" id="trt-finish-vial-checkbox" style="width: auto; margin: 0;">
+                    <label for="trt-finish-vial-checkbox" style="margin: 0; cursor: pointer; user-select: none;">
+                        Finish this vial (use all remaining volume)
+                    </label>
+                </div>
                 <div class="form-group">
                     <label for="trt-injection-volume">Volume (ml)</label>
                     <input type="number" id="trt-injection-volume" step="0.05" min="0.1" max="2" required placeholder="0.5">
+                    <p id="trt-remaining-volume-hint" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; display: none;">
+                        Remaining in vial: <span id="trt-vial-remaining-display">--</span> ml
+                    </p>
                 </div>
                 <div id="trt-dose-display" style="background: var(--secondary-bg); padding: 12px; border-radius: var(--border-radius-sm); margin-bottom: var(--spacing-md); display: none;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -6574,20 +6583,43 @@
                 // Live dose calculation for TRT injection
                 const trtVolumeInput = document.getElementById('trt-injection-volume');
                 const trtVialSelect = document.getElementById('trt-injection-vial');
+                const trtFinishVialCheckbox = document.getElementById('trt-finish-vial-checkbox');
+                const trtRemainingVolumeHint = document.getElementById('trt-remaining-volume-hint');
+                const trtVialRemainingDisplay = document.getElementById('trt-vial-remaining-display');
+
                 if (trtVolumeInput && trtVialSelect) {
                     const updateTrtDoseDisplay = () => {
                         const volumeMl = parseFloat(trtVolumeInput.value);
                         const vialId = trtVialSelect.value;
                         const doseDisplay = document.getElementById('trt-dose-display');
                         const calculatedDose = document.getElementById('trt-calculated-dose');
+                        const concentrationDisplay = document.getElementById('trt-concentration-display');
 
-                        if (!volumeMl || !vialId || volumeMl <= 0) {
+                        if (!vialId) {
                             doseDisplay.style.display = 'none';
+                            if (trtRemainingVolumeHint) trtRemainingVolumeHint.style.display = 'none';
                             return;
                         }
 
                         const vial = this.findTrtVialById(vialId);
                         if (!vial) {
+                            doseDisplay.style.display = 'none';
+                            if (trtRemainingVolumeHint) trtRemainingVolumeHint.style.display = 'none';
+                            return;
+                        }
+
+                        // Show remaining volume hint
+                        if (trtRemainingVolumeHint && trtVialRemainingDisplay) {
+                            trtVialRemainingDisplay.textContent = (vial.remaining_ml || 0).toFixed(2);
+                            trtRemainingVolumeHint.style.display = 'block';
+                        }
+
+                        // Show concentration
+                        if (concentrationDisplay) {
+                            concentrationDisplay.textContent = `${vial.concentration_mg_ml}mg/ml`;
+                        }
+
+                        if (!volumeMl || volumeMl <= 0) {
                             doseDisplay.style.display = 'none';
                             return;
                         }
@@ -6599,6 +6631,49 @@
 
                     trtVolumeInput.addEventListener('input', updateTrtDoseDisplay);
                     trtVialSelect.addEventListener('change', updateTrtDoseDisplay);
+
+                    // Handle "Finish Vial" checkbox
+                    if (trtFinishVialCheckbox) {
+                        trtFinishVialCheckbox.addEventListener('change', (e) => {
+                            const vialId = trtVialSelect.value;
+
+                            if (e.target.checked) {
+                                // Checkbox is checked - auto-fill with remaining volume
+                                if (vialId) {
+                                    const vial = this.findTrtVialById(vialId);
+                                    if (vial && vial.remaining_ml > 0) {
+                                        trtVolumeInput.value = vial.remaining_ml.toFixed(2);
+                                        trtVolumeInput.disabled = true;
+                                        trtVolumeInput.style.opacity = '0.6';
+                                        updateTrtDoseDisplay();
+                                    }
+                                } else {
+                                    alert('Please select a vial first');
+                                    e.target.checked = false;
+                                }
+                            } else {
+                                // Checkbox is unchecked - re-enable manual input
+                                trtVolumeInput.disabled = false;
+                                trtVolumeInput.style.opacity = '1';
+                                trtVolumeInput.value = '';
+                                updateTrtDoseDisplay();
+                            }
+                        });
+
+                        // Also handle vial selection change when checkbox is checked
+                        trtVialSelect.addEventListener('change', () => {
+                            if (trtFinishVialCheckbox.checked) {
+                                const vialId = trtVialSelect.value;
+                                if (vialId) {
+                                    const vial = this.findTrtVialById(vialId);
+                                    if (vial && vial.remaining_ml > 0) {
+                                        trtVolumeInput.value = vial.remaining_ml.toFixed(2);
+                                        updateTrtDoseDisplay();
+                                    }
+                                }
+                            }
+                        });
+                    }
                 }
 
                 // Add TRT Vial Form
@@ -7435,6 +7510,17 @@
                     document.getElementById('trt-injection-date').value = localDateTime;
                     // Populate TRT vial dropdown
                     this.populateTrtVialSelect();
+                    // Reset finish vial checkbox and volume input
+                    const finishVialCheckbox = document.getElementById('trt-finish-vial-checkbox');
+                    const volumeInput = document.getElementById('trt-injection-volume');
+                    if (finishVialCheckbox) {
+                        finishVialCheckbox.checked = false;
+                    }
+                    if (volumeInput) {
+                        volumeInput.disabled = false;
+                        volumeInput.style.opacity = '1';
+                        volumeInput.value = '';
+                    }
                 } else if (modalId === 'add-trt-vial-modal') {
                     // Set default expiry date (1 year from now)
                     const oneYearFromNow = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
@@ -8093,13 +8179,19 @@
                         return;
                     }
 
+                    // Check if trying to use more than remaining volume
+                    if (volumeMl > vial.remaining_ml) {
+                        alert(`Cannot use ${volumeMl}ml - only ${vial.remaining_ml.toFixed(2)}ml remaining in this vial`);
+                        return;
+                    }
+
                     const injection = {
                         timestamp: new Date(document.getElementById('trt-injection-date').value).toISOString(),
                         volume_ml: volumeMl,
                         concentration_mg_ml: vial.concentration_mg_ml,
                         injection_site: document.getElementById('trt-injection-site').value,
                         time_of_day: document.getElementById('trt-injection-time-of-day').value || null,
-                        technique_notes: document.getElementById('trt-injection-technique-notes').value || '',
+                        technique_notes: document.getElementById('trt-injection-technique').value || '',
                         notes: document.getElementById('trt-injection-notes').value || '',
                         vial_id: vialId,
                         skipped: false
@@ -8109,6 +8201,13 @@
 
                     // Reset form after successful submission
                     form.reset();
+
+                    // Also reset the volume input state (in case it was disabled)
+                    const volumeInput = document.getElementById('trt-injection-volume');
+                    if (volumeInput) {
+                        volumeInput.disabled = false;
+                        volumeInput.style.opacity = '1';
+                    }
 
                 } catch (error) {
                     console.error('Error adding TRT injection:', error);
