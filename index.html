@@ -9280,11 +9280,63 @@
                     }
                 };
 
+                // Custom plugin to draw red X markers for skipped injections
+                const skipIndicatorPlugin = {
+                    id: 'skipIndicator',
+                    afterDatasetsDraw: (chart) => {
+                        const ctx = chart.ctx;
+                        const xScale = chart.scales.x;
+                        const yScale = chart.scales.y;
+
+                        if (!groupedInjections.length) return;
+
+                        ctx.save();
+
+                        // Draw red X for each skipped injection
+                        groupedInjections.forEach((group) => {
+                            // Check if this group has any skipped injections
+                            const hasSkipped = group.injections.some(inj => inj.skipped);
+                            if (!hasSkipped) return;
+
+                            const injDate = new Date(group.timestamp);
+                            const x = xScale.getPixelForValue(injDate);
+
+                            // Find the matching weight to position the X at the weight point
+                            const matchingWeight = weightsWithInjections.find(weight => {
+                                const weightDate = new Date(weight.timestamp);
+                                const timeDiff = Math.abs(weightDate - injDate);
+                                const hoursDiff = timeDiff / (1000 * 60 * 60);
+                                return hoursDiff <= 24;
+                            });
+
+                            if (!matchingWeight) return;
+
+                            const y = yScale.getPixelForValue(matchingWeight.weight_kg);
+
+                            // Draw red X marker
+                            const xSize = isMobile ? 8 : 10; // Size of the X
+                            ctx.strokeStyle = '#FF3B30'; // Red color
+                            ctx.lineWidth = 2.5;
+                            ctx.lineCap = 'round';
+
+                            // Draw X (two diagonal lines)
+                            ctx.beginPath();
+                            ctx.moveTo(x - xSize, y - xSize);
+                            ctx.lineTo(x + xSize, y + xSize);
+                            ctx.moveTo(x + xSize, y - xSize);
+                            ctx.lineTo(x - xSize, y + xSize);
+                            ctx.stroke();
+                        });
+
+                        ctx.restore();
+                    }
+                };
+
                 // Pass plugin directly to chart instance instead of global registration
                 this.charts.shotsWeightChart = new Chart(ctx, {
                     type: 'line',
                     data: { datasets },
-                    plugins: [doseLabelsPlugin],
+                    plugins: [doseLabelsPlugin, skipIndicatorPlugin],
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
