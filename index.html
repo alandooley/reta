@@ -2754,6 +2754,7 @@
                 <div class="inventory-header">
                     <button id="add-vial-btn" class="btn-primary">Add Vials to Stock</button>
                     <button id="activate-vial-btn" class="btn-secondary">Activate Vial</button>
+                    <button id="add-nearly-empty-vial-btn" class="btn-secondary">Add Nearly Empty Vial</button>
                 </div>
                 <div id="vials-list" class="vials-list"></div>
                 <div class="inventory-stats">
@@ -3340,6 +3341,38 @@
                 <div class="form-group">
                     <button type="submit" class="btn-primary">Activate Vial</button>
                     <button type="button" class="btn-secondary" data-modal="activate-vial-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add Nearly Empty Vial Modal -->
+        <div id="add-nearly-empty-vial-modal" class="modal" style="display: none;">
+            <div class="modal-header">
+                <h3 class="modal-title">Add Nearly Empty Vial</h3>
+                <button class="modal-close" data-modal="add-nearly-empty-vial-modal">&times;</button>
+            </div>
+            <form id="add-nearly-empty-vial-form">
+                <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: var(--spacing-md);">
+                    Quick add for a vial you already have with some medication remaining.
+                </p>
+                <div class="form-group">
+                    <label for="nearly-empty-vial-mg">mg per Vial</label>
+                    <input type="number" id="nearly-empty-vial-mg" step="0.1" min="0" required placeholder="10" value="10">
+                </div>
+                <div class="form-group">
+                    <label for="nearly-empty-vial-volume">Approximate Remaining Volume (ml)</label>
+                    <input type="number" id="nearly-empty-vial-volume" step="0.01" min="0" max="2" required placeholder="0.2" value="0.2">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Estimate how much is left in the vial (e.g., 0.2 ml for nearly empty)
+                    </p>
+                </div>
+                <div class="form-group">
+                    <label for="nearly-empty-vial-notes">Notes - Optional</label>
+                    <textarea id="nearly-empty-vial-notes" placeholder="e.g., 'Old vial from previous prescription'"></textarea>
+                </div>
+                <div class="form-group">
+                    <button type="submit" class="btn-primary">Add Vial</button>
+                    <button type="button" class="btn-secondary" data-modal="add-nearly-empty-vial-modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -6461,6 +6494,11 @@
                     this.openModal('activate-vial-modal');
                 });
 
+                // Add Nearly Empty Vial Button handler
+                document.getElementById('add-nearly-empty-vial-btn').addEventListener('click', () => {
+                    this.openModal('add-nearly-empty-vial-modal');
+                });
+
                 // TRT Modal Handlers (if TRT-specific buttons exist)
                 const addTrtInjectionBtn = document.getElementById('add-trt-injection-btn');
                 if (addTrtInjectionBtn) {
@@ -6560,6 +6598,12 @@
                 document.getElementById('add-vial-form').addEventListener('submit', (e) => {
                     e.preventDefault();
                     this.handleAddVial();
+                });
+
+                // Add Nearly Empty Vial Form
+                document.getElementById('add-nearly-empty-vial-form').addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.handleAddNearlyEmptyVial();
                 });
 
                 // Edit Vial Form
@@ -8128,6 +8172,83 @@
                         }
                     });
                     console.log(`Vial ${vial.vial_id} activation (${concentrationMgMl.toFixed(1)}mg/ml) added to sync queue`);
+                }
+
+                // Delay modal close to show save indicator
+                setTimeout(() => {
+                    this.closeModal();
+                }, 300);
+            }
+
+            async handleAddNearlyEmptyVial() {
+                const totalMg = parseFloat(document.getElementById('nearly-empty-vial-mg').value);
+                const remainingMl = parseFloat(document.getElementById('nearly-empty-vial-volume').value);
+                const notes = document.getElementById('nearly-empty-vial-notes').value;
+
+                if (!totalMg || remainingMl === null || remainingMl === undefined) {
+                    alert('Please fill in all required fields');
+                    return;
+                }
+
+                // Use today as order date and reconstitution date
+                const today = new Date().toISOString();
+
+                // Assume 1ml of BAC water was used (standard)
+                const bacWaterMl = 1.0;
+                const concentrationMgMl = totalMg / bacWaterMl;
+
+                // Calculate how much volume has been used
+                const usedVolumeMl = bacWaterMl - remainingMl;
+
+                // Calculate expiration date (28 days from reconstitution)
+                const expirationDate = this.calculateExpirationDate(today, null);
+
+                // Create the vial directly as active with partial volume
+                const vial = {
+                    vial_id: this.generateId(),
+                    order_date: today.split('T')[0], // Just the date part
+                    supplier: 'Existing vial',
+                    total_mg: totalMg,
+                    bac_water_ml: bacWaterMl,
+                    concentration_mg_ml: concentrationMgMl,
+                    reconstitution_date: today,
+                    expiration_date: expirationDate,
+                    remaining_ml: remainingMl,
+                    current_volume_ml: remainingMl, // Sync property for consistency
+                    doses_used: 0,
+                    status: 'active',
+                    notes: notes || 'Nearly empty vial added'
+                };
+
+                this.data.vials.push(vial);
+                this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
+                this.saveData();
+                this.updateUI();
+
+                // Push to sync queue
+                if (authManager && authManager.isAuthenticated() && this.syncQueue) {
+                    this.syncQueue.add({
+                        type: 'create',
+                        entity: 'vial',
+                        localId: vial.vial_id,
+                        data: {
+                            id: vial.vial_id,
+                            orderDate: vial.order_date,
+                            totalMg: totalMg,
+                            supplier: vial.supplier,
+                            status: 'active',
+                            reconstitutionDate: today,
+                            expirationDate: expirationDate,
+                            bacWaterMl: bacWaterMl,
+                            concentrationMgMl: concentrationMgMl,
+                            currentVolumeMl: remainingMl,
+                            usedVolumeMl: usedVolumeMl,
+                            remainingMl: remainingMl,
+                            dosesUsed: 0,
+                            notes: vial.notes
+                        }
+                    });
+                    console.log(`Nearly empty vial ${vial.vial_id} (${totalMg}mg, ${remainingMl}ml remaining) added to sync queue`);
                 }
 
                 // Delay modal close to show save indicator
