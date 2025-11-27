@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Retatrutide Tracker is a Progressive Web App (PWA) for tracking medication injections with cloud synchronization. The application consists of:
+TRT Tracker is a Progressive Web App (PWA) for tracking Testosterone Replacement Therapy (TRT) injections with cloud synchronization. The application consists of:
 
 1. **Frontend**: Single-page application in `index.html` (~5000 lines)
 2. **Cloud Infrastructure**: AWS CDK stack in `reta-cloud-infrastructure/`
@@ -159,6 +159,18 @@ The application uses **Chart.js** for weight tracking with custom styling:
 - **Data Format**: Objects with `x: timestamp, y: value` format
 - **Units**: All measurements in **kg** (not lb)
 
+### TRT Vial Characteristics
+
+**IMPORTANT**: This application tracks **Testosterone Replacement Therapy (TRT)** injections:
+
+- **Pre-mixed Solution**: TRT vials contain testosterone suspended in oil (typically sesame or cottonseed oil)
+- **No Reconstitution**: Vials are ready to use - NO bacteriostatic water needed
+- **Fixed Volume**: Vials come in standard sizes (1ml, 5ml, 10ml)
+- **Standard Concentrations**: Common concentrations are 100mg/ml, 200mg/ml, or 250mg/ml
+- **Volume Tracking**: The app tracks actual vial volume depletion based on injection doses
+
+**NOT for peptides**: Unlike peptides (e.g., Retatrutide, Semaglutide) which require reconstitution with bacteriostatic water, TRT vials are pharmaceutical-grade solutions ready for injection.
+
 ### Data Property Naming
 
 **Critical**: The codebase uses **camelCase** for data properties:
@@ -179,15 +191,16 @@ This is consistent across localStorage, API, and DynamoDB.
 
 **Supply Forecast Calculation**:
 - **Formula**: `Total capacity - Total used`
-- **Total capacity**: `All vials × 1ml × concentration` (assumes 1ml bac water per vial)
+- **Total capacity**: `All vials × vial volume × concentration`
 - **Total used**: Sum of all injection doses
-- **Includes**: Both dry (unused) and activated vials
-- **Example**: 4 vials @ 10mg each = 40mg total; used 4mg = 36mg remaining
+- **Includes**: All vials (TRT vials come pre-mixed in oil, ready to use)
+- **Example**: 4 vials @ 200mg/ml × 1ml each = 800mg total; used 100mg = 700mg remaining
 
 **Level at Last Shot**:
 - Shows **remaining vial volume** (in ml), not body medication level
-- Calculates: `1.0ml - (total doses from vial / concentration)`
-- Example: If vial used 0.15ml total, shows `0.85 ml` remaining
+- Calculates: `vial volume - (total doses from vial / concentration)`
+- Example: For a 1ml vial at 200mg/ml, if 50mg used (0.25ml), shows `0.75 ml` remaining
+- **Important**: TRT vials come pre-mixed in oil (not reconstituted with bac water)
 
 ### Lambda Budget Optimizations
 
