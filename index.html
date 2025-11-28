@@ -3585,7 +3585,7 @@
         // VERSION INFORMATION
         // ====================================
         const APP_VERSION = {
-            timestamp: '2025-11-28 16:15:00'
+            timestamp: '2025-11-28 16:30:00'
         };
 
         // ====================================
@@ -9516,7 +9516,24 @@
 
                 // Build datasets - only show weights that have matching injections
                 const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
+
+                // Determine which weight points correspond to skipped injections (hide dots for these)
+                const isSkippedPoint = displayWeights.map(weight => {
+                    const weightDate = new Date(weight.timestamp);
+                    // Check if any skipped injection matches this weight (within 48 hours)
+                    return groupedInjections.some(group => {
+                        if (!group.hasSkipped) return false;
+                        const injDate = new Date(group.timestamp);
+                        const hoursDiff = Math.abs(weightDate - injDate) / (1000 * 60 * 60);
+                        return hoursDiff <= 48;
+                    });
+                });
+
                 const pointColors = displayWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
+                // Hide points (set radius to 0) for weights matched to skipped injections
+                const pointRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 6 : 5));
+                const pointHoverRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 8 : 7));
+                const pointHitRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 14 : 12));
 
                 // Handle case where we only have skipped injections (no weights)
                 // Create invisible placeholder points to establish chart scale
@@ -9544,13 +9561,14 @@
                     label: aggregateBy !== 'none' ? 'Weight (kg) - Weekly Avg' : 'Weight (kg)',
                     data: datasetData,
                     borderColor: hasSkippedOnly ? 'transparent' : '#AF52DE',
+                    borderWidth: 2,
                     backgroundColor: 'transparent',
                     fill: false,
                     tension: 0.4,
                     yAxisID: 'y',
-                    pointRadius: hasSkippedOnly ? 0 : (isMobile ? 6 : 5),
-                    pointHoverRadius: hasSkippedOnly ? 0 : (isMobile ? 8 : 7),
-                    pointHitRadius: hasSkippedOnly ? 0 : (isMobile ? 14 : 12),
+                    pointRadius: hasSkippedOnly ? 0 : pointRadii,
+                    pointHoverRadius: hasSkippedOnly ? 0 : pointHoverRadii,
+                    pointHitRadius: hasSkippedOnly ? 0 : pointHitRadii,
                     pointBackgroundColor: hasSkippedOnly ? 'transparent' : pointColors,
                     pointBorderColor: hasSkippedOnly ? 'transparent' : pointColors,
                     pointBorderWidth: 2,
@@ -9706,10 +9724,10 @@
                                 y = yScale.bottom - 15;
                             }
 
-                            // Draw red X marker
-                            const xSize = isMobile ? 8 : 10; // Size of the X
+                            // Draw red X marker - consistent with chart line style
+                            const xSize = isMobile ? 6 : 7; // Size matches point radius
                             ctx.strokeStyle = '#FF3B30'; // Red color
-                            ctx.lineWidth = 2.5;
+                            ctx.lineWidth = 2; // Match chart borderWidth
                             ctx.lineCap = 'round';
 
                             // Draw X (two diagonal lines)
