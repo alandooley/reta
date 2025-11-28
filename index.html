@@ -9410,8 +9410,9 @@
                     group.injections.push(injection);
                 });
 
-                // Convert map to array for easier iteration
-                const groupedInjections = Array.from(injectionsByDate.values());
+                // Convert map to array for easier iteration and sort by timestamp
+                const groupedInjections = Array.from(injectionsByDate.values())
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 // Check if we have any data to display
                 // Allow rendering if we have either weights OR skipped injections
@@ -9472,14 +9473,15 @@
                     // Calculate average for each group, use latest timestamp in group
                     return Array.from(grouped.entries()).map(([key, weights]) => {
                         const avgWeight = weights.reduce((sum, w) => sum + w.weight_kg, 0) / weights.length;
-                        const latestTimestamp = Math.max(...weights.map(w => w.timestamp));
+                        // Convert timestamps to numbers for Math.max, then back to ISO string
+                        const latestTimestamp = Math.max(...weights.map(w => new Date(w.timestamp).getTime()));
                         return {
-                            timestamp: latestTimestamp,
+                            timestamp: new Date(latestTimestamp).toISOString(),
                             weight_kg: avgWeight,
                             isAggregated: true,
                             groupSize: weights.length
                         };
-                    }).sort((a, b) => a.timestamp - b.timestamp);
+                    }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 };
 
                 // Apply aggregation to weights with injections
@@ -9785,12 +9787,19 @@
                                     }
                                 },
                                 // Add padding on both sides for visibility (2 days on each side)
-                                min: displayWeights.length > 0 ?
-                                    new Date(new Date(displayWeights[0].timestamp).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() :
-                                    undefined,
-                                max: displayWeights.length > 0 ?
-                                    new Date(new Date(displayWeights[displayWeights.length - 1].timestamp).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() :
-                                    new Date().toISOString(),
+                                // Include both weight dates AND injection dates (including skipped) for bounds
+                                min: (() => {
+                                    const weightMin = displayWeights.length > 0 ? new Date(displayWeights[0].timestamp).getTime() : Infinity;
+                                    const injectionMin = groupedInjections.length > 0 ? new Date(groupedInjections[0].timestamp).getTime() : Infinity;
+                                    const minTime = Math.min(weightMin, injectionMin);
+                                    return minTime !== Infinity ? new Date(minTime - 2 * 24 * 60 * 60 * 1000).toISOString() : undefined;
+                                })(),
+                                max: (() => {
+                                    const weightMax = displayWeights.length > 0 ? new Date(displayWeights[displayWeights.length - 1].timestamp).getTime() : -Infinity;
+                                    const injectionMax = groupedInjections.length > 0 ? new Date(groupedInjections[groupedInjections.length - 1].timestamp).getTime() : -Infinity;
+                                    const maxTime = Math.max(weightMax, injectionMax);
+                                    return maxTime !== -Infinity ? new Date(maxTime + 2 * 24 * 60 * 60 * 1000).toISOString() : new Date().toISOString();
+                                })(),
                                 grid: {
                                     color: '#333333'
                                 },
