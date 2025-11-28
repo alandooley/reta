@@ -9378,7 +9378,13 @@
                 // Convert map to array for easier iteration
                 const groupedInjections = Array.from(injectionsByDate.values());
 
-                if (injectionsWithWeights.length === 0 || weightsWithInjections.length === 0) {
+                // Check if we have any data to display
+                // Allow rendering if we have either weights OR skipped injections
+                const hasSkippedOnly = injectionsWithWeights.length > 0 &&
+                                       injectionsWithWeights.every(inj => inj.skipped) &&
+                                       weightsWithInjections.length === 0;
+
+                if (injectionsWithWeights.length === 0 || (weightsWithInjections.length === 0 && !hasSkippedOnly)) {
                     // Show empty state
                     const container = canvas.parentElement;
                     container.innerHTML = `
@@ -9390,6 +9396,59 @@
                     `;
                     return;
                 }
+
+                // Data aggregation for crowded views (smoothing for longer time windows)
+                // Determine aggregation strategy based on time range
+                let aggregateBy = 'none'; // Options: 'none', 'week', 'month'
+                if (this.timeRange === 'all' || this.timeRange >= 180) {
+                    // 6 months or all time: aggregate by week
+                    aggregateBy = 'week';
+                } else if (this.timeRange >= 90) {
+                    // 3 months: aggregate by week
+                    aggregateBy = 'week';
+                }
+                // 1 month: no aggregation (show all points)
+
+                // Function to aggregate weights by time period
+                const aggregateWeights = (weights, period) => {
+                    if (period === 'none' || weights.length === 0) return weights;
+
+                    const grouped = new Map();
+                    weights.forEach(weight => {
+                        const date = new Date(weight.timestamp);
+                        let key;
+                        if (period === 'week') {
+                            // Group by week (Monday-Sunday)
+                            const weekStart = new Date(date);
+                            weekStart.setDate(date.getDate() - date.getDay() + (date.getDay() === 0 ? -6 : 1));
+                            weekStart.setHours(0, 0, 0, 0);
+                            key = weekStart.getTime();
+                        } else if (period === 'month') {
+                            // Group by month
+                            key = new Date(date.getFullYear(), date.getMonth(), 1).getTime();
+                        }
+
+                        if (!grouped.has(key)) {
+                            grouped.set(key, []);
+                        }
+                        grouped.get(key).push(weight);
+                    });
+
+                    // Calculate average for each group, use latest timestamp in group
+                    return Array.from(grouped.entries()).map(([key, weights]) => {
+                        const avgWeight = weights.reduce((sum, w) => sum + w.weight_kg, 0) / weights.length;
+                        const latestTimestamp = Math.max(...weights.map(w => w.timestamp));
+                        return {
+                            timestamp: latestTimestamp,
+                            weight_kg: avgWeight,
+                            isAggregated: true,
+                            groupSize: weights.length
+                        };
+                    }).sort((a, b) => a.timestamp - b.timestamp);
+                };
+
+                // Apply aggregation to weights with injections
+                const displayWeights = aggregateWeights(weightsWithInjections, aggregateBy);
 
                 // Ensure canvas exists for chart
                 if (!canvas.parentElement.querySelector('canvas')) {
@@ -9418,27 +9477,47 @@
 
                 // Build datasets - only show weights that have matching injections
                 const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
-                const pointColors = weightsWithInjections.map((w, idx) => colorPalette[idx % colorPalette.length]);
+                const pointColors = displayWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
 
-                const datasets = [{
-                    label: 'Weight (kg)',
-                    data: weightsWithInjections.map(w => ({
+                // Handle case where we only have skipped injections (no weights)
+                // Create invisible placeholder points to establish chart scale
+                let datasetData;
+                if (hasSkippedOnly && displayWeights.length === 0) {
+                    // Create invisible points at skipped injection timestamps
+                    // Use a neutral weight value (won't be visible, just for scale)
+                    const avgWeight = sortedWeights.length > 0 ?
+                        sortedWeights.reduce((sum, w) => sum + w.weight_kg, 0) / sortedWeights.length :
+                        70; // Default fallback
+                    datasetData = groupedInjections
+                        .filter(g => g.hasSkipped)
+                        .map(g => ({
+                            x: g.timestamp,
+                            y: avgWeight
+                        }));
+                } else {
+                    datasetData = displayWeights.map(w => ({
                         x: w.timestamp,
                         y: w.weight_kg
-                    })),
-                    borderColor: '#AF52DE',
+                    }));
+                }
+
+                const datasets = [{
+                    label: aggregateBy !== 'none' ? 'Weight (kg) - Weekly Avg' : 'Weight (kg)',
+                    data: datasetData,
+                    borderColor: hasSkippedOnly ? 'transparent' : '#AF52DE',
                     backgroundColor: 'transparent',
                     fill: false,
                     tension: 0.4,
                     yAxisID: 'y',
-                    pointRadius: isMobile ? 6 : 5,
-                    pointHoverRadius: isMobile ? 8 : 7,
-                    pointHitRadius: isMobile ? 14 : 12,
-                    pointBackgroundColor: pointColors,
-                    pointBorderColor: pointColors,
+                    pointRadius: hasSkippedOnly ? 0 : (isMobile ? 6 : 5),
+                    pointHoverRadius: hasSkippedOnly ? 0 : (isMobile ? 8 : 7),
+                    pointHitRadius: hasSkippedOnly ? 0 : (isMobile ? 14 : 12),
+                    pointBackgroundColor: hasSkippedOnly ? 'transparent' : pointColors,
+                    pointBorderColor: hasSkippedOnly ? 'transparent' : pointColors,
                     pointBorderWidth: 2,
                     segment: {
                         borderColor: (ctx) => {
+                            if (hasSkippedOnly) return 'transparent';
                             if (!ctx.p0DataIndex || ctx.p0DataIndex >= pointColors.length - 1) return colorPalette[0];
                             return pointColors[ctx.p0DataIndex];
                         }
@@ -9454,6 +9533,9 @@
                         const yScale = chart.scales.y;
 
                         if (!groupedInjections.length) return;
+
+                        // Skip dose labels when data is aggregated (too crowded/misaligned)
+                        if (aggregateBy !== 'none') return;
 
                         // Calculate data density for adaptive label sizing
                         const chartWidth = xScale.right - xScale.left;
@@ -9496,11 +9578,19 @@
                                 return hoursDiff <= 24;
                             });
 
-                            // Skip drawing label if no matching weight (skipped injections without weight)
-                            if (!matchingWeight) return;
-
-                            // Position above the matching weight point
-                            const y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            // For skipped-only mode, position label at center-bottom of chart
+                            // For normal mode, skip if no matching weight
+                            let y;
+                            if (hasSkippedOnly) {
+                                // Position at middle-bottom for skipped-only display
+                                y = yScale.bottom - 25;
+                            } else if (!matchingWeight) {
+                                // Skip drawing label if no matching weight in normal mode
+                                return;
+                            } else {
+                                // Position above the matching weight point
+                                y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            }
 
                             // Show summed dose for all injections on this date
                             // Check if this group contains only skipped injections
@@ -9561,10 +9651,13 @@
                                 return hoursDiff <= 24;
                             });
 
-                            // Position Y at the weight point, or at bottom of chart if no matching weight
+                            // Position Y at the weight point, or at middle-bottom for skipped-only, or bottom if no match
                             let y;
                             if (matchingWeight) {
                                 y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            } else if (hasSkippedOnly) {
+                                // For skipped-only mode, position at middle of chart
+                                y = yScale.bottom - (yScale.bottom - yScale.top) / 2;
                             } else {
                                 // Position at bottom of chart area when no matching weight exists
                                 y = yScale.bottom - 15;
@@ -9632,6 +9725,18 @@
                                 },
                                 bodyFont: {
                                     size: isMobile ? 12 : 13
+                                },
+                                callbacks: {
+                                    afterBody: (tooltipItems) => {
+                                        if (aggregateBy !== 'none' && tooltipItems.length > 0) {
+                                            const dataIndex = tooltipItems[0].dataIndex;
+                                            const weight = displayWeights[dataIndex];
+                                            if (weight && weight.isAggregated) {
+                                                return `\n📊 ${aggregateBy === 'week' ? 'Weekly' : 'Monthly'} average (${weight.groupSize} readings)`;
+                                            }
+                                        }
+                                        return '';
+                                    }
                                 }
                             }
                         },
@@ -9645,11 +9750,11 @@
                                     }
                                 },
                                 // Add padding on both sides for visibility (2 days on each side)
-                                min: weightsWithInjections.length > 0 ?
-                                    new Date(new Date(weightsWithInjections[0].timestamp).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() :
+                                min: displayWeights.length > 0 ?
+                                    new Date(new Date(displayWeights[0].timestamp).getTime() - 2 * 24 * 60 * 60 * 1000).toISOString() :
                                     undefined,
-                                max: weightsWithInjections.length > 0 ?
-                                    new Date(new Date(weightsWithInjections[weightsWithInjections.length - 1].timestamp).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() :
+                                max: displayWeights.length > 0 ?
+                                    new Date(new Date(displayWeights[displayWeights.length - 1].timestamp).getTime() + 2 * 24 * 60 * 60 * 1000).toISOString() :
                                     new Date().toISOString(),
                                 grid: {
                                     color: '#333333'
