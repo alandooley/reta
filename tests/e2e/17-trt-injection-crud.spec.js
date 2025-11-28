@@ -36,8 +36,9 @@ const {
  * Switch to TRT mode in the app
  */
 async function switchToTrtMode(page) {
-    await page.click('#app-switcher-toggle');
-    await page.waitForTimeout(300);
+    // Click TRT button in app switcher
+    await page.click('.app-switcher-btn[data-app="trt"]');
+    await page.waitForTimeout(500);
 }
 
 /**
@@ -246,7 +247,7 @@ test.describe('TRT Injection CRUD Operations', () => {
             await navigateToTab(page, 'shots');
 
             // Open Skip modal
-            await openModal(page, '#skip-trt-injection-btn');
+            await openModal(page, '#skip-trt-week-btn');
 
             // Fill in skip reason
             await fillInput(page, '#skip-trt-reason', 'Traveling this week');
@@ -269,7 +270,7 @@ test.describe('TRT Injection CRUD Operations', () => {
             await switchToTrtMode(page);
             await navigateToTab(page, 'shots');
 
-            await openModal(page, '#skip-trt-injection-btn');
+            await openModal(page, '#skip-trt-week-btn');
             await fillInput(page, '#skip-trt-reason', 'Doctor advised skip');
             await submitForm(page, '#skip-trt-injection-form');
             await page.waitForTimeout(500);

@@ -35,9 +35,9 @@ const {
  * Switch to TRT mode in the app
  */
 async function switchToTrtMode(page) {
-    // Click TRT toggle in app switcher
-    await page.click('#app-switcher-toggle');
-    await page.waitForTimeout(300);
+    // Click TRT button in app switcher
+    await page.click('.app-switcher-btn[data-app="trt"]');
+    await page.waitForTimeout(500);
 }
 
 /**
@@ -93,7 +93,7 @@ test.describe('TRT Vial CRUD Operations', () => {
             await navigateToTab(page, 'inventory');
 
             // Open Add TRT Vial modal
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             // Fill in all fields
             await fillInput(page, '#trt-vial-concentration', '200');
@@ -126,7 +126,7 @@ test.describe('TRT Vial CRUD Operations', () => {
 
         test('should create an active vial with opened date', async ({ page }) => {
             await navigateToTab(page, 'inventory');
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             await fillInput(page, '#trt-vial-concentration', '250');
             await fillInput(page, '#trt-vial-volume', '5');
@@ -155,7 +155,7 @@ test.describe('TRT Vial CRUD Operations', () => {
 
         test('should quick-add a vial with default values', async ({ page }) => {
             await navigateToTab(page, 'inventory');
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             // Click Quick Add button
             await page.click('#trt-vial-quick-add-btn');
@@ -175,7 +175,7 @@ test.describe('TRT Vial CRUD Operations', () => {
 
         test('quick-add should create vial with expiry date', async ({ page }) => {
             await navigateToTab(page, 'inventory');
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             await page.click('#trt-vial-quick-add-btn');
             await page.waitForTimeout(500);
@@ -342,7 +342,7 @@ test.describe('TRT Vial CRUD Operations', () => {
             await navigateToTab(page, 'inventory');
 
             // Open modal and fill some fields
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
             await fillInput(page, '#trt-vial-concentration', '999');
             await fillInput(page, '#trt-vial-lot', 'TESTLOT');
 
@@ -351,7 +351,7 @@ test.describe('TRT Vial CRUD Operations', () => {
             await page.waitForTimeout(500);
 
             // Reopen modal
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             // Check that fields are reset
             const concentration = await page.$eval('#trt-vial-concentration', el => el.value);
@@ -360,7 +360,7 @@ test.describe('TRT Vial CRUD Operations', () => {
 
         test('should show/hide opened date based on status', async ({ page }) => {
             await navigateToTab(page, 'inventory');
-            await openModal(page, '#add-trt-vial-modal-btn');
+            await openModal(page, '#add-trt-vial-btn');
 
             // Initially dry_stock, opened date should be hidden
             await selectOption(page, '#trt-vial-status', 'dry_stock');
