@@ -3585,7 +3585,7 @@
         // VERSION INFORMATION
         // ====================================
         const APP_VERSION = {
-            timestamp: '2025-11-28 15:21:00'
+            timestamp: '2025-11-28 15:40:00'
         };
 
         // ====================================
@@ -4139,11 +4139,12 @@
                     new Date(w.timestamp) >= oneWeekAgo
                 ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-                // Get this week's injections
+                // Get this week's injections (exclude skipped for avg dose)
                 const weekInjections = this.data.injections.filter(i =>
-                    new Date(i.timestamp) >= oneWeekAgo
+                    new Date(i.timestamp) >= oneWeekAgo && !i.skipped
                 );
 
+                // Hide card if no meaningful data this week
                 if (weekWeights.length < 2 && weekInjections.length === 0) {
                     insightsCard.style.display = 'none';
                     return;
@@ -4173,10 +4174,9 @@
                     document.getElementById('insight-weight-trend').textContent = '--';
                 }
 
-                // Average dose (exclude skipped injections)
-                const actualInjections = weekInjections.filter(inj => !inj.skipped);
-                if (actualInjections.length > 0) {
-                    const avgDose = actualInjections.reduce((sum, inj) => sum + inj.dose_mg, 0) / actualInjections.length;
+                // Average dose
+                if (weekInjections.length > 0) {
+                    const avgDose = weekInjections.reduce((sum, inj) => sum + inj.dose_mg, 0) / weekInjections.length;
                     document.getElementById('insight-avg-dose').textContent =
                         `${avgDose.toFixed(1)} mg`;
                 } else {
