@@ -23,7 +23,7 @@ module.exports = {
     },
 
     headless: !!process.env.CI, // Run headless in CI, headed locally
-    viewport: { width: 390, height: 844 }, // iPhone 14 Pro dimensions
+    viewport: { width: 402, height: 874 }, // iPhone 16 Pro dimensions
     ignoreHTTPSErrors: true,
     video: 'retain-on-failure',
     screenshot: 'only-on-failure',
@@ -41,21 +41,20 @@ module.exports = {
 
   projects: [
     {
-      name: 'chromium',
+      name: 'mobile',  // Mobile-only testing (iPhone 16 Pro)
       use: {
         ...require('@playwright/test').devices['Desktop Chrome'],
-        viewport: { width: 390, height: 844 }
+        viewport: { width: 402, height: 874 }
       },
     },
-
-    // Optional: Desktop project for visual/debugging tests
-    {
-      name: 'chromium-desktop',
-      use: {
-        ...require('@playwright/test').devices['Desktop Chrome'],
-        viewport: { width: 1280, height: 720 }
-      },
-    },
+    // Desktop project disabled - mobile-only requirement
+    // {
+    //   name: 'chromium-desktop',
+    //   use: {
+    //     ...require('@playwright/test').devices['Desktop Chrome'],
+    //     viewport: { width: 1280, height: 720 }
+    //   },
+    // },
   ],
 
   // Reporter configuration

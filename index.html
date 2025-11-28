@@ -3482,6 +3482,20 @@
                 <button class="modal-close" data-modal="add-trt-vial-modal">&times;</button>
             </div>
             <form id="add-trt-vial-form">
+                <!-- Quick Add Section -->
+                <div class="form-group" style="margin-bottom: var(--spacing-lg); padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color);">
+                    <button type="button" id="trt-vial-quick-add-btn" class="btn-secondary" style="width: 100%; padding: var(--spacing-md);">
+                        Quick Add: 200mg/ml, 10ml (Active)
+                    </button>
+                    <p style="font-size: 12px; color: var(--text-secondary); text-align: center; margin-top: 8px;">
+                        Creates a standard vial with defaults. Use "Finish Vial" later when empty.
+                    </p>
+                </div>
+
+                <p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin-bottom: var(--spacing-md);">
+                    — Or fill out details below —
+                </p>
+
                 <div class="form-group">
                     <label for="trt-vial-concentration">Testosterone Concentration (mg/ml)</label>
                     <input type="number" id="trt-vial-concentration" step="1" min="1" required placeholder="200" value="200">
@@ -6225,6 +6239,13 @@
                             <div>Expires: ${this.formatDate(vial.expiry_date)}</div>
                             ${vial.notes ? `<div>Notes: ${vial.notes}</div>` : ''}
                         </div>
+                        ${vial.status === 'active' ? `
+                            <div class="vial-quick-actions" style="margin-top: 8px;">
+                                <button class="finish-vial-btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" title="Mark vial as empty">
+                                    Finish Vial
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                     <div class="item-actions">
                         <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
@@ -6244,6 +6265,16 @@
                         await this.deleteTrtVial(vial.id);
                     }
                 });
+
+                // Add finish vial handler (only for active vials)
+                const finishBtn = div.querySelector('.finish-vial-btn');
+                if (finishBtn) {
+                    finishBtn.addEventListener('click', async () => {
+                        if (confirm('Mark this vial as finished (empty)?')) {
+                            await this.finishTrtVial(vial.id);
+                        }
+                    });
+                }
 
                 return div;
             }
@@ -6752,6 +6783,14 @@
                             if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
                             if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
                         }
+                    });
+                }
+
+                // TRT Vial Quick Add button handler
+                const trtQuickAddBtn = document.getElementById('trt-vial-quick-add-btn');
+                if (trtQuickAddBtn) {
+                    trtQuickAddBtn.addEventListener('click', async () => {
+                        await this.handleQuickAddTrtVial();
                     });
                 }
 
@@ -8433,6 +8472,90 @@
                 }
             }
 
+            /**
+             * Quick add a TRT vial with default values (200mg/ml, 10ml, active)
+             * User can mark vial as "finished" later when it's empty
+             */
+            async handleQuickAddTrtVial() {
+                try {
+                    const now = new Date();
+                    const expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
+
+                    const vial = {
+                        concentration_mg_ml: 200,
+                        volume_ml: 10,
+                        remaining_ml: 10,
+                        status: 'active',
+                        opened_date: now.toISOString(),
+                        expiry_date: expiryDate.toISOString(),
+                        lot_number: '',
+                        notes: 'Quick-added vial'
+                    };
+
+                    await this.addTrtVial(vial);
+
+                    // Reset form after successful submission
+                    const form = document.getElementById('add-trt-vial-form');
+                    if (form) form.reset();
+
+                    this.showToast('TRT vial added (200mg/ml, 10ml)');
+
+                } catch (error) {
+                    console.error('Error quick-adding TRT vial:', error);
+                    alert('TRT vial saved locally. Cloud sync will retry automatically.');
+                } finally {
+                    // Always close modal, even on error
+                    setTimeout(() => {
+                        this.closeModal();
+                    }, 300);
+                }
+            }
+
+            /**
+             * Finish (mark as empty) an active TRT vial
+             * Used when user has used up the remaining contents of a vial
+             */
+            async finishTrtVial(vialId) {
+                try {
+                    if (!this.data.trtVials) return;
+
+                    const vialIndex = this.data.trtVials.findIndex(v => v.id === vialId);
+                    if (vialIndex === -1) {
+                        console.error('TRT vial not found:', vialId);
+                        return;
+                    }
+
+                    const vial = this.data.trtVials[vialIndex];
+
+                    // Update vial to empty status
+                    vial.status = 'empty';
+                    vial.remaining_ml = 0;
+                    vial.finished_date = new Date().toISOString();
+
+                    this.saveData();
+                    this.updateUI();
+
+                    // Sync to cloud
+                    if (window.apiClient) {
+                        try {
+                            await window.apiClient.patchTrtVial(vialId, {
+                                status: 'empty',
+                                remaining_ml: 0,
+                                finished_date: vial.finished_date
+                            });
+                        } catch (syncError) {
+                            console.error('Cloud sync failed for finish vial, will retry:', syncError);
+                        }
+                    }
+
+                    this.showToast('Vial marked as finished');
+
+                } catch (error) {
+                    console.error('Error finishing TRT vial:', error);
+                    alert('Error finishing vial. Please try again.');
+                }
+            }
+
             async handleAddTrtSymptom() {
                 try {
                     // Get form values
@@ -9200,7 +9323,11 @@
                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 // Filter to only show injections that have a matching weight (within 24 hours)
+                // EXCEPTION: Always include skipped injections so red X can be displayed
                 const injectionsWithWeights = sortedInjections.filter(injection => {
+                    // Always include skipped injections for red X display
+                    if (injection.skipped) return true;
+
                     const injDate = new Date(injection.timestamp);
                     return sortedWeights.some(weight => {
                         const weightDate = new Date(weight.timestamp);
@@ -9430,9 +9557,14 @@
                                 return hoursDiff <= 24;
                             });
 
-                            if (!matchingWeight) return;
-
-                            const y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            // Position Y at the weight point, or at bottom of chart if no matching weight
+                            let y;
+                            if (matchingWeight) {
+                                y = yScale.getPixelForValue(matchingWeight.weight_kg);
+                            } else {
+                                // Position at bottom of chart area when no matching weight exists
+                                y = yScale.bottom - 15;
+                            }
 
                             // Draw red X marker
                             const xSize = isMobile ? 8 : 10; // Size of the X

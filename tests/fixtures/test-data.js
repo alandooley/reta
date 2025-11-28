@@ -6,6 +6,194 @@
 
 const { TestDataBuilder } = require('../helpers/test-data-builder');
 
+// ============================================
+// CONSTANTS
+// ============================================
+
+/**
+ * Valid injection sites for Reta
+ */
+const INJECTION_SITES = [
+    'left_thigh',
+    'right_thigh',
+    'abdomen_left',
+    'abdomen_right',
+    'left_arm',
+    'right_arm',
+    'left_glute',
+    'right_glute'
+];
+
+/**
+ * Valid TRT injection sites
+ */
+const TRT_INJECTION_SITES = [
+    'left_front_thigh',
+    'right_front_thigh'
+];
+
+/**
+ * Valid vial statuses
+ */
+const VIAL_STATUSES = ['dry_stock', 'active', 'insufficient', 'empty', 'expired'];
+
+/**
+ * Sync operation statuses
+ */
+const SYNC_STATUSES = ['pending', 'syncing', 'synced', 'failed'];
+
+// ============================================
+// FACTORY FUNCTIONS
+// ============================================
+
+/**
+ * Create a valid Reta vial object
+ */
+function createValidVial(overrides = {}) {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+        vial_id: `test-vial-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        order_date: today,
+        supplier: 'Test Supplier',
+        total_mg: 10,
+        status: 'active',
+        bac_water_ml: 1,
+        concentration_mg_ml: 10,
+        current_volume_ml: 1,
+        remaining_ml: 1,
+        used_volume_ml: 0,
+        doses_used: 0,
+        reconstitution_date: today,
+        expiration_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        lot_number: '',
+        notes: '',
+        ...overrides
+    };
+}
+
+/**
+ * Create a dry stock vial
+ */
+function createDryStockVial(overrides = {}) {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+        vial_id: `test-vial-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        order_date: today,
+        supplier: 'Test Supplier',
+        total_mg: 10,
+        status: 'dry_stock',
+        bac_water_ml: null,
+        concentration_mg_ml: null,
+        current_volume_ml: 0,
+        remaining_ml: 0,
+        reconstitution_date: null,
+        expiration_date: new Date(Date.now() + 730 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        ...overrides
+    };
+}
+
+/**
+ * Create a valid Reta injection object
+ */
+function createValidInjection(overrides = {}) {
+    return {
+        id: `test-inj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        dose_mg: 2.5,
+        injection_site: 'abdomen_left',
+        vial_id: overrides.vial_id || 'test-vial-1',
+        notes: '',
+        skipped: false,
+        ...overrides
+    };
+}
+
+/**
+ * Create a skipped injection
+ */
+function createSkippedInjection(overrides = {}) {
+    return {
+        id: `test-skip-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        dose_mg: 0,
+        injection_site: null,
+        vial_id: null,
+        notes: 'Skipped',
+        skipped: true,
+        planned_dose_mg: overrides.planned_dose_mg || 2.5,
+        ...overrides
+    };
+}
+
+/**
+ * Create a valid weight object
+ */
+function createValidWeight(overrides = {}) {
+    return {
+        id: `test-weight-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        weight_kg: 85.0,
+        body_fat_percentage: null,
+        notes: '',
+        ...overrides
+    };
+}
+
+/**
+ * Create settings object
+ */
+function createSettings(overrides = {}) {
+    return {
+        defaultDose: 2.0,
+        injectionFrequency: 7,
+        heightCm: 175,
+        goalWeightKg: 80,
+        injectionDay: 'Monday',
+        prefillDoseFrom: 'last',
+        ...overrides
+    };
+}
+
+/**
+ * Create TRT vial object
+ */
+function createTrtVial(overrides = {}) {
+    return {
+        id: `trt-vial-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        concentration_mg_ml: 200,
+        volume_ml: 10,
+        remaining_ml: overrides.remaining_ml !== undefined ? overrides.remaining_ml : 10,
+        status: 'active',
+        lot_number: '',
+        expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
+        opened_date: new Date().toISOString(),
+        notes: '',
+        ...overrides
+    };
+}
+
+/**
+ * Create TRT injection object
+ */
+function createTrtInjection(overrides = {}) {
+    const volumeMl = overrides.volume_ml || 0.5;
+    const concentrationMgMl = overrides.concentration_mg_ml || 200;
+    return {
+        id: `trt-inj-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        dose_mg: overrides.dose_mg || (volumeMl * concentrationMgMl),
+        volume_ml: volumeMl,
+        concentration_mg_ml: concentrationMgMl,
+        vial_id: overrides.vial_id || 'trt-vial-1',
+        injection_site: 'left_front_thigh',
+        time_of_day: 'morning',
+        technique_notes: '',
+        skipped: false,
+        notes: '',
+        ...overrides
+    };
+}
+
 /**
  * Empty dataset (fresh start)
  */
@@ -288,6 +476,22 @@ const failedSyncQueue = {
 };
 
 module.exports = {
+    // Constants
+    INJECTION_SITES,
+    TRT_INJECTION_SITES,
+    VIAL_STATUSES,
+    SYNC_STATUSES,
+
+    // Factory functions
+    createValidVial,
+    createDryStockVial,
+    createValidInjection,
+    createSkippedInjection,
+    createValidWeight,
+    createSettings,
+    createTrtVial,
+    createTrtInjection,
+
     // Basic scenarios
     emptyData,
     singleDryVial,
