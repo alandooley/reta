@@ -2958,8 +2958,8 @@
             <h2 style="margin-bottom: var(--spacing-lg);">Symptom Tracking</h2>
 
             <!-- Quick Check-in Card -->
-            <div class="card">
-                <h3>📝 Today's Check-in</h3>
+            <div class="card" id="trt-checkin-card">
+                <h3 id="trt-checkin-title">📝 Today's Check-in</h3>
                 <div id="trt-symptom-form">
                     <div class="symptom-slider">
                         <label>Energy Level</label>
@@ -5957,6 +5957,38 @@
                     const symptomItem = this.createTrtSymptomListItem(symptom);
                     symptomsList.appendChild(symptomItem);
                 });
+
+                // Update today's check-in indicator
+                this.updateTodayCheckinIndicator();
+            }
+
+            updateTodayCheckinIndicator() {
+                const checkinCard = document.getElementById('trt-checkin-card');
+                const checkinTitle = document.getElementById('trt-checkin-title');
+                if (!checkinCard || !checkinTitle) return;
+
+                // Check if there's a symptom entry for today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const todaySymptom = this.data.trtSymptoms.find(symptom => {
+                    const symptomDate = new Date(symptom.timestamp);
+                    return symptomDate >= today && symptomDate < tomorrow;
+                });
+
+                if (todaySymptom) {
+                    // Today's check-in is done - show completion indicator
+                    checkinTitle.innerHTML = '📝 Today\'s Check-in <span style="color: var(--success-color); font-size: 18px; margin-left: 8px;">✅</span>';
+                    checkinCard.style.border = '2px solid var(--success-color)';
+                    checkinCard.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+                } else {
+                    // No check-in yet today - show default state
+                    checkinTitle.textContent = '📝 Today\'s Check-in';
+                    checkinCard.style.border = '';
+                    checkinCard.style.boxShadow = '';
+                }
             }
 
             createTrtSymptomListItem(symptom) {
@@ -5999,7 +6031,7 @@
                         </div>
                     </div>
                     ${symptom.notes ? `<div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-color); color: var(--text-secondary); font-size: 13px;">${symptom.notes}</div>` : ''}
-                    <button class="delete-symptom-btn" style="margin-top: 12px; padding: 6px 12px; background: var(--danger-color); color: white; border: none; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 13px; width: 100%;">Delete</button>
+                    <button class="delete-symptom-btn" style="margin-top: 12px; padding: 8px 12px; background: var(--danger-color); color: white; border: none; border-radius: var(--border-radius-sm); cursor: pointer; font-size: 16px; width: 100%;" title="Delete this check-in">🗑️</button>
                 `;
 
                 // Add delete handler
@@ -6467,6 +6499,9 @@
                         }
                         if (targetTab === 'trt-shots') {
                             this.updateTrtInjectionsList();
+                        }
+                        if (targetTab === 'trt-symptoms') {
+                            this.updateTodayCheckinIndicator();
                         }
                         if (targetTab === 'trt-inventory') {
                             this.updateTrtVialsList();
