@@ -3585,7 +3585,7 @@
         // VERSION INFORMATION
         // ====================================
         const APP_VERSION = {
-            timestamp: '2025-11-28 15:40:00'
+            timestamp: '2025-11-28 15:42:00'
         };
 
         // ====================================
@@ -4131,6 +4131,9 @@
                 const insightsCard = document.getElementById('weekly-insights');
                 if (!insightsCard) return;
 
+                // Always show the card
+                insightsCard.style.display = 'block';
+
                 const now = new Date();
                 const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
@@ -4143,14 +4146,6 @@
                 const weekInjections = this.data.injections.filter(i =>
                     new Date(i.timestamp) >= oneWeekAgo && !i.skipped
                 );
-
-                // Hide card if no meaningful data this week
-                if (weekWeights.length < 2 && weekInjections.length === 0) {
-                    insightsCard.style.display = 'none';
-                    return;
-                }
-
-                insightsCard.style.display = 'block';
 
                 // Weight change
                 if (weekWeights.length >= 2) {
@@ -4169,9 +4164,12 @@
                         trendEl.textContent = `↑ ${change.toFixed(1)} kg`;
                         trendEl.classList.add('negative');
                     }
+                } else if (weekWeights.length === 1) {
+                    document.getElementById('insight-weight-change').textContent = 'Need 2+ weights';
+                    document.getElementById('insight-weight-trend').textContent = '';
                 } else {
-                    document.getElementById('insight-weight-change').textContent = '--';
-                    document.getElementById('insight-weight-trend').textContent = '--';
+                    document.getElementById('insight-weight-change').textContent = 'No data';
+                    document.getElementById('insight-weight-trend').textContent = '';
                 }
 
                 // Average dose
@@ -4180,7 +4178,7 @@
                     document.getElementById('insight-avg-dose').textContent =
                         `${avgDose.toFixed(1)} mg`;
                 } else {
-                    document.getElementById('insight-avg-dose').textContent = '--';
+                    document.getElementById('insight-avg-dose').textContent = 'No shots';
                 }
             }
 
