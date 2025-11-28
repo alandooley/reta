@@ -9337,13 +9337,11 @@
                     });
                 });
 
-                // Filter weights to only show those that have a matching NON-SKIPPED injection
-                // (Skipped injections don't need weight matches for the chart line)
+                // Filter weights to only show those that have a matching injection (including skipped)
+                // This allows us to show red X for skipped doses at the weight point
                 const weightsWithInjections = sortedWeights.filter(weight => {
                     const weightDate = new Date(weight.timestamp);
                     return injectionsWithWeights.some(injection => {
-                        // Only match against non-skipped injections for weight filtering
-                        if (injection.skipped) return false;
                         const injDate = new Date(injection.timestamp);
                         const timeDiff = Math.abs(weightDate - injDate);
                         const hoursDiff = timeDiff / (1000 * 60 * 60);
