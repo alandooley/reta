@@ -1215,12 +1215,16 @@
             color: white;
         }
 
-        .vial-status.dry_stock {
+        .vial-status.dry_stock,
+        .vial-status.unopened {
             background-color: var(--warning-color);
             color: var(--bg-color);
         }
 
-        .vial-item.dry_stock {
+        .vial-item.dry_stock,
+        .vial-item.unopened,
+        .vial-item.status-dry_stock,
+        .vial-item.status-unopened {
             border-left: 4px solid var(--warning-color);
         }
 
@@ -1240,7 +1244,8 @@
             color: white;
         }
 
-        .status-badge.dry-stock {
+        .status-badge.dry-stock,
+        .status-badge.unopened {
             background-color: var(--warning-color);
             color: var(--bg-color);
         }
@@ -3559,7 +3564,7 @@
                 <div class="form-group">
                     <label for="trt-vial-status">Status</label>
                     <select id="trt-vial-status" required>
-                        <option value="dry_stock">Dry Stock (Unopened)</option>
+                        <option value="unopened">Unopened (Sealed)</option>
                         <option value="active">Active (In Use)</option>
                         <option value="empty">Empty (Finished)</option>
                     </select>
@@ -4230,6 +4235,9 @@
 
                         // Migrate old injection site naming to consistent format
                         this.migrateInjectionSiteNames();
+
+                        // Migrate TRT vial status from dry_stock to unopened
+                        this.migrateTrtVialStatus();
                     } else {
                         // Check if we should skip sample data (nuclear reset)
                         const skipSampleData = localStorage.getItem('__skip_sample_data__');
@@ -4339,6 +4347,29 @@
                 if (migratedCount > 0) {
                     console.log(`Migrated ${migratedCount} injection site names to consistent format`);
                     this.saveData();  // Save migrated data
+                }
+            }
+
+            /**
+             * Migrate TRT vial status from 'dry_stock' to 'unopened'
+             * TRT vials are pre-mixed solutions, not dry powders
+             */
+            migrateTrtVialStatus() {
+                if (!this.data.trtVials || this.data.trtVials.length === 0) return;
+
+                let migratedCount = 0;
+                this.data.trtVials = this.data.trtVials.map(vial => {
+                    if (vial.status === 'dry_stock') {
+                        vial.status = 'unopened';
+                        migratedCount++;
+                        console.log(`Migrated TRT vial status: dry_stock → unopened for vial ${vial.id}`);
+                    }
+                    return vial;
+                });
+
+                if (migratedCount > 0) {
+                    console.log(`Migrated ${migratedCount} TRT vial(s) from dry_stock to unopened`);
+                    this.saveData();
                 }
             }
 
@@ -5312,7 +5343,7 @@
                     lot_number: vial.lot_number || '',
                     expiry_date: vial.expiry_date,
                     opened_date: vial.opened_date || null,
-                    status: vial.status || 'dry_stock',
+                    status: vial.status || 'unopened',
                     notes: vial.notes || ''
                 };
 
@@ -6258,9 +6289,9 @@
 
                 vialsList.innerHTML = '';
 
-                // Sort vials: Active first, then dry stock, then expired
+                // Sort vials: Active first, then unopened, then empty, then expired
                 const sortedVials = [...this.data.trtVials].sort((a, b) => {
-                    const priorityMap = { 'active': 1, 'dry_stock': 2, 'empty': 3, 'expired': 4 };
+                    const priorityMap = { 'active': 1, 'unopened': 2, 'dry_stock': 2, 'empty': 3, 'expired': 4 };
                     return priorityMap[a.status] - priorityMap[b.status];
                 });
 
@@ -6282,7 +6313,8 @@
 
                 const statusBadges = {
                     'active': '<span class="status-badge active">Active</span>',
-                    'dry_stock': '<span class="status-badge dry-stock">Dry Stock</span>',
+                    'unopened': '<span class="status-badge unopened">Unopened</span>',
+                    'dry_stock': '<span class="status-badge unopened">Unopened</span>',  // Legacy support
                     'empty': '<span class="status-badge empty">Empty</span>',
                     'expired': '<span class="status-badge expired">Expired</span>'
                 };
@@ -6872,6 +6904,19 @@
                         if (e.target.value === 'active' || e.target.value === 'empty') {
                             if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'block';
                             if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'block';
+
+                            // Pre-fill remaining volume with total volume if empty (switching from unopened to active)
+                            const remainingField = document.getElementById('trt-vial-remaining');
+                            const volumeField = document.getElementById('trt-vial-volume');
+                            if (remainingField && volumeField && !remainingField.value && e.target.value === 'active') {
+                                remainingField.value = volumeField.value;
+                            }
+
+                            // Pre-fill opened date with today if empty
+                            const openedField = document.getElementById('trt-vial-opened');
+                            if (openedField && !openedField.value) {
+                                openedField.value = new Date().toISOString().slice(0, 10);
+                            }
                         } else {
                             if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
                             if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
@@ -7915,7 +7960,7 @@
                 document.getElementById('trt-vial-volume').value = vial.volume_ml || '';
                 document.getElementById('trt-vial-lot').value = vial.lot_number || '';
                 document.getElementById('trt-vial-expiry').value = vial.expiry_date ? new Date(vial.expiry_date).toISOString().slice(0, 10) : '';
-                document.getElementById('trt-vial-status').value = vial.status || 'dry_stock';
+                document.getElementById('trt-vial-status').value = vial.status === 'dry_stock' ? 'unopened' : (vial.status || 'unopened');
                 document.getElementById('trt-vial-notes').value = vial.notes || '';
 
                 // Show/hide opened date and remaining volume based on status
@@ -7926,8 +7971,8 @@
                     if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'block';
                     if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'block';
                     document.getElementById('trt-vial-opened').value = vial.opened_date ? new Date(vial.opened_date).toISOString().slice(0, 10) : '';
-                    // For empty vials, show 0; for active, show actual remaining
-                    document.getElementById('trt-vial-remaining').value = vial.status === 'empty' ? '0' : (vial.remaining_ml || '');
+                    // For empty vials, show 0; for active, show actual remaining (or full volume if not set)
+                    document.getElementById('trt-vial-remaining').value = vial.status === 'empty' ? '0' : (vial.remaining_ml || vial.volume_ml || '');
                 } else {
                     if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
                     if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
@@ -8601,6 +8646,9 @@
                             const existingVial = this.data.trtVials.find(v => v.id === this.editMode.entityId);
                             if (existingVial && existingVial.remaining_ml !== undefined) {
                                 vial.remaining_ml = existingVial.remaining_ml;
+                            } else {
+                                // Vial was unopened/dry_stock with no remaining_ml - default to full volume
+                                vial.remaining_ml = volumeMl;
                             }
                         } else if (!remainingMl && !isEditMode) {
                             // New active vial with empty remaining field - default to full volume
