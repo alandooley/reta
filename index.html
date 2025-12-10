@@ -6279,6 +6279,12 @@
                         ` : ''}
                     </div>
                     <div class="item-actions">
+                        <button class="edit-btn" aria-label="Edit vial" title="Edit this vial">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                            </svg>
+                        </button>
                         <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
@@ -6288,6 +6294,12 @@
                     </div>
                     <div class="delete-action">Delete</div>
                 `;
+
+                // Add edit handler
+                const editBtn = div.querySelector('.edit-btn');
+                editBtn.addEventListener('click', () => {
+                    this.showEditTrtVialModal(vial.id);
+                });
 
                 // Add delete handler
                 const deleteBtn = div.querySelector('.delete-btn');
@@ -6514,8 +6526,23 @@
 
             hideLoadingScreen() {
                 document.getElementById('loading-screen').style.display = 'none';
-                document.getElementById('summary-tab').style.display = 'block';
                 document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+
+                // Show the correct app and tab based on currentApp setting
+                if (this.currentApp === 'trt') {
+                    this.showTrtApp();
+                    // Set TRT dashboard as active
+                    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                    const trtDashboardBtn = document.querySelector('.nav-btn[data-tab="trt-dashboard"]');
+                    if (trtDashboardBtn) trtDashboardBtn.classList.add('active');
+                    // Update app switcher button
+                    document.querySelectorAll('.app-switcher-btn').forEach(btn => btn.classList.remove('active'));
+                    const trtSwitcherBtn = document.querySelector('.app-switcher-btn[data-app="trt"]');
+                    if (trtSwitcherBtn) trtSwitcherBtn.classList.add('active');
+                } else {
+                    this.showRetaApp();
+                    document.getElementById('summary-tab').style.display = 'block';
+                }
             }
 
             // ====================================
@@ -7733,6 +7760,8 @@
                 document.getElementById('shot-submit-btn').textContent = 'Add Shot';
                 document.getElementById('add-weight-modal-title').textContent = 'Add Weight Entry';
                 document.getElementById('weight-submit-btn').textContent = 'Add Weight';
+                document.getElementById('add-trt-vial-modal-title').textContent = 'Add TRT Vial';
+                document.getElementById('trt-vial-submit-btn').textContent = 'Add Vial';
 
                 // Reset forms
                 document.querySelectorAll('form').forEach(form => form.reset());
@@ -7828,6 +7857,52 @@
                 // Show modal
                 document.getElementById('modal-overlay').style.display = 'block';
                 document.getElementById('add-vial-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
+            showEditTrtVialModal(vialId) {
+                // Find TRT vial by ID
+                const vial = this.data.trtVials.find(v => v.id === vialId);
+                if (!vial) {
+                    console.error('TRT vial not found:', vialId);
+                    return;
+                }
+
+                // Set edit mode state
+                this.editMode.active = true;
+                this.editMode.entityType = 'trt_vial';
+                this.editMode.entityId = vialId;
+                this.editMode.originalData = { ...vial };
+
+                // Update modal title and button
+                document.getElementById('add-trt-vial-modal-title').textContent = 'Edit TRT Vial';
+                document.getElementById('trt-vial-submit-btn').textContent = 'Save Changes';
+
+                // Pre-fill form with existing data
+                document.getElementById('trt-vial-concentration').value = vial.concentration_mg_ml || '';
+                document.getElementById('trt-vial-volume').value = vial.volume_ml || '';
+                document.getElementById('trt-vial-lot').value = vial.lot_number || '';
+                document.getElementById('trt-vial-expiry').value = vial.expiry_date ? new Date(vial.expiry_date).toISOString().slice(0, 10) : '';
+                document.getElementById('trt-vial-status').value = vial.status || 'dry_stock';
+                document.getElementById('trt-vial-notes').value = vial.notes || '';
+
+                // Show/hide opened date and remaining volume based on status
+                const trtOpenedDateGroup = document.getElementById('trt-vial-opened-group');
+                const trtRemainingVolumeGroup = document.getElementById('trt-vial-remaining-group');
+
+                if (vial.status === 'active') {
+                    if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'block';
+                    if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'block';
+                    document.getElementById('trt-vial-opened').value = vial.opened_date ? new Date(vial.opened_date).toISOString().slice(0, 10) : '';
+                    document.getElementById('trt-vial-remaining').value = vial.remaining_ml || '';
+                } else {
+                    if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
+                    if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
+                }
+
+                // Show modal
+                document.getElementById('modal-overlay').style.display = 'flex';
+                document.getElementById('add-trt-vial-modal').style.display = 'block';
                 document.body.style.overflow = 'hidden';
             }
 
@@ -8434,6 +8509,7 @@
             async handleAddTrtVial() {
                 try {
                     const form = document.getElementById('add-trt-vial-form');
+                    const isEditMode = this.editMode.active && this.editMode.entityType === 'trt_vial';
 
                     // Validate form before processing
                     if (!form.checkValidity()) {
@@ -8487,16 +8563,33 @@
                                 alert(`Remaining volume (${vial.remaining_ml}ml) cannot exceed total volume (${volumeMl}ml)`);
                                 return;
                             }
+                        } else if (!remainingMl && isEditMode) {
+                            // Preserve existing remaining_ml if editing and field is empty
+                            const existingVial = this.data.trtVials.find(v => v.id === this.editMode.entityId);
+                            if (existingVial && existingVial.remaining_ml !== undefined) {
+                                vial.remaining_ml = existingVial.remaining_ml;
+                            }
                         }
                     }
 
-                    await this.addTrtVial(vial);
+                    if (isEditMode) {
+                        // Update existing vial
+                        await this.updateTrtVial(this.editMode.entityId, vial);
+                        this.showToast('TRT vial updated successfully');
+                    } else {
+                        // Add new vial
+                        await this.addTrtVial(vial);
+                    }
 
                     // Reset form after successful submission
                     form.reset();
 
+                    // Reset modal title and button for next use
+                    document.getElementById('add-trt-vial-modal-title').textContent = 'Add TRT Vial';
+                    document.getElementById('trt-vial-submit-btn').textContent = 'Add Vial';
+
                 } catch (error) {
-                    console.error('Error adding TRT vial:', error);
+                    console.error('Error adding/updating TRT vial:', error);
                     alert('TRT vial saved locally. Cloud sync will retry automatically.');
                 } finally {
                     // Always close modal, even on error
