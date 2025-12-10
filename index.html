@@ -1224,6 +1224,37 @@
             border-left: 4px solid var(--warning-color);
         }
 
+        /* TRT Vial Status Badges */
+        .status-badge {
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-left: 8px;
+        }
+
+        .status-badge.active {
+            background-color: var(--success-color);
+            color: white;
+        }
+
+        .status-badge.dry-stock {
+            background-color: var(--warning-color);
+            color: var(--bg-color);
+        }
+
+        .status-badge.empty {
+            background-color: var(--text-muted);
+            color: white;
+        }
+
+        .status-badge.expired {
+            background-color: var(--danger-color);
+            color: white;
+        }
+
         /* Delete Button Styles */
         .item-actions {
             display: flex;
@@ -3530,6 +3561,7 @@
                     <select id="trt-vial-status" required>
                         <option value="dry_stock">Dry Stock (Unopened)</option>
                         <option value="active">Active (In Use)</option>
+                        <option value="empty">Empty (Finished)</option>
                     </select>
                 </div>
                 <div class="form-group" id="trt-vial-opened-group" style="display: none;">
@@ -6837,7 +6869,7 @@
                 const trtRemainingVolumeGroup = document.getElementById('trt-vial-remaining-group');
                 if (trtVialStatus) {
                     trtVialStatus.addEventListener('change', (e) => {
-                        if (e.target.value === 'active') {
+                        if (e.target.value === 'active' || e.target.value === 'empty') {
                             if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'block';
                             if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'block';
                         } else {
@@ -7890,11 +7922,12 @@
                 const trtOpenedDateGroup = document.getElementById('trt-vial-opened-group');
                 const trtRemainingVolumeGroup = document.getElementById('trt-vial-remaining-group');
 
-                if (vial.status === 'active') {
+                if (vial.status === 'active' || vial.status === 'empty') {
                     if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'block';
                     if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'block';
                     document.getElementById('trt-vial-opened').value = vial.opened_date ? new Date(vial.opened_date).toISOString().slice(0, 10) : '';
-                    document.getElementById('trt-vial-remaining').value = vial.remaining_ml || '';
+                    // For empty vials, show 0; for active, show actual remaining
+                    document.getElementById('trt-vial-remaining').value = vial.status === 'empty' ? '0' : (vial.remaining_ml || '');
                 } else {
                     if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
                     if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
@@ -8569,7 +8602,13 @@
                             if (existingVial && existingVial.remaining_ml !== undefined) {
                                 vial.remaining_ml = existingVial.remaining_ml;
                             }
+                        } else if (!remainingMl && !isEditMode) {
+                            // New active vial with empty remaining field - default to full volume
+                            vial.remaining_ml = volumeMl;
                         }
+                    } else if (status === 'empty') {
+                        // Empty vials have 0 remaining
+                        vial.remaining_ml = 0;
                     }
 
                     if (isEditMode) {
