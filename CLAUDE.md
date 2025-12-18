@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TRT Tracker is a Progressive Web App (PWA) for tracking Testosterone Replacement Therapy (TRT) injections with cloud synchronization. The application consists of:
 
-1. **Frontend**: Single-page application in `index.html` (~5000 lines)
+1. **Frontend**: Single-page application in `index.html` (~12,600 lines)
 2. **Cloud Infrastructure**: AWS CDK stack in `reta-cloud-infrastructure/`
 3. **Backend**: AWS Lambda functions for API endpoints
 
@@ -18,7 +18,7 @@ TRT Tracker is a Progressive Web App (PWA) for tracking Testosterone Replacement
 
 The application uses a **monolithic single-file architecture** with vanilla JavaScript ES6+:
 
-- **Main Application Class**: `InjectionTracker` in `index.html` (starts ~line 1600)
+- **Main Application Class**: `InjectionTracker` in `index.html` (starts line 3632)
   - Manages all application state in `this.data` object
   - Contains injections, vials, weights, and settings
   - All data stored in localStorage with browser-based backup system
@@ -70,7 +70,7 @@ The application uses a **monolithic single-file architecture** with vanilla Java
 - **CloudFront CDN**: Serves static frontend from S3
 - **Origin Access Control (OAC)**: Secure S3 access (NOT OAI - deprecated)
 - **Cache Policy**: 365-day TTL for cost optimization
-- **Auth Gate**: Login screen shown before app content (see `index.html` lines ~1225-1241)
+- **Auth Gate**: Login screen shown before app content (see `index.html` lines ~2423-2500)
 - **SEO Blocking**: robots.txt blocks all crawlers including AI bots
 
 ## Development Commands
@@ -173,11 +173,17 @@ The application uses **Chart.js** for weight tracking with custom styling:
 
 ### Data Property Naming
 
-**Critical**: The codebase uses **camelCase** for data properties:
-- ✅ `weightKg`, `doseMg`, `vialId`
-- ❌ NOT `weight_kg`, `dose_mg`, `vial_id`
+**Critical**: The codebase uses **two different formats**:
 
-This is consistent across localStorage, API, and DynamoDB.
+**Internal/localStorage** (snake_case):
+- `dose_mg`, `weight_kg`, `vial_id`, `injection_site`
+- `concentration_mg_ml`, `current_volume_ml`
+
+**API/DynamoDB** (camelCase):
+- `doseMg`, `weightKg`, `vialId`, `site`
+- `concentrationMgPerMl`, `initialVolumeMl`
+
+The frontend automatically maps between formats during cloud sync operations.
 
 ### Key Metrics and Calculations
 
@@ -227,14 +233,15 @@ Backup cleanup is **Lambda-managed, not S3 lifecycle rules**:
 
 ## Working with the Monolithic Frontend
 
-The `index.html` file contains ~5000 lines. Key sections:
+The `index.html` file contains ~12,600 lines. Key sections:
 
-- **Lines 1-200**: HTML structure, meta tags, CSS
-- **Lines 200-1600**: CSS styles (dark theme, responsive design)
-- **Lines 1600-4900**: `InjectionTracker` class (main application logic)
-- **Lines 4900-5000**: Initialization and event handlers
+- **Lines 1-50**: HTML structure, meta tags
+- **Lines 50-2420**: CSS styles (dark theme, responsive design)
+- **Lines 2420-3630**: HTML body, auth gate, main app structure
+- **Lines 3632-12400**: `InjectionTracker` class (main application logic)
+- **Lines 12400-12664**: Initialization and event handlers
 
-When editing, use specific line searches in the Read tool rather than reading the entire file.
+When editing, use Grep to find specific functions or sections rather than reading the entire file.
 
 ## Git Workflow
 
@@ -284,12 +291,28 @@ Co-Authored-By: Claude <noreply@anthropic.com>
 
 ## Testing Notes
 
-Playwright tests in `tests/` directory:
-- `app.spec.js` - Core application functionality
-- `data-integrity.spec.js` - Data validation tests
-- `live-site.spec.js` - Production site smoke tests
+Playwright tests are organized in `tests/` with 40+ test files:
 
-Tests expect local server on port 3000 or live CloudFront URL.
+**Test Directories:**
+- `tests/e2e/` - End-to-end CRUD tests (injections, vials, weights, charts, settings)
+- `tests/integration/` - Feature integration tests
+- `tests/sync/` - Cloud sync and offline operations
+- `tests/edge-cases/` - Error handling and validation
+- `tests/performance/` - Large dataset tests
+- `tests/data/` - Data integrity and cleanup
+- `tests/smoke/` - Pre-deploy sanity checks
+
+**Running Tests:**
+```bash
+npm test                           # Run all tests
+npm test -- tests/e2e/01-injection-crud.spec.js  # Run single test file
+npm test -- --grep "should add"    # Run tests matching pattern
+npm run test:headed                # Run with browser visible
+npm run test:integration           # Run integration suite only
+npm run test:live                  # Test live production site
+```
+
+Tests expect local server on `http://localhost:3000` (run `npm start` first).
 
 ## AWS Profile
 
