@@ -1,6 +1,6 @@
 {
-	"name": "Injection Tracker",
-	"short_name": "InjectTracker",
+	"name": "RTracker",
+	"short_name": "RTracker",
 	"description": "Comprehensive injection tracker with vial management and weight tracking",
 	"start_url": "/",
 	"display": "standalone",
