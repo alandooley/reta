@@ -9590,19 +9590,19 @@
                     .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                 // Check if we have any data to display
-                // Allow rendering if we have either weights OR skipped injections
+                // Show chart if we have injections AND weights (don't require them to match within 24h)
                 const hasSkippedOnly = injectionsWithWeights.length > 0 &&
                                        injectionsWithWeights.every(inj => inj.skipped) &&
-                                       weightsWithInjections.length === 0;
+                                       sortedWeights.length === 0;
 
-                if (injectionsWithWeights.length === 0 || (weightsWithInjections.length === 0 && !hasSkippedOnly)) {
+                if (injectionsWithWeights.length === 0 || (sortedWeights.length === 0 && !hasSkippedOnly)) {
                     // Show empty state
                     const container = canvas.parentElement;
                     container.innerHTML = `
                         <div class="empty-state">
                             <div class="empty-state-icon">📊</div>
                             <h3>No shots with weight data yet</h3>
-                            <p>Add weight entries on the same day as your shots to see them here</p>
+                            <p>Add weight entries to see your progress here</p>
                         </div>
                     `;
                     return;
@@ -9659,8 +9659,9 @@
                     }).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
                 };
 
-                // Apply aggregation to weights with injections
-                const displayWeights = aggregateWeights(weightsWithInjections, aggregateBy);
+                // Apply aggregation to ALL weights in time range (not just those matching injections)
+                // This ensures the chart line is continuous and dose labels can be positioned anywhere
+                const displayWeights = aggregateWeights(sortedWeights, aggregateBy);
 
                 // Ensure canvas exists for chart
                 if (!canvas.parentElement.querySelector('canvas')) {
@@ -9754,7 +9755,7 @@
                     }
                 }];
 
-                // Custom plugin to draw dose labels - only for injections with matching weights
+                // Custom plugin to draw dose labels for all injections
                 const doseLabelsPlugin = {
                     id: 'doseLabels',
                     afterDatasetsDraw: (chart) => {
