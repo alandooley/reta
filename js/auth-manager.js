@@ -73,18 +73,21 @@ class AuthManager {
             console.error('Error stack:', error.stack);
 
             // Handle missing initial state error specifically
+            // Since we now use popup mode exclusively for sign-in, this error is expected
+            // in these scenarios and can be safely ignored:
+            // - Storage partitioning (Safari ITP, Chrome 3rd party cookie blocking)
+            // - Stale redirect state from before popup mode migration
+            // - Browser cleared sessionStorage between visits
+            // User can still sign in normally via popup - no need to show an error
             if (error.message.includes('missing initial state')) {
-                console.error('⚠️ Missing initial state error - this usually means:');
-                console.error('  1. Browser blocked cookies/storage during redirect');
-                console.error('  2. User is in private/incognito mode');
-                console.error('  3. Browser cleared storage between redirect steps');
-
-                // Store error info for user display (don't sign out - may destroy partial auth)
-                sessionStorage.setItem('auth_error', JSON.stringify({
-                    code: 'missing-initial-state',
-                    message: 'Browser storage was blocked during sign-in. Please enable cookies and try again.',
-                    timestamp: Date.now()
-                }));
+                console.log('ℹ️ Ignoring "missing initial state" error - expected with popup-only auth mode');
+                console.log('  (Stale redirect state or storage partitioning - user can sign in via popup)');
+                // Clear any stale auth error from previous sessions
+                try {
+                    sessionStorage.removeItem('auth_error');
+                } catch (e) {
+                    // sessionStorage may be inaccessible - that's fine
+                }
             } else if (error.code === 'auth/popup-closed-by-user' ||
                        error.code === 'auth/cancelled-popup-request') {
                 console.log('Auth flow was cancelled by user');
