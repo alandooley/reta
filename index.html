@@ -4455,14 +4455,16 @@
                 try {
                     console.log('Syncing data from cloud...');
 
-                    // Fetch all data from API
-                    const [injectionsAPI, weightsAPI, vialsAPI] = await Promise.all([
+                    // Fetch all data from API (including TRT data)
+                    const [injectionsAPI, weightsAPI, vialsAPI, trtVialsAPI, trtInjectionsAPI] = await Promise.all([
                         apiClient.getInjections(),
                         apiClient.getWeights(),
-                        apiClient.getVials()
+                        apiClient.getVials(),
+                        apiClient.getTrtVials().catch(err => { console.warn('Failed to fetch TRT vials:', err); return []; }),
+                        apiClient.getTrtInjections().catch(err => { console.warn('Failed to fetch TRT injections:', err); return []; })
                     ]);
 
-                    console.log(`Fetched from cloud: ${injectionsAPI.length} injections, ${weightsAPI.length} weights, ${vialsAPI.length} vials`);
+                    console.log(`Fetched from cloud: ${injectionsAPI.length} injections, ${weightsAPI.length} weights, ${vialsAPI.length} vials, ${trtVialsAPI.length} TRT vials, ${trtInjectionsAPI.length} TRT injections`);
 
                     // Map API format (camelCase) to app format (snake_case)
                     const cloudInjections = injectionsAPI.map(inj => ({
@@ -4500,10 +4502,42 @@
                         used_volume_ml: vial.used_volume_ml
                     }));
 
+                    // Map TRT vials from API format to app format
+                    const cloudTrtVials = trtVialsAPI.map(vial => ({
+                        id: vial.id,
+                        concentration_mg_ml: vial.concentrationMgMl,
+                        volume_ml: vial.volumeMl,
+                        remaining_ml: vial.remainingMl,
+                        lot_number: vial.lotNumber || '',
+                        expiry_date: vial.expiryDate,
+                        opened_date: vial.openedDate || null,
+                        status: vial.status,
+                        notes: vial.notes || '',
+                        cloudSynced: true
+                    }));
+
+                    // Map TRT injections from API format to app format
+                    const cloudTrtInjections = trtInjectionsAPI.map(inj => ({
+                        id: inj.id,
+                        timestamp: inj.timestamp,
+                        volume_ml: inj.volumeMl,
+                        concentration_mg_ml: inj.concentrationMgMl,
+                        dose_mg: inj.doseMg,
+                        injection_site: inj.injectionSite,
+                        time_of_day: inj.timeOfDay || null,
+                        technique_notes: inj.techniqueNotes || '',
+                        notes: inj.notes || '',
+                        vial_id: inj.vialId || null,
+                        skipped: inj.skipped || false,
+                        cloudSynced: true
+                    }));
+
                     // MERGE cloud data with local data (prevents losing pending items)
                     this.data.injections = this.mergeArrays(this.data.injections, cloudInjections, 'id');
                     this.data.weights = this.mergeArrays(this.data.weights, cloudWeights, 'id');
                     this.data.vials = this.mergeArrays(this.data.vials, cloudVials, 'vial_id');
+                    this.data.trtVials = this.mergeArrays(this.data.trtVials || [], cloudTrtVials, 'id');
+                    this.data.trtInjections = this.mergeArrays(this.data.trtInjections || [], cloudTrtInjections, 'id');
 
                     // Save to localStorage (without showing indicator - this is a sync, not a user save)
                     this.saveData(false);
