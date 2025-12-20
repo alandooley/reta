@@ -124,34 +124,35 @@ class CloudStorage {
             try {
                 let cloudVial;
 
-                // Check if vial already exists in cloud (has an ID that's not a temp local ID)
-                const isExistingVial = vial.id && !vial.id.startsWith('temp_') && vial.cloudSynced !== false;
+                const vialData = {
+                    startDate: vial.order_date || vial.startDate,
+                    initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
+                    concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
+                    currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl || vial.initialVolumeMl,
+                    usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
+                    status: vial.status || 'active',
+                    source: vial.supplier || vial.source || '',
+                    notes: vial.notes || '',
+                };
 
-                if (isExistingVial) {
-                    // Update existing vial with PATCH
-                    cloudVial = await this.apiClient.updateVial(vial.id, {
-                        startDate: vial.order_date || vial.startDate,
-                        initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
-                        concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
-                        currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl,
-                        usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
-                        status: vial.status || 'active',
-                        source: vial.supplier || vial.source || '',
-                        notes: vial.notes || '',
-                    });
-                    console.log('Vial updated in cloud:', vial.id);
+                // If vial has an ID, try to update it first
+                if (vial.id || vial.vial_id) {
+                    const vialId = vial.id || vial.vial_id;
+                    try {
+                        cloudVial = await this.apiClient.updateVial(vialId, vialData);
+                        console.log('Vial updated in cloud:', vialId);
+                    } catch (updateError) {
+                        // If update fails (vial doesn't exist in cloud), try to create it
+                        console.log('Update failed, trying to create vial in cloud:', updateError.message);
+                        cloudVial = await this.apiClient.createVial({
+                            id: vialId,  // Use existing ID to maintain consistency
+                            ...vialData
+                        });
+                        console.log('Vial created in cloud:', cloudVial.id);
+                    }
                 } else {
-                    // Create new vial
-                    cloudVial = await this.apiClient.createVial({
-                        startDate: vial.order_date || vial.startDate,
-                        initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
-                        concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
-                        currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl || vial.initialVolumeMl,
-                        usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
-                        status: vial.status || 'active',
-                        source: vial.supplier || vial.source || '',
-                        notes: vial.notes || '',
-                    });
+                    // No ID - create new vial
+                    cloudVial = await this.apiClient.createVial(vialData);
                     console.log('Vial created in cloud:', cloudVial.id);
                 }
 
@@ -351,34 +352,34 @@ class CloudStorage {
             try {
                 let cloudVial;
 
-                // Check if vial already exists in cloud (has an ID that's not a temp local ID)
-                const isExistingVial = vial.id && !vial.id.startsWith('temp_') && vial.cloudSynced !== false;
+                const vialData = {
+                    concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
+                    volumeMl: vial.volume_ml || vial.volumeMl,
+                    remainingMl: vial.remaining_ml || vial.remainingMl,
+                    lotNumber: vial.lot_number || vial.lotNumber || '',
+                    expiryDate: vial.expiry_date || vial.expiryDate,
+                    openedDate: vial.opened_date || vial.openedDate || null,
+                    status: vial.status,
+                    notes: vial.notes || '',
+                };
 
-                if (isExistingVial) {
-                    // Update existing vial with PATCH
-                    cloudVial = await this.apiClient.patchTrtVial(vial.id, {
-                        concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
-                        volumeMl: vial.volume_ml || vial.volumeMl,
-                        remainingMl: vial.remaining_ml || vial.remainingMl,
-                        lotNumber: vial.lot_number || vial.lotNumber || '',
-                        expiryDate: vial.expiry_date || vial.expiryDate,
-                        openedDate: vial.opened_date || vial.openedDate || null,
-                        status: vial.status,
-                        notes: vial.notes || '',
-                    });
-                    console.log('TRT vial updated in cloud:', vial.id);
+                // If vial has an ID, try to update it first
+                if (vial.id) {
+                    try {
+                        cloudVial = await this.apiClient.patchTrtVial(vial.id, vialData);
+                        console.log('TRT vial updated in cloud:', vial.id);
+                    } catch (patchError) {
+                        // If PATCH fails (vial doesn't exist in cloud), try to create it
+                        console.log('PATCH failed, trying to create vial in cloud:', patchError.message);
+                        cloudVial = await this.apiClient.createTrtVial({
+                            id: vial.id,  // Use existing ID to maintain consistency
+                            ...vialData
+                        });
+                        console.log('TRT vial created in cloud:', cloudVial.id);
+                    }
                 } else {
-                    // Create new vial
-                    cloudVial = await this.apiClient.createTrtVial({
-                        concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
-                        volumeMl: vial.volume_ml || vial.volumeMl,
-                        remainingMl: vial.remaining_ml || vial.remainingMl,
-                        lotNumber: vial.lot_number || vial.lotNumber || '',
-                        expiryDate: vial.expiry_date || vial.expiryDate,
-                        openedDate: vial.opened_date || vial.openedDate || null,
-                        status: vial.status,
-                        notes: vial.notes || '',
-                    });
+                    // No ID - create new vial
+                    cloudVial = await this.apiClient.createTrtVial(vialData);
                     console.log('TRT vial created in cloud:', cloudVial.id);
                 }
 
