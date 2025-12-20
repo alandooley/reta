@@ -327,19 +327,41 @@ class CloudStorage {
         // Sync to cloud if authenticated
         if (this.isCloudAvailable()) {
             try {
-                const cloudVial = await this.apiClient.createTrtVial({
-                    concentrationMgMl: vial.concentrationMgMl,
-                    volumeMl: vial.volumeMl,
-                    remainingMl: vial.remainingMl,
-                    lotNumber: vial.lotNumber || '',
-                    expiryDate: vial.expiryDate,
-                    openedDate: vial.openedDate || null,
-                    status: vial.status,
-                    notes: vial.notes || '',
-                });
+                let cloudVial;
+
+                // Check if vial already exists in cloud (has an ID that's not a temp local ID)
+                const isExistingVial = vial.id && !vial.id.startsWith('temp_') && vial.cloudSynced !== false;
+
+                if (isExistingVial) {
+                    // Update existing vial with PATCH
+                    cloudVial = await this.apiClient.patchTrtVial(vial.id, {
+                        concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
+                        volumeMl: vial.volume_ml || vial.volumeMl,
+                        remainingMl: vial.remaining_ml || vial.remainingMl,
+                        lotNumber: vial.lot_number || vial.lotNumber || '',
+                        expiryDate: vial.expiry_date || vial.expiryDate,
+                        openedDate: vial.opened_date || vial.openedDate || null,
+                        status: vial.status,
+                        notes: vial.notes || '',
+                    });
+                    console.log('TRT vial updated in cloud:', vial.id);
+                } else {
+                    // Create new vial
+                    cloudVial = await this.apiClient.createTrtVial({
+                        concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
+                        volumeMl: vial.volume_ml || vial.volumeMl,
+                        remainingMl: vial.remaining_ml || vial.remainingMl,
+                        lotNumber: vial.lot_number || vial.lotNumber || '',
+                        expiryDate: vial.expiry_date || vial.expiryDate,
+                        openedDate: vial.opened_date || vial.openedDate || null,
+                        status: vial.status,
+                        notes: vial.notes || '',
+                    });
+                    console.log('TRT vial created in cloud:', cloudVial.id);
+                }
 
                 // Update local with cloud ID
-                savedLocal.id = cloudVial.id;
+                savedLocal.id = cloudVial.id || savedLocal.id;
                 savedLocal.cloudSynced = true;
                 await this.localStorage.saveTrtVial(savedLocal);
 
