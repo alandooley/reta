@@ -5368,9 +5368,11 @@
                     throw new Error('TRT vial not found');
                 }
 
+                const existingVial = this.data.trtVials[vialIndex];
                 const updatedVial = {
-                    ...this.data.trtVials[vialIndex],
-                    ...updates
+                    ...existingVial,
+                    ...updates,
+                    id: vialId  // Ensure ID is preserved
                 };
 
                 this.data.trtVials[vialIndex] = updatedVial;
@@ -5379,9 +5381,17 @@
 
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        await cloudStorage.saveTrtVial(updatedVial);
+                        // Mark as synced to cloud so saveTrtVial knows to use PATCH
+                        await cloudStorage.saveTrtVial({
+                            ...updatedVial,
+                            cloudSynced: existingVial.cloudSynced !== false  // Preserve sync status or default to true for updates
+                        });
+                        console.log('TRT vial update synced to cloud:', vialId);
                     } catch (error) {
                         console.warn('Failed to sync TRT vial update to cloud:', error);
+                        // Mark as needing sync
+                        updatedVial.cloudSynced = false;
+                        this.saveData();
                     }
                 }
 
@@ -5424,6 +5434,20 @@
                 }
 
                 this.saveData();
+
+                // Sync vial usage to cloud
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtVial({
+                            ...vial,
+                            cloudSynced: true  // Mark as existing vial to use PATCH
+                        });
+                    } catch (error) {
+                        console.warn('Failed to sync TRT vial usage to cloud:', error);
+                        vial.cloudSynced = false;
+                        this.saveData();
+                    }
+                }
             }
 
             async reverseTrtVialUsage(vialId, volumeMl) {
@@ -5443,6 +5467,20 @@
                 }
 
                 this.saveData();
+
+                // Sync reversed vial usage to cloud
+                if (authManager && authManager.isAuthenticated() && cloudStorage) {
+                    try {
+                        await cloudStorage.saveTrtVial({
+                            ...vial,
+                            cloudSynced: true  // Mark as existing vial to use PATCH
+                        });
+                    } catch (error) {
+                        console.warn('Failed to sync TRT vial reversal to cloud:', error);
+                        vial.cloudSynced = false;
+                        this.saveData();
+                    }
+                }
             }
 
             // ====================================
@@ -8753,16 +8791,20 @@
                     this.saveData();
                     this.updateUI();
 
-                    // Sync to cloud
-                    if (window.apiClient) {
+                    // Sync to cloud using cloudStorage for proper update handling
+                    if (authManager && authManager.isAuthenticated() && cloudStorage) {
                         try {
-                            await window.apiClient.patchTrtVial(vialId, {
-                                status: 'empty',
-                                remaining_ml: 0,
-                                finished_date: vial.finished_date
+                            await cloudStorage.saveTrtVial({
+                                ...vial,
+                                id: vialId,
+                                cloudSynced: true  // Mark as existing in cloud
                             });
+                            console.log('TRT vial finish synced to cloud:', vialId);
                         } catch (syncError) {
-                            console.error('Cloud sync failed for finish vial, will retry:', syncError);
+                            console.error('Cloud sync failed for finish vial:', syncError);
+                            // Mark as needing sync so it will be picked up on next full sync
+                            vial.cloudSynced = false;
+                            this.saveData();
                         }
                     }
 
