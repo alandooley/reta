@@ -5354,8 +5354,13 @@
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
                         await cloudStorage.saveTrtVial(newVial);
+                        // Mark vial as synced in app data
+                        newVial.cloudSynced = true;
+                        this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT vial to cloud:', error);
+                        newVial.cloudSynced = false;
+                        this.saveData();
                     }
                 }
 
