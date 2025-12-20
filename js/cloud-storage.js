@@ -122,19 +122,41 @@ class CloudStorage {
         // Sync to cloud if authenticated
         if (this.isCloudAvailable()) {
             try {
-                const cloudVial = await this.apiClient.createVial({
-                    startDate: vial.startDate,
-                    initialVolumeMl: vial.initialVolumeMl,
-                    concentrationMgPerMl: vial.concentrationMgPerMl,
-                    currentVolumeMl: vial.currentVolumeMl || vial.initialVolumeMl,
-                    usedVolumeMl: vial.usedVolumeMl || 0,
-                    status: vial.status || 'active',
-                    source: vial.source || '',
-                    notes: vial.notes || '',
-                });
+                let cloudVial;
+
+                // Check if vial already exists in cloud (has an ID that's not a temp local ID)
+                const isExistingVial = vial.id && !vial.id.startsWith('temp_') && vial.cloudSynced !== false;
+
+                if (isExistingVial) {
+                    // Update existing vial with PATCH
+                    cloudVial = await this.apiClient.updateVial(vial.id, {
+                        startDate: vial.order_date || vial.startDate,
+                        initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
+                        concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
+                        currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl,
+                        usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
+                        status: vial.status || 'active',
+                        source: vial.supplier || vial.source || '',
+                        notes: vial.notes || '',
+                    });
+                    console.log('Vial updated in cloud:', vial.id);
+                } else {
+                    // Create new vial
+                    cloudVial = await this.apiClient.createVial({
+                        startDate: vial.order_date || vial.startDate,
+                        initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
+                        concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
+                        currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl || vial.initialVolumeMl,
+                        usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
+                        status: vial.status || 'active',
+                        source: vial.supplier || vial.source || '',
+                        notes: vial.notes || '',
+                    });
+                    console.log('Vial created in cloud:', cloudVial.id);
+                }
 
                 // Update local with cloud ID
-                savedLocal.id = cloudVial.id;
+                savedLocal.id = cloudVial.id || savedLocal.id;
                 savedLocal.cloudSynced = true;
                 await this.localStorage.saveVial(savedLocal);
 
