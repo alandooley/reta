@@ -2975,7 +2975,10 @@
 
         <!-- TRT Shots Tab -->
         <div id="trt-shots-tab" class="tab-content" style="display: none;">
-            <h2 style="margin-bottom: var(--spacing-lg);">TRT Injections</h2>
+            <div class="shots-header">
+                <h2>TRT Injections</h2>
+                <button id="skip-trt-week-btn" class="skip-week-btn">Skip</button>
+            </div>
 
             <!-- Injection Site Rotation Warning -->
             <div id="trt-site-rotation-warning" style="display: none; margin-bottom: var(--spacing-md);"></div>
@@ -8952,7 +8955,7 @@
                     }
 
                     const scheduledDate = document.getElementById('skip-trt-injection-date').value;
-                    const reason = document.getElementById('skip-trt-injection-reason').value;
+                    const reason = document.getElementById('skip-trt-reason').value;
 
                     // Get user's typical dose to show what was skipped
                     const weeklyDose = this.calculateTrtWeeklyDose();
