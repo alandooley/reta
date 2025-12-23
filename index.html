@@ -4206,63 +4206,55 @@
 
                 let touchStartX = 0;
                 let touchStartY = 0;
-                let touchEndX = 0;
-                let touchEndY = 0;
-                let isSwiping = false;
-                const swipeThreshold = 80;
-                const tapThreshold = 10; // Max movement for a tap
+                let touchCurrentX = 0;
+                let touchCurrentY = 0;
+                let hasMoved = false;
+                const swipeThreshold = 80;      // Distance to complete a swipe
+                const moveThreshold = 30;       // Distance before starting to slide
 
                 element.addEventListener('touchstart', (e) => {
                     touchStartX = e.touches[0].clientX;
                     touchStartY = e.touches[0].clientY;
-                    isSwiping = false;
-                    element.classList.add('swiping');
+                    touchCurrentX = touchStartX;
+                    touchCurrentY = touchStartY;
+                    hasMoved = false;
                 }, { passive: true });
 
                 element.addEventListener('touchmove', (e) => {
-                    touchEndX = e.touches[0].clientX;
-                    touchEndY = e.touches[0].clientY;
-                    const swipeDistanceX = touchStartX - touchEndX;
-                    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
+                    touchCurrentX = e.touches[0].clientX;
+                    touchCurrentY = e.touches[0].clientY;
+                    const deltaX = touchStartX - touchCurrentX;
+                    const deltaY = Math.abs(touchStartY - touchCurrentY);
 
-                    // Only consider horizontal swipes (not vertical scrolling)
-                    if (swipeDistanceX > tapThreshold && swipeDistanceY < 50) {
-                        isSwiping = true;
-                        if (swipeDistanceX > 0 && swipeDistanceX < 100) {
-                            element.style.transform = `translateX(-${swipeDistanceX}px)`;
+                    // Only start sliding after significant horizontal movement
+                    // and minimal vertical movement (to not interfere with scrolling)
+                    if (deltaX > moveThreshold && deltaY < 50) {
+                        hasMoved = true;
+                        // Slide the element, subtracting the threshold so it starts from 0
+                        const slideAmount = Math.min(deltaX - moveThreshold, 80);
+                        if (slideAmount > 0) {
+                            element.style.transform = `translateX(-${slideAmount}px)`;
                         }
                     }
                 }, { passive: true });
 
                 element.addEventListener('touchend', (e) => {
-                    element.classList.remove('swiping');
-                    const swipeDistanceX = touchStartX - touchEndX;
-                    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
-                    const totalMovement = Math.abs(swipeDistanceX) + swipeDistanceY;
+                    const deltaX = touchStartX - touchCurrentX;
 
-                    // If it was a tap (minimal movement), trigger click on content area
-                    if (totalMovement < tapThreshold) {
-                        const contentArea = element.querySelector('.shot-content, .vial-content, .weight-content');
-                        if (contentArea && e.target.closest('.shot-content, .vial-content, .weight-content')) {
-                            // Small delay to let any existing handlers complete
-                            setTimeout(() => {
-                                contentArea.click();
-                            }, 10);
-                        }
-                    } else if (swipeDistanceX > swipeThreshold) {
-                        // It was a swipe
+                    if (!hasMoved) {
+                        // It was a tap - no significant movement occurred
+                        // Don't interfere, let the click event propagate naturally
+                        element.style.transform = '';
+                    } else if (deltaX > swipeThreshold) {
+                        // Complete the swipe
                         element.classList.add('swiped');
                         element.style.transform = `translateX(-80px)`;
                         this.triggerHaptic('medium');
                     } else {
+                        // Incomplete swipe - reset
                         element.classList.remove('swiped');
                         element.style.transform = '';
                     }
-
-                    touchStartX = 0;
-                    touchStartY = 0;
-                    touchEndX = 0;
-                    touchEndY = 0;
                 }, { passive: true });
             }
 
