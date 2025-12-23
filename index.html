@@ -1300,6 +1300,42 @@
             height: 20px;
         }
 
+        /* Tappable content areas - tap to edit */
+        .shot-content,
+        .vial-content,
+        .weight-content {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+            border-radius: var(--border-radius-sm);
+            margin: -8px;
+            padding: 8px;
+        }
+
+        .shot-content:active,
+        .vial-content:active,
+        .weight-content:active {
+            background-color: var(--secondary-bg);
+        }
+
+        /* Desktop hover state */
+        @media (hover: hover) {
+            .shot-content:hover,
+            .vial-content:hover,
+            .weight-content:hover {
+                background-color: var(--secondary-bg);
+            }
+        }
+
+        /* Disable tapping for skipped injections */
+        .shot-item.skipped .shot-content {
+            cursor: default;
+        }
+
+        .shot-item.skipped .shot-content:hover,
+        .shot-item.skipped .shot-content:active {
+            background-color: transparent;
+        }
+
         .delete-btn {
             background-color: transparent;
             border: 2px solid var(--danger-color);
@@ -6490,12 +6526,6 @@
                         ` : ''}
                     </div>
                     <div class="item-actions">
-                        <button class="edit-btn" aria-label="Edit vial" title="Edit this vial">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
                         <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
@@ -6505,12 +6535,6 @@
                     </div>
                     <div class="delete-action">Delete</div>
                 `;
-
-                // Add edit handler
-                const editBtn = div.querySelector('.edit-btn');
-                editBtn.addEventListener('click', () => {
-                    this.showEditTrtVialModal(vial.id);
-                });
 
                 // Add delete handler
                 const deleteBtn = div.querySelector('.delete-btn');
@@ -7278,20 +7302,31 @@
             }
 
             setupEditHandlers() {
-                // Use event delegation for edit buttons (since they're dynamically created)
+                // Use event delegation for tappable content areas (tap to edit)
                 document.addEventListener('click', (e) => {
-                    const editBtn = e.target.closest('.edit-btn');
-                    if (!editBtn) return;
+                    // Check for tappable content areas
+                    const contentArea = e.target.closest('.shot-content, .vial-content, .weight-content');
+                    if (!contentArea) return;
 
-                    const entityType = editBtn.dataset.entityType;
-                    const entityId = editBtn.dataset.entityId;
+                    // Don't trigger if clicking on buttons inside (like finish vial button)
+                    if (e.target.closest('button')) return;
 
-                    if (entityType === 'injection') {
-                        this.showEditInjectionModal(entityId);
-                    } else if (entityType === 'weight') {
+                    // Find the parent item container to get entity info
+                    const itemContainer = contentArea.closest('.shot-item, .vial-item, .weight-item');
+                    if (!itemContainer) return;
+
+                    const entityId = itemContainer.dataset.itemId;
+                    if (!entityId) return;
+
+                    // Determine entity type from container class
+                    if (itemContainer.classList.contains('shot-item')) {
+                        // Check if it's a skipped injection (not editable)
+                        if (itemContainer.classList.contains('skipped')) return;
+                        this.showEditTrtInjectionModal(entityId);
+                    } else if (itemContainer.classList.contains('vial-item')) {
+                        this.showEditTrtVialModal(entityId);
+                    } else if (itemContainer.classList.contains('weight-item')) {
                         this.showEditWeightModal(entityId);
-                    } else if (entityType === 'vial') {
-                        this.showEditVialModal(entityId);
                     }
                 });
             }
@@ -8063,6 +8098,8 @@
                 document.getElementById('weight-submit-btn').textContent = 'Add Weight';
                 document.getElementById('add-trt-vial-modal-title').textContent = 'Add TRT Vial';
                 document.getElementById('trt-vial-submit-btn').textContent = 'Add Vial';
+                document.getElementById('add-trt-injection-modal-title').textContent = 'Add TRT Injection';
+                document.getElementById('trt-injection-submit-btn').textContent = 'Add Injection';
 
                 // Reset forms
                 document.querySelectorAll('form').forEach(form => form.reset());
@@ -8158,6 +8195,52 @@
                 // Show modal
                 document.getElementById('modal-overlay').style.display = 'block';
                 document.getElementById('add-vial-modal').style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            }
+
+            showEditTrtInjectionModal(injectionId) {
+                // Find TRT injection by ID
+                const injection = this.data.trtInjections.find(inj => inj.id === injectionId);
+                if (!injection) {
+                    console.error('TRT injection not found:', injectionId);
+                    return;
+                }
+
+                // Set edit mode state
+                this.editMode.active = true;
+                this.editMode.entityType = 'trt_injection';
+                this.editMode.entityId = injectionId;
+                this.editMode.originalData = { ...injection };
+
+                // Update modal title and button
+                document.getElementById('add-trt-injection-modal-title').textContent = 'Edit TRT Injection';
+                document.getElementById('trt-injection-submit-btn').textContent = 'Save Changes';
+
+                // Pre-fill form with existing data
+                document.getElementById('trt-injection-date').value = new Date(injection.timestamp).toISOString().slice(0, 16);
+
+                // Populate vial dropdown and select the injection's vial
+                this.populateTrtVialDropdown();
+                document.getElementById('trt-injection-vial').value = injection.vial_id || '';
+
+                // Update dose display for selected vial
+                this.updateTrtDoseDisplay();
+
+                document.getElementById('trt-injection-volume').value = injection.volume_ml || '';
+                document.getElementById('trt-injection-site').value = injection.injection_site || '';
+                document.getElementById('trt-injection-time-of-day').value = injection.time_of_day || '';
+                document.getElementById('trt-injection-technique').value = injection.technique_notes || '';
+                document.getElementById('trt-injection-notes').value = injection.notes || '';
+
+                // Uncheck finish vial checkbox in edit mode
+                const finishVialCheckbox = document.getElementById('trt-finish-vial-checkbox');
+                if (finishVialCheckbox) {
+                    finishVialCheckbox.checked = false;
+                }
+
+                // Show modal
+                document.getElementById('modal-overlay').style.display = 'flex';
+                document.getElementById('add-trt-injection-modal').style.display = 'block';
                 document.body.style.overflow = 'hidden';
             }
 
@@ -8741,6 +8824,7 @@
             async handleAddTrtInjection() {
                 try {
                     const form = document.getElementById('add-trt-injection-form');
+                    const isEditMode = this.editMode.active && this.editMode.entityType === 'trt_injection';
 
                     // Validate form before processing
                     if (!form.checkValidity()) {
@@ -8768,8 +8852,19 @@
                     }
 
                     // Check if trying to use more than remaining volume
-                    if (volumeMl > vial.remaining_ml) {
-                        alert(`Cannot use ${volumeMl}ml - only ${vial.remaining_ml.toFixed(2)}ml remaining in this vial`);
+                    // In edit mode, account for the original volume used
+                    let availableVolume = vial.remaining_ml;
+                    if (isEditMode && this.editMode.originalData) {
+                        const originalVialId = this.editMode.originalData.vial_id;
+                        const originalVolume = this.editMode.originalData.volume_ml || 0;
+                        // If editing and using the same vial, add back the original volume
+                        if (originalVialId === vialId) {
+                            availableVolume += originalVolume;
+                        }
+                    }
+
+                    if (volumeMl > availableVolume) {
+                        alert(`Cannot use ${volumeMl}ml - only ${availableVolume.toFixed(2)}ml available in this vial`);
                         return;
                     }
 
@@ -8785,7 +8880,11 @@
                         skipped: false
                     };
 
-                    await this.addTrtInjection(injection);
+                    if (isEditMode) {
+                        await this.updateTrtInjection(this.editMode.entityId, injection);
+                    } else {
+                        await this.addTrtInjection(injection);
+                    }
 
                     // Reset form after successful submission
                     form.reset();
@@ -8798,7 +8897,7 @@
                     }
 
                 } catch (error) {
-                    console.error('Error adding TRT injection:', error);
+                    console.error('Error handling TRT injection:', error);
                     alert('TRT injection saved locally. Cloud sync will retry automatically.');
                 } finally {
                     // Always close modal, even on error
@@ -11153,12 +11252,6 @@
                         ` : ''}
                     </div>
                     <div class="item-actions">
-                        <button class="edit-btn" data-entity-type="weight" data-entity-id="${weight.id || weight.timestamp}" aria-label="Edit weight entry" title="Edit this weight entry">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
                         <button class="delete-btn" aria-label="Delete weight entry" title="Delete this weight entry">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
