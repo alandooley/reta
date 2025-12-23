@@ -4205,28 +4205,52 @@
                 if (!this.swipeToDeleteEnabled) return;
 
                 let touchStartX = 0;
+                let touchStartY = 0;
                 let touchEndX = 0;
+                let touchEndY = 0;
+                let isSwiping = false;
                 const swipeThreshold = 80;
+                const tapThreshold = 10; // Max movement for a tap
 
                 element.addEventListener('touchstart', (e) => {
                     touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    isSwiping = false;
                     element.classList.add('swiping');
                 }, { passive: true });
 
                 element.addEventListener('touchmove', (e) => {
                     touchEndX = e.touches[0].clientX;
-                    const swipeDistance = touchStartX - touchEndX;
+                    touchEndY = e.touches[0].clientY;
+                    const swipeDistanceX = touchStartX - touchEndX;
+                    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
 
-                    if (swipeDistance > 0 && swipeDistance < 100) {
-                        element.style.transform = `translateX(-${swipeDistance}px)`;
+                    // Only consider horizontal swipes (not vertical scrolling)
+                    if (swipeDistanceX > tapThreshold && swipeDistanceY < 50) {
+                        isSwiping = true;
+                        if (swipeDistanceX > 0 && swipeDistanceX < 100) {
+                            element.style.transform = `translateX(-${swipeDistanceX}px)`;
+                        }
                     }
                 }, { passive: true });
 
-                element.addEventListener('touchend', () => {
+                element.addEventListener('touchend', (e) => {
                     element.classList.remove('swiping');
-                    const swipeDistance = touchStartX - touchEndX;
+                    const swipeDistanceX = touchStartX - touchEndX;
+                    const swipeDistanceY = Math.abs(touchStartY - touchEndY);
+                    const totalMovement = Math.abs(swipeDistanceX) + swipeDistanceY;
 
-                    if (swipeDistance > swipeThreshold) {
+                    // If it was a tap (minimal movement), trigger click on content area
+                    if (totalMovement < tapThreshold) {
+                        const contentArea = element.querySelector('.shot-content, .vial-content, .weight-content');
+                        if (contentArea && e.target.closest('.shot-content, .vial-content, .weight-content')) {
+                            // Small delay to let any existing handlers complete
+                            setTimeout(() => {
+                                contentArea.click();
+                            }, 10);
+                        }
+                    } else if (swipeDistanceX > swipeThreshold) {
+                        // It was a swipe
                         element.classList.add('swiped');
                         element.style.transform = `translateX(-80px)`;
                         this.triggerHaptic('medium');
@@ -4236,7 +4260,9 @@
                     }
 
                     touchStartX = 0;
+                    touchStartY = 0;
                     touchEndX = 0;
+                    touchEndY = 0;
                 }, { passive: true });
             }
 
@@ -9342,18 +9368,12 @@
                             </div>
                         </div>
                         <div class="item-actions">
-                        <button class="edit-btn" data-entity-type="injection" data-entity-id="${injection.id}" aria-label="Edit injection" title="Edit this injection">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
-                                <path d="M10 11v6M14 11v6"/>
-                            </svg>
-                        </button>
+                            <button class="delete-btn" aria-label="Delete injection" title="Delete this injection">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                            </button>
                         </div>
                         <div class="delete-action">Delete</div>
                     `;
@@ -9393,18 +9413,14 @@
                                 </div>
                             </div>
                         </div>
-                        <button class="edit-btn" aria-label="Edit vial" title="Edit this vial">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
-                        <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
-                                <path d="M10 11v6M14 11v6"/>
-                            </svg>
-                        </button>
+                        <div class="item-actions">
+                            <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
+                                    <path d="M10 11v6M14 11v6"/>
+                                </svg>
+                            </button>
+                        </div>
                     `;
                     return div;
                 }
@@ -9484,12 +9500,6 @@
                         </div>
                     </div>
                     <div class="item-actions">
-                        <button class="edit-btn" data-entity-type="vial" data-entity-id="${vial.id}" aria-label="Edit vial" title="Edit this vial">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                            </svg>
-                        </button>
                         <button class="delete-btn" aria-label="Delete vial" title="Delete this vial">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z"/>
@@ -12183,17 +12193,6 @@
                                 const itemId = item.getAttribute('data-item-id');
                                 const timestamp = item.getAttribute('data-timestamp');
                                 this.handleDeleteVial(item, itemId, timestamp);
-                            };
-                        }
-
-                        // Add handler for edit button
-                        const editBtn = item.querySelector('.edit-btn');
-                        if (editBtn && !editBtn.dataset.initialized) {
-                            editBtn.dataset.initialized = 'true';
-                            editBtn.onclick = (e) => {
-                                e.stopPropagation();
-                                const itemId = item.getAttribute('data-item-id');
-                                app.openEditVialModal(itemId);
                             };
                         }
 
