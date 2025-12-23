@@ -4209,6 +4209,7 @@
                 let touchCurrentX = 0;
                 let touchCurrentY = 0;
                 let hasMoved = false;
+                let touchTarget = null;
                 const swipeThreshold = 80;      // Distance to complete a swipe
                 const moveThreshold = 30;       // Distance before starting to slide
 
@@ -4218,6 +4219,7 @@
                     touchCurrentX = touchStartX;
                     touchCurrentY = touchStartY;
                     hasMoved = false;
+                    touchTarget = e.target;
                 }, { passive: true });
 
                 element.addEventListener('touchmove', (e) => {
@@ -4242,9 +4244,17 @@
                     const deltaX = touchStartX - touchCurrentX;
 
                     if (!hasMoved) {
-                        // It was a tap - no significant movement occurred
-                        // Don't interfere, let the click event propagate naturally
+                        // It was a tap - explicitly trigger click since mobile may not fire it
                         element.style.transform = '';
+
+                        // Only trigger tap on content area, not on buttons
+                        if (touchTarget && !touchTarget.closest('button, .delete-action')) {
+                            const contentArea = element.querySelector('.shot-content, .vial-content, .weight-content');
+                            if (contentArea && touchTarget.closest('.shot-content, .vial-content, .weight-content')) {
+                                // Trigger a click event on the content area
+                                contentArea.click();
+                            }
+                        }
                     } else if (deltaX > swipeThreshold) {
                         // Complete the swipe
                         element.classList.add('swiped');
@@ -6179,11 +6189,15 @@
 
                 // Add delete handler
                 const deleteBtn = div.querySelector('.delete-btn');
-                deleteBtn.addEventListener('click', async () => {
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
                     if (confirm('Delete this injection?')) {
                         await this.deleteTrtInjection(injection.id);
                     }
                 });
+
+                // Add swipe to delete handlers (also enables tap-to-edit on mobile)
+                this.addSwipeToDeleteHandlers(div);
 
                 return div;
             }
@@ -6556,7 +6570,8 @@
 
                 // Add delete handler
                 const deleteBtn = div.querySelector('.delete-btn');
-                deleteBtn.addEventListener('click', async () => {
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
                     if (confirm('Delete this vial?')) {
                         await this.deleteTrtVial(vial.id);
                     }
@@ -6565,12 +6580,16 @@
                 // Add finish vial handler (only for active vials)
                 const finishBtn = div.querySelector('.finish-vial-btn');
                 if (finishBtn) {
-                    finishBtn.addEventListener('click', async () => {
+                    finishBtn.addEventListener('click', async (e) => {
+                        e.stopPropagation();
                         if (confirm('Mark this vial as finished (empty)?')) {
                             await this.finishTrtVial(vial.id);
                         }
                     });
                 }
+
+                // Add swipe to delete handlers (also enables tap-to-edit on mobile)
+                this.addSwipeToDeleteHandlers(div);
 
                 return div;
             }
@@ -11261,7 +11280,12 @@
                             </svg>
                         </button>
                     </div>
+                    <div class="delete-action">Delete</div>
                 `;
+
+                // Add swipe to delete handlers (also enables tap-to-edit on mobile)
+                this.addSwipeToDeleteHandlers(div);
+
                 return div;
             }
 
