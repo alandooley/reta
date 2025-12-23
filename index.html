@@ -3602,10 +3602,10 @@
                     </p>
                 </div>
                 <div class="form-group">
-                    <label for="skip-trt-planned-dose">Planned Dose (mg)</label>
-                    <input type="number" id="skip-trt-planned-dose" step="1" min="0" required readonly>
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        This is the dose you would have taken (for reference)
+                    <label for="skip-trt-volume">Volume (ml)</label>
+                    <input type="number" id="skip-trt-volume" step="0.05" min="0.05" max="2" required placeholder="0.3">
+                    <p id="skip-trt-dose-display" style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Calculated dose: -- mg
                     </p>
                 </div>
                 <div class="form-group">
@@ -8955,20 +8955,22 @@
                     }
 
                     const scheduledDate = document.getElementById('skip-trt-injection-date').value;
+                    const volumeMl = parseFloat(document.getElementById('skip-trt-volume').value);
                     const reason = document.getElementById('skip-trt-reason').value;
 
-                    // Get user's typical dose to show what was skipped
-                    const weeklyDose = this.calculateTrtWeeklyDose();
+                    // Get concentration from active vial or last injection
+                    const concentrationMgMl = this.getSkipTrtConcentration();
+                    const plannedDoseMg = volumeMl * concentrationMgMl;
 
                     const injection = {
                         timestamp: new Date(scheduledDate).toISOString(),
-                        volume_ml: 0,
-                        concentration_mg_ml: 0,
+                        volume_ml: volumeMl,
+                        concentration_mg_ml: concentrationMgMl,
                         injection_site: null,
                         vial_id: null,
                         notes: reason || 'Skipped injection',
                         skipped: true,
-                        planned_dose_mg: weeklyDose // Store what was planned
+                        planned_dose_mg: plannedDoseMg // Store what was planned
                     };
 
                     await this.addTrtInjection(injection);
@@ -8987,13 +8989,57 @@
                 }
             }
 
-            showSkipTrtInjectionModal() {
-                // Populate planned dose
-                const weeklyDose = this.calculateTrtWeeklyDose();
-                const plannedDoseEl = document.getElementById('skip-trt-planned-dose');
-                if (plannedDoseEl) {
-                    plannedDoseEl.value = weeklyDose.toFixed(1);
+            // Get concentration for skip shot from active vial or last injection
+            getSkipTrtConcentration() {
+                // Try active vial first
+                const activeVial = this.data.trtVials.find(v =>
+                    v.status === 'active' || v.status === 'activated'
+                );
+                if (activeVial && activeVial.concentration_mg_ml) {
+                    return activeVial.concentration_mg_ml;
                 }
+
+                // Fall back to last injection's concentration
+                const lastInjection = this.data.trtInjections
+                    .filter(inj => !inj.skipped && inj.concentration_mg_ml)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+                if (lastInjection) {
+                    return lastInjection.concentration_mg_ml;
+                }
+
+                // Default TRT concentration (200mg/ml is common)
+                return 200;
+            }
+
+            showSkipTrtInjectionModal() {
+                const volumeInput = document.getElementById('skip-trt-volume');
+                const doseDisplay = document.getElementById('skip-trt-dose-display');
+                const concentration = this.getSkipTrtConcentration();
+
+                // Set up volume input event listener for dose calculation
+                const updateSkipDoseDisplay = () => {
+                    const volumeMl = parseFloat(volumeInput?.value);
+                    if (!isNaN(volumeMl) && volumeMl > 0) {
+                        const doseMg = volumeMl * concentration;
+                        doseDisplay.textContent = `Calculated dose: ${doseMg.toFixed(1)} mg (at ${concentration}mg/ml)`;
+                    } else {
+                        doseDisplay.textContent = `Calculated dose: -- mg (at ${concentration}mg/ml)`;
+                    }
+                };
+
+                if (volumeInput) {
+                    volumeInput.addEventListener('input', updateSkipDoseDisplay);
+                }
+
+                // Pre-fill volume from last injection if available
+                const lastInjection = this.data.trtInjections
+                    .filter(inj => !inj.skipped && inj.volume_ml)
+                    .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+
+                if (lastInjection && volumeInput) {
+                    volumeInput.value = lastInjection.volume_ml;
+                }
+                updateSkipDoseDisplay();
 
                 // Set default date to today
                 const dateInput = document.getElementById('skip-trt-injection-date');
