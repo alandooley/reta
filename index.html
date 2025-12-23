@@ -2556,6 +2556,10 @@
                     <h3>Supply Forecast</h3>
                     <div class="supply-forecast">
                         <div class="forecast-row">
+                            <span class="forecast-label">Vials:</span>
+                            <span class="forecast-value" id="vial-counts">0 active, 0 dry stock</span>
+                        </div>
+                        <div class="forecast-row">
                             <span class="forecast-label">Total Supply:</span>
                             <span class="forecast-value" id="total-supply">0 mg</span>
                         </div>
@@ -2959,9 +2963,43 @@
             </div>
 
             <!-- Supply Forecast Card -->
-            <div class="card">
-                <h3>📦 Supply Forecast</h3>
-                <div id="trt-supply-forecast"></div>
+            <div class="supply-forecast-container">
+                <h3>Supply Forecast</h3>
+                <div class="supply-forecast" id="trt-supply-forecast">
+                    <div class="forecast-row">
+                        <span class="forecast-label">Vials:</span>
+                        <span class="forecast-value" id="trt-vial-counts">0 active, 0 unopened</span>
+                    </div>
+                    <div class="forecast-row">
+                        <span class="forecast-label">Total Supply:</span>
+                        <span class="forecast-value" id="trt-total-supply">0 mg</span>
+                    </div>
+                    <div class="forecast-row">
+                        <span class="forecast-label">Weekly Dose:</span>
+                        <span class="forecast-value" id="trt-weekly-dose">0 mg</span>
+                    </div>
+                    <div class="forecast-row">
+                        <span class="forecast-label">Supply Will Last:</span>
+                        <div class="stat-value-container">
+                            <span class="forecast-value" id="trt-supply-duration">0 weeks</span>
+                            <span id="trt-supply-duration-validation-indicator"></span>
+                        </div>
+                    </div>
+                    <div class="forecast-row">
+                        <span class="forecast-label">Estimated Run Out Date:</span>
+                        <div class="stat-value-container">
+                            <span class="forecast-value" id="trt-run-out-date">--</span>
+                            <span id="trt-run-out-date-validation-indicator"></span>
+                        </div>
+                    </div>
+                    <div class="forecast-row">
+                        <span class="forecast-label">Days Until Reorder:</span>
+                        <div class="stat-value-container">
+                            <span class="forecast-value" id="trt-reorder-days">--</span>
+                            <span id="trt-reorder-days-validation-indicator"></span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Current Protocol Card -->
@@ -5617,46 +5655,75 @@
             }
 
             calculateTrtSupplyForecast() {
-                const activeVials = this.data.trtVials.filter(v => v.status === 'active');
-                if (activeVials.length === 0) {
+                const trtVials = this.data.trtVials || [];
+                const activeVials = trtVials.filter(v => v.status === 'active');
+                const unopenedVials = trtVials.filter(v => v.status === 'unopened');
+
+                if (activeVials.length === 0 && unopenedVials.length === 0) {
                     return {
+                        success: false,
+                        error: 'No vial data available',
                         totalSupplyMl: 0,
                         totalSupplyMg: 0,
                         activeWeeksRemaining: 0,
                         skippedWeeksCount: 0,
                         calendarWeeksRemaining: 0,
+                        calendarDaysRemaining: 0,
                         adjustmentText: '',
                         runOutDate: null,
                         reorderDate: null,
-                        daysUntilReorder: 0
+                        daysUntilReorder: 0,
+                        activeVialCount: 0,
+                        unopenedVialCount: 0
                     };
                 }
 
-                const totalRemainingMl = activeVials.reduce((sum, v) => sum + v.remaining_ml, 0);
-                const avgConcentration = activeVials.reduce((sum, v) => sum + v.concentration_mg_ml, 0) / activeVials.length;
-                const totalSupplyMg = totalRemainingMl * avgConcentration;
+                // Calculate supply from active vials
+                let totalSupplyMg = 0;
+                activeVials.forEach(vial => {
+                    const concentration = vial.concentration_mg_ml || 0;
+                    const remainingMl = vial.remaining_ml || 0;
+                    totalSupplyMg += remainingMl * concentration;
+                });
+
+                // Calculate supply from unopened vials (full volume)
+                unopenedVials.forEach(vial => {
+                    const concentration = vial.concentration_mg_ml || 0;
+                    const volumeMl = vial.volume_ml || 0;
+                    totalSupplyMg += volumeMl * concentration;
+                });
+
+                const totalRemainingMl = activeVials.reduce((sum, v) => sum + (v.remaining_ml || 0), 0) +
+                                         unopenedVials.reduce((sum, v) => sum + (v.volume_ml || 0), 0);
 
                 const weeklyDoseMg = this.calculateTrtWeeklyDose();
-                const activeWeeks = Math.floor(totalSupplyMg / weeklyDoseMg);
+                const activeWeeks = weeklyDoseMg > 0 ? Math.floor(totalSupplyMg / weeklyDoseMg) : 0;
 
                 // Add skipped weeks (direct 1:1 extension)
-                const skippedWeeks = this.data.trtInjections.filter(inj => inj.skipped).length;
+                const skippedWeeks = (this.data.trtInjections || []).filter(inj => inj.skipped).length;
                 const calendarWeeks = activeWeeks + skippedWeeks;
+                const calendarDays = calendarWeeks * 7;
 
                 const today = new Date();
                 const runOutDate = new Date(today.getTime() + calendarWeeks * 7 * 24 * 60 * 60 * 1000);
                 const reorderDate = new Date(runOutDate.getTime() - 14 * 24 * 60 * 60 * 1000); // 2 weeks before
+                const reorderDays = Math.max(0, Math.ceil((reorderDate - today) / (24 * 60 * 60 * 1000)));
 
                 return {
-                    totalSupplyMl: totalRemainingMl.toFixed(1),
-                    totalSupplyMg: totalSupplyMg.toFixed(0),
+                    success: true,
+                    totalSupplyMl: totalRemainingMl,
+                    totalSupplyMg: totalSupplyMg,
                     activeWeeksRemaining: activeWeeks,
                     skippedWeeksCount: skippedWeeks,
                     calendarWeeksRemaining: calendarWeeks,
+                    calendarDaysRemaining: calendarDays,
                     adjustmentText: skippedWeeks > 0 ? `+${skippedWeeks} weeks from skips` : '',
                     runOutDate: runOutDate.toISOString().split('T')[0],
                     reorderDate: reorderDate.toISOString().split('T')[0],
-                    daysUntilReorder: Math.ceil((reorderDate - today) / (24 * 60 * 60 * 1000))
+                    daysUntilReorder: reorderDays,
+                    activeVialCount: activeVials.length,
+                    unopenedVialCount: unopenedVials.length,
+                    weeklyDoseMg: weeklyDoseMg
                 };
             }
 
@@ -6467,31 +6534,106 @@
             }
 
             updateTrtSupplyForecast() {
-                const forecastEl = document.getElementById('trt-supply-forecast');
-                if (!forecastEl) return;
-
                 const forecast = this.calculateTrtSupplyForecast();
 
-                forecastEl.innerHTML = `
-                    <div class="forecast-summary">
-                        <div class="forecast-item">
-                            <div class="forecast-label">Total Supply</div>
-                            <div class="forecast-value">${forecast.totalSupplyMg.toFixed(1)} mg</div>
-                        </div>
-                        <div class="forecast-item">
-                            <div class="forecast-label">Active Weeks</div>
-                            <div class="forecast-value">${forecast.activeWeeksRemaining}</div>
-                        </div>
-                        <div class="forecast-item">
-                            <div class="forecast-label">Calendar Weeks</div>
-                            <div class="forecast-value">${forecast.calendarWeeksRemaining}</div>
-                        </div>
-                        <div class="forecast-item">
-                            <div class="forecast-label">Runs Out</div>
-                            <div class="forecast-value">${forecast.runoutDate ? this.formatDate(forecast.runoutDate) : 'Unknown'}</div>
-                        </div>
-                    </div>
-                `;
+                // Handle error state
+                if (!forecast.success) {
+                    const errorIndicator = `
+                        <span class="validation-indicator validation-error validation-tooltip">
+                            <span class="validation-icon">⚠️</span>
+                            <span class="tooltip-content">${forecast.error}</span>
+                        </span>
+                    `;
+
+                    const vialCountsEl = document.getElementById('trt-vial-counts');
+                    if (vialCountsEl) vialCountsEl.textContent = '0 active, 0 unopened';
+
+                    const totalSupplyEl = document.getElementById('trt-total-supply');
+                    if (totalSupplyEl) totalSupplyEl.textContent = '0 mg';
+
+                    const weeklyDoseEl = document.getElementById('trt-weekly-dose');
+                    if (weeklyDoseEl) weeklyDoseEl.textContent = '0 mg';
+
+                    const durationEl = document.getElementById('trt-supply-duration');
+                    if (durationEl) durationEl.textContent = 'No data';
+
+                    const runOutEl = document.getElementById('trt-run-out-date');
+                    if (runOutEl) runOutEl.textContent = 'No supply';
+
+                    const reorderEl = document.getElementById('trt-reorder-days');
+                    if (reorderEl) reorderEl.textContent = 'N/A';
+
+                    document.getElementById('trt-supply-duration-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('trt-run-out-date-validation-indicator').innerHTML = errorIndicator;
+                    document.getElementById('trt-reorder-days-validation-indicator').innerHTML = errorIndicator;
+                    return;
+                }
+
+                const { totalSupplyMg, calendarWeeksRemaining, calendarDaysRemaining, activeWeeksRemaining, skippedWeeksCount, daysUntilReorder } = forecast;
+
+                // Update vial counts
+                const vialCountsEl = document.getElementById('trt-vial-counts');
+                if (vialCountsEl) {
+                    vialCountsEl.textContent = `${forecast.activeVialCount} active, ${forecast.unopenedVialCount} unopened`;
+                }
+
+                // Update total supply
+                const totalSupplyEl = document.getElementById('trt-total-supply');
+                if (totalSupplyEl) totalSupplyEl.textContent = `${totalSupplyMg.toFixed(1)} mg`;
+
+                // Update weekly dose
+                const weeklyDoseEl = document.getElementById('trt-weekly-dose');
+                if (weeklyDoseEl) weeklyDoseEl.textContent = `${(forecast.weeklyDoseMg || 0).toFixed(0)} mg`;
+
+                // Show breakdown: active weeks + skipped weeks = calendar weeks
+                const breakdownText = skippedWeeksCount > 0
+                    ? `${calendarWeeksRemaining} weeks (${activeWeeksRemaining} active + ${skippedWeeksCount} skipped)`
+                    : `${calendarWeeksRemaining} weeks`;
+                const durationEl = document.getElementById('trt-supply-duration');
+                if (durationEl) durationEl.textContent = breakdownText;
+
+                // Calculate run out date
+                const runOutDate = new Date();
+                runOutDate.setDate(runOutDate.getDate() + calendarDaysRemaining);
+                const runOutEl = document.getElementById('trt-run-out-date');
+                if (runOutEl) runOutEl.textContent = calendarDaysRemaining > 0 ? runOutDate.toLocaleDateString() : 'No supply';
+
+                // Update reorder days
+                const reorderEl = document.getElementById('trt-reorder-days');
+                if (reorderEl) reorderEl.textContent = daysUntilReorder > 0 ? `${daysUntilReorder} days` : 'Order now!';
+
+                // Add validation indicators (success state)
+                const validationHTML = `<span class="validation-indicator validation-success">
+                       <span class="validation-icon">✓</span>
+                   </span>`;
+
+                const durationIndicator = document.getElementById('trt-supply-duration-validation-indicator');
+                if (durationIndicator) durationIndicator.innerHTML = validationHTML;
+
+                const runOutIndicator = document.getElementById('trt-run-out-date-validation-indicator');
+                if (runOutIndicator) runOutIndicator.innerHTML = validationHTML;
+
+                const reorderIndicator = document.getElementById('trt-reorder-days-validation-indicator');
+                if (reorderIndicator) reorderIndicator.innerHTML = validationHTML;
+
+                // Update colors based on supply levels
+                const durationColorEl = document.getElementById('trt-supply-duration');
+                const runOutColorEl = document.getElementById('trt-run-out-date');
+                const reorderColorEl = document.getElementById('trt-reorder-days');
+
+                if (calendarDaysRemaining < 7) {
+                    if (durationColorEl) durationColorEl.style.color = '#FF3B30'; // Red
+                    if (runOutColorEl) runOutColorEl.style.color = '#FF3B30';
+                    if (reorderColorEl) reorderColorEl.style.color = '#FF3B30';
+                } else if (calendarDaysRemaining < 21) {
+                    if (durationColorEl) durationColorEl.style.color = '#FF9500'; // Orange
+                    if (runOutColorEl) runOutColorEl.style.color = '#FF9500';
+                    if (reorderColorEl) reorderColorEl.style.color = '#FF9500';
+                } else {
+                    if (durationColorEl) durationColorEl.style.color = '#34C759'; // Green
+                    if (runOutColorEl) runOutColorEl.style.color = '#34C759';
+                    if (reorderColorEl) reorderColorEl.style.color = '#34C759';
+                }
             }
 
             // ====================================
@@ -9445,6 +9587,10 @@
                 const reorderDays = Math.max(0, daysRemaining - 14);
 
                 // Update display
+                const vialCountsEl = document.getElementById('vial-counts');
+                if (vialCountsEl) {
+                    vialCountsEl.textContent = `${forecast.activeVialCount} active, ${forecast.dryStockCount} dry stock`;
+                }
                 document.getElementById('total-supply').textContent = `${totalSupplyMg.toFixed(1)} mg`;
 
                 // Show breakdown: active weeks + skipped weeks = calendar weeks
