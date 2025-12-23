@@ -3634,8 +3634,8 @@
 
         class InjectionTracker {
             constructor() {
-                // App mode state
-                this.currentApp = localStorage.getItem('currentApp') || 'reta'; // 'reta' or 'trt'
+                // App mode state - always start on Reta (can be overridden by URL hash)
+                this.currentApp = 'reta';
 
                 this.data = {
                     // Retatrutide tracking
@@ -6369,9 +6369,9 @@
 
                 vialsList.innerHTML = '';
 
-                // Sort vials: Active first, then unopened, then empty, then expired
+                // Sort vials: Active first, then unopened/dry_stock, then empty/expired at bottom
                 const sortedVials = [...this.data.trtVials].sort((a, b) => {
-                    const priorityMap = { 'active': 1, 'unopened': 2, 'dry_stock': 2, 'empty': 3, 'expired': 4 };
+                    const priorityMap = { 'active': 1, 'unopened': 2, 'dry_stock': 2, 'empty': 3, 'expired': 3 };
                     return priorityMap[a.status] - priorityMap[b.status];
                 });
 
@@ -6525,7 +6525,6 @@
 
                         // Switch app mode
                         this.currentApp = targetApp;
-                        localStorage.setItem('currentApp', targetApp);
 
                         // Update URL hash
                         window.location.hash = targetApp;
@@ -6551,11 +6550,10 @@
                     }
                 });
 
-                // Initialize from hash on load
+                // Initialize from hash on load (allows direct links to #trt or #reta)
                 const initialHash = window.location.hash.replace('#', '');
                 if (initialHash === 'trt' || initialHash === 'reta') {
                     this.currentApp = initialHash;
-                    localStorage.setItem('currentApp', initialHash);
                     const activeBtn = document.querySelector(`.app-switcher-btn[data-app="${initialHash}"]`);
                     if (activeBtn) {
                         switcherButtons.forEach(b => b.classList.remove('active'));
