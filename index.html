@@ -10083,7 +10083,61 @@
                 };
 
                 // Build datasets - only show weights that have matching injections
-                const colorPalette = ['#FF6B6B', '#FF9500', '#34C759', '#5AC8FA', '#007AFF', '#AF52DE'];
+                // Fixed dose-to-color mapping for consistent visual representation
+                const doseColorMap = {
+                    1.0: '#FF6B6B',   // Red/Pink
+                    1.5: '#FF8E8E',   // Light pink
+                    2.0: '#FF69B4',   // Hot pink (like screenshot)
+                    2.5: '#FF9500',   // Orange
+                    3.0: '#FFEB3B',   // Yellow (like screenshot)
+                    3.5: '#C6FF00',   // Yellow-green
+                    4.0: '#34C759',   // Green (like screenshot)
+                    4.5: '#00E676',   // Light green
+                    5.0: '#5AC8FA',   // Cyan
+                    5.5: '#00BCD4',   // Teal
+                    6.0: '#FF00FF',   // Magenta (like screenshot)
+                    7.5: '#007AFF',   // Blue
+                    10.0: '#AF52DE',  // Purple
+                    12.5: '#9C27B0',  // Deep purple
+                    15.0: '#673AB7'   // Indigo
+                };
+                const defaultDoseColor = '#AF52DE'; // Purple fallback
+
+                // Helper function to get color for a dose
+                const getDoseColor = (dose) => {
+                    // Try exact match first
+                    if (doseColorMap[dose]) return doseColorMap[dose];
+                    // Try rounding to nearest 0.5
+                    const rounded = Math.round(dose * 2) / 2;
+                    if (doseColorMap[rounded]) return doseColorMap[rounded];
+                    // Fallback to default
+                    return defaultDoseColor;
+                };
+
+                // Function to find the active dose at a given timestamp
+                // Returns the most recent injection dose before or at that timestamp
+                const getActiveDoseAtTime = (timestamp) => {
+                    const targetTime = new Date(timestamp).getTime();
+                    let activeDose = null;
+
+                    // Find the most recent non-skipped injection before or at this time
+                    for (const group of groupedInjections) {
+                        const injTime = new Date(group.timestamp).getTime();
+                        if (injTime <= targetTime && group.totalDose > 0) {
+                            activeDose = group.totalDose;
+                        } else if (injTime > targetTime) {
+                            break;
+                        }
+                    }
+
+                    // If no injection found before, use first injection's dose
+                    if (activeDose === null && groupedInjections.length > 0) {
+                        const firstWithDose = groupedInjections.find(g => g.totalDose > 0);
+                        if (firstWithDose) activeDose = firstWithDose.totalDose;
+                    }
+
+                    return activeDose;
+                };
 
                 // Determine which weight points correspond to skipped injections (hide dots for these)
                 const isSkippedPoint = displayWeights.map(weight => {
@@ -10097,11 +10151,17 @@
                     });
                 });
 
-                const pointColors = displayWeights.map((w, idx) => colorPalette[idx % colorPalette.length]);
+                // Color each point based on the active dose at that time
+                const pointColors = displayWeights.map((w) => {
+                    const activeDose = getActiveDoseAtTime(w.timestamp);
+                    return activeDose ? getDoseColor(activeDose) : defaultDoseColor;
+                });
+
                 // Hide points (set radius to 0) for weights matched to skipped injections
-                const pointRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 6 : 5));
-                const pointHoverRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 8 : 7));
-                const pointHitRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 14 : 12));
+                // Make dots smaller for cleaner look (like screenshot)
+                const pointRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 4 : 3));
+                const pointHoverRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 6 : 5));
+                const pointHitRadii = displayWeights.map((w, idx) => isSkippedPoint[idx] ? 0 : (isMobile ? 12 : 10));
 
                 // Handle case where we only have skipped injections (no weights)
                 // Create invisible placeholder points to establish chart scale
@@ -10143,13 +10203,16 @@
                     segment: {
                         borderColor: (ctx) => {
                             if (hasSkippedOnly) return 'transparent';
-                            if (!ctx.p0DataIndex || ctx.p0DataIndex >= pointColors.length - 1) return colorPalette[0];
-                            return pointColors[ctx.p0DataIndex];
+                            // Use the dose color of the starting point of this segment
+                            const idx = ctx.p0DataIndex;
+                            if (idx === undefined || idx >= pointColors.length) return defaultDoseColor;
+                            return pointColors[idx];
                         }
                     }
                 }];
 
-                // Custom plugin to draw dose labels for all injections
+                // Custom plugin to draw dose labels only at dose change points
+                // Like the reference screenshot: labels appear at first dose and when dose changes
                 const doseLabelsPlugin = {
                     id: 'doseLabels',
                     afterDatasetsDraw: (chart) => {
@@ -10159,71 +10222,81 @@
 
                         if (!groupedInjections.length) return;
 
-                        // Skip dose labels when data is aggregated (too crowded/misaligned)
-                        if (aggregateBy !== 'none') return;
+                        // Filter to only show labels at dose change points (or first dose)
+                        const doseChangePoints = [];
+                        let lastDose = null;
 
-                        // Calculate data density for adaptive label sizing
+                        groupedInjections.forEach((group, index) => {
+                            const allSkipped = group.injections.every(inj => inj.skipped);
+                            const currentDose = allSkipped ? 'SKIPPED' : group.totalDose;
+
+                            // Show label if: first dose, dose changed, or skipped (always show skipped)
+                            if (index === 0 || currentDose !== lastDose) {
+                                doseChangePoints.push({
+                                    group,
+                                    index,
+                                    dose: currentDose,
+                                    allSkipped
+                                });
+                            }
+
+                            // Update lastDose only for non-skipped injections
+                            if (!allSkipped) {
+                                lastDose = currentDose;
+                            }
+                        });
+
+                        if (doseChangePoints.length === 0) return;
+
+                        // Calculate label count for adaptive sizing
                         const chartWidth = xScale.right - xScale.left;
-                        const avgSpacing = groupedInjections.length > 1 ? chartWidth / groupedInjections.length : chartWidth;
+                        const avgSpacing = doseChangePoints.length > 1 ? chartWidth / doseChangePoints.length : chartWidth;
 
-                        // Since we only show shots with weights (weekly), keep labels large and readable
-                        // Use consistent sizing with minimal density-based reduction
-                        let fontSize, padding, pillHeight, yOffset;
-                        const labelFormat = 'full'; // Always show "mg" suffix
+                        // Adaptive sizing based on spacing
+                        let labelFontSize, padding, pillHeight, yOffset;
 
-                        if (avgSpacing < 40) {
-                            // Dense mode (many data points)
-                            fontSize = isMobile ? 11 : 14;
-                            padding = isMobile ? 5 : 8;
+                        if (avgSpacing < 50) {
+                            // Dense mode
+                            labelFontSize = isMobile ? 10 : 12;
+                            padding = isMobile ? 4 : 6;
+                            pillHeight = isMobile ? 16 : 20;
+                            yOffset = isMobile ? 22 : 28;
+                        } else if (avgSpacing < 100) {
+                            // Medium density
+                            labelFontSize = isMobile ? 11 : 13;
+                            padding = isMobile ? 5 : 7;
                             pillHeight = isMobile ? 18 : 22;
-                            yOffset = isMobile ? 24 : 30;
+                            yOffset = isMobile ? 25 : 32;
                         } else {
-                            // Normal mode (comfortable spacing)
-                            fontSize = isMobile ? 12 : 15;
-                            padding = isMobile ? 6 : 9;
+                            // Comfortable spacing
+                            labelFontSize = isMobile ? 12 : 14;
+                            padding = isMobile ? 6 : 8;
                             pillHeight = isMobile ? 20 : 24;
                             yOffset = isMobile ? 28 : 36;
                         }
 
                         ctx.save();
-                        ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
+                        ctx.font = `bold ${labelFontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif`;
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'bottom';
 
-                        // Draw a label for each date with summed doses
-                        groupedInjections.forEach((group, index) => {
+                        // Draw labels only at dose change points
+                        doseChangePoints.forEach(({ group, dose, allSkipped }) => {
                             const injDate = new Date(group.timestamp);
                             const x = xScale.getPixelForValue(injDate);
 
-                            // Find the matching weight to position the label above it
-                            // Check if this group has skipped injections - use 48-hour window if so
-                            const hasSkippedInGroup = group.injections.some(inj => inj.skipped);
-                            const matchingWeight = weightsWithInjections.find(weight => {
-                                const weightDate = new Date(weight.timestamp);
-                                const timeDiff = Math.abs(weightDate - injDate);
-                                const hoursDiff = timeDiff / (1000 * 60 * 60);
-                                const maxHours = hasSkippedInGroup ? 48 : 24;
-                                return hoursDiff <= maxHours;
-                            });
-
-                            // For skipped-only mode, position label at center-bottom of chart
-                            // For normal mode, use matching weight or interpolate position
+                            // Find Y position - use interpolation on the weight line
+                            const injTime = injDate.getTime();
                             let y;
-                            if (hasSkippedOnly) {
-                                // Position at middle-bottom for skipped-only display
-                                y = yScale.bottom - 25;
-                            } else if (matchingWeight) {
-                                // Position above the matching weight point
-                                y = yScale.getPixelForValue(matchingWeight.weight_kg);
-                            } else {
-                                // No matching weight - interpolate Y position from nearby weights
-                                const injTime = injDate.getTime();
 
-                                // Find weights before and after this injection
+                            if (hasSkippedOnly) {
+                                y = yScale.bottom - 25;
+                            } else {
+                                // Find the closest weight point or interpolate
                                 let weightBefore = null;
                                 let weightAfter = null;
 
-                                for (const w of sortedWeights) {
+                                for (const w of displayWeights) {
                                     const wTime = new Date(w.timestamp).getTime();
                                     if (wTime <= injTime) {
                                         weightBefore = w;
@@ -10234,7 +10307,7 @@
                                 }
 
                                 if (weightBefore && weightAfter) {
-                                    // Interpolate between the two weights
+                                    // Interpolate between weights
                                     const beforeTime = new Date(weightBefore.timestamp).getTime();
                                     const afterTime = new Date(weightAfter.timestamp).getTime();
                                     const ratio = (injTime - beforeTime) / (afterTime - beforeTime);
@@ -10242,33 +10315,25 @@
                                         (weightAfter.weight_kg - weightBefore.weight_kg) * ratio;
                                     y = yScale.getPixelForValue(interpolatedWeight);
                                 } else if (weightBefore) {
-                                    // After all weights - use last weight's position
                                     y = yScale.getPixelForValue(weightBefore.weight_kg);
                                 } else if (weightAfter) {
-                                    // Before all weights - use first weight's position
                                     y = yScale.getPixelForValue(weightAfter.weight_kg);
                                 } else {
-                                    // No weights at all - position near top of chart
                                     y = yScale.top + 50;
                                 }
                             }
 
-                            // Show summed dose for all injections on this date
-                            // Check if this group contains only skipped injections
-                            const allSkipped = group.injections.every(inj => inj.skipped);
-                            const label = allSkipped ? 'SKIPPED' : `${group.totalDose}mg`;
+                            // Create label text
+                            const label = allSkipped ? 'SKIPPED' : `${dose}mg`;
 
-                            // No staggering needed since we only show shots with weights (naturally spaced)
-                            const staggerOffset = 0;
-
-                            // Draw background pill with colorful gradient
+                            // Draw pill background
                             const textWidth = ctx.measureText(label).width;
                             const pillWidth = textWidth + padding * 2;
                             const pillX = x - pillWidth / 2;
-                            const pillY = y - yOffset - staggerOffset;
+                            const pillY = y - yOffset;
 
-                            // Use gray color for skipped doses, normal color palette otherwise
-                            const color = allSkipped ? 'rgba(136, 136, 136, 0.5)' : colorPalette[index % colorPalette.length];
+                            // Use dose color for pill, gray for skipped
+                            const color = allSkipped ? 'rgba(136, 136, 136, 0.5)' : getDoseColor(dose);
                             ctx.fillStyle = color;
                             ctx.beginPath();
                             ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
