@@ -10103,6 +10103,19 @@
                 };
                 const defaultDoseColor = '#AF52DE'; // Purple fallback
 
+                // Helper function to get readable text color based on background luminance
+                const getTextColorForBackground = (hexColor) => {
+                    // Parse hex color
+                    const hex = hexColor.replace('#', '');
+                    const r = parseInt(hex.substr(0, 2), 16);
+                    const g = parseInt(hex.substr(2, 2), 16);
+                    const b = parseInt(hex.substr(4, 2), 16);
+                    // Calculate relative luminance (WCAG formula)
+                    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+                    // Use dark text for light backgrounds, white for dark
+                    return luminance > 0.5 ? '#000000' : '#FFFFFF';
+                };
+
                 // Helper function to get color for a dose
                 const getDoseColor = (dose) => {
                     // Try exact match first
@@ -10339,8 +10352,8 @@
                             ctx.roundRect(pillX, pillY, pillWidth, pillHeight, pillHeight / 2);
                             ctx.fill();
 
-                            // Draw text
-                            ctx.fillStyle = allSkipped ? 'rgba(255, 255, 255, 0.6)' : '#FFFFFF';
+                            // Draw text with readable color based on background
+                            ctx.fillStyle = allSkipped ? 'rgba(255, 255, 255, 0.6)' : getTextColorForBackground(color);
                             ctx.fillText(label, x, pillY + pillHeight - 3);
                         });
 
