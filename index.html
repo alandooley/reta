@@ -3416,6 +3416,13 @@
                     <label for="edit-vial-mg">mg per Vial</label>
                     <input type="number" id="edit-vial-mg" step="0.1" min="0" required placeholder="10">
                 </div>
+                <div class="form-group" id="edit-vial-expiry-group">
+                    <label for="edit-vial-expiry">Expiration Date</label>
+                    <input type="date" id="edit-vial-expiry">
+                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
+                        Set the expiration date for this vial
+                    </p>
+                </div>
                 <div class="form-group" id="edit-vial-volume-group" style="display: none;">
                     <label for="edit-vial-current-volume">Current Volume (ml)</label>
                     <input type="number" id="edit-vial-current-volume" step="0.01" min="0" placeholder="0.50">
@@ -7367,7 +7374,12 @@
                         if (itemContainer.classList.contains('skipped')) return;
                         this.showEditTrtInjectionModal(entityId);
                     } else if (itemContainer.classList.contains('vial-item')) {
-                        this.showEditTrtVialModal(entityId);
+                        // Use correct edit function based on current app mode
+                        if (this.currentApp === 'trt') {
+                            this.showEditTrtVialModal(entityId);
+                        } else {
+                            this.openEditVialModal(entityId);
+                        }
                     } else if (itemContainer.classList.contains('weight-item')) {
                         this.showEditWeightModal(entityId);
                     }
@@ -8601,6 +8613,14 @@
                 document.getElementById('edit-vial-supplier').value = vial.supplier || '';
                 document.getElementById('edit-vial-mg').value = vial.total_mg;
 
+                // Populate expiration date
+                const expiryInput = document.getElementById('edit-vial-expiry');
+                if (vial.expiration_date) {
+                    expiryInput.value = new Date(vial.expiration_date).toISOString().split('T')[0];
+                } else {
+                    expiryInput.value = '';
+                }
+
                 // Show volume field for active vials
                 const volumeGroup = document.getElementById('edit-vial-volume-group');
                 const volumeInput = document.getElementById('edit-vial-current-volume');
@@ -8622,6 +8642,7 @@
                 const orderDate = document.getElementById('edit-vial-order-date').value;
                 const supplier = document.getElementById('edit-vial-supplier').value;
                 const totalMg = parseFloat(document.getElementById('edit-vial-mg').value);
+                const expiryDate = document.getElementById('edit-vial-expiry').value;
                 const currentVolumeInput = document.getElementById('edit-vial-current-volume');
                 const newVolume = currentVolumeInput.value ? parseFloat(currentVolumeInput.value) : null;
 
@@ -8662,8 +8683,10 @@
                     vial.concentration_mg_ml = totalMg / vial.bac_water_ml;
                 }
 
-                // Update expiration date if vial hasn't been activated
-                if (vial.status === 'dry_stock') {
+                // Update expiration date - use form value if provided, otherwise auto-calculate for dry_stock
+                if (expiryDate) {
+                    vial.expiration_date = expiryDate;
+                } else if (vial.status === 'dry_stock') {
                     vial.expiration_date = this.calculateExpirationDate(null, orderDate);
                 }
 
@@ -8682,6 +8705,7 @@
                             currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || 0,
                             usedVolumeMl: vial.used_volume_ml || 0,
                             status: vial.status,
+                            expirationDate: vial.expiration_date,
                             notes: vial.notes || `${totalMg}mg vial`
                         }
                     });
