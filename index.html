@@ -1200,16 +1200,6 @@
             color: white;
         }
 
-        .vial-status.expired {
-            background-color: var(--danger-color);
-            color: white;
-        }
-
-        .vial-status.expiring {
-            background-color: var(--warning-color);
-            color: white;
-        }
-
         .vial-status.empty {
             background-color: var(--text-muted);
             color: white;
@@ -1252,11 +1242,6 @@
 
         .status-badge.empty {
             background-color: var(--text-muted);
-            color: white;
-        }
-
-        .status-badge.expired {
-            background-color: var(--danger-color);
             color: white;
         }
 
@@ -3416,12 +3401,13 @@
                     <label for="edit-vial-mg">mg per Vial</label>
                     <input type="number" id="edit-vial-mg" step="0.1" min="0" required placeholder="10">
                 </div>
-                <div class="form-group" id="edit-vial-expiry-group">
-                    <label for="edit-vial-expiry">Expiration Date</label>
-                    <input type="date" id="edit-vial-expiry">
-                    <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
-                        Set the expiration date for this vial
-                    </p>
+                <div class="form-group">
+                    <label for="edit-vial-status">Status</label>
+                    <select id="edit-vial-status" required>
+                        <option value="dry_stock">Dry Stock (Sealed)</option>
+                        <option value="active">Active (In Use)</option>
+                        <option value="empty">Empty (Finished)</option>
+                    </select>
                 </div>
                 <div class="form-group" id="edit-vial-volume-group" style="display: none;">
                     <label for="edit-vial-current-volume">Current Volume (ml)</label>
@@ -3642,13 +3628,9 @@
                     <input type="text" id="trt-vial-lot" placeholder="LOT123456">
                 </div>
                 <div class="form-group">
-                    <label for="trt-vial-expiry">Expiry Date</label>
-                    <input type="date" id="trt-vial-expiry" required>
-                </div>
-                <div class="form-group">
                     <label for="trt-vial-status">Status</label>
                     <select id="trt-vial-status" required>
-                        <option value="unopened">Unopened (Sealed)</option>
+                        <option value="dry_stock">Dry Stock (Sealed)</option>
                         <option value="active">Active (In Use)</option>
                         <option value="empty">Empty (Finished)</option>
                     </select>
@@ -4412,12 +4394,6 @@
                     } else if (vial.current_volume_ml !== undefined && vial.remaining_ml === undefined) {
                         vial.remaining_ml = vial.current_volume_ml;
                         console.log(`Synced remaining_ml for vial ${vial.vial_id || vial.id}`);
-                    }
-
-                    // Fix missing expiration dates for dry stock vials
-                    if (vial.status === 'dry_stock' && !vial.expiration_date && vial.order_date) {
-                        vial.expiration_date = this.calculateExpirationDate(null, vial.order_date);
-                        console.log(`Fixed expiration for dry stock vial ${vial.vial_id || vial.id}`);
                     }
 
                     return vial;
@@ -5955,18 +5931,17 @@
                 const vialsList = document.getElementById('vials-list');
                 vialsList.innerHTML = '';
 
-                // Sort vials: Active first, Dry stock middle, Finished/Expired last
+                // Sort vials: Active first, Dry stock middle, Empty last
                 const sortedVials = [...this.data.vials].sort((a, b) => {
                     const getStatusPriority = (vial) => {
-                        // Check if vial is expired, empty, or expiring (finished status)
-                        const now = new Date();
-                        const expDate = vial.expiration_date ? new Date(vial.expiration_date) : null;
-                        const isExpired = expDate && expDate < now;
                         const isEmpty = vial.remaining_ml <= 0;
+                        // Map legacy statuses
+                        const status = vial.status === 'expired' || vial.status === 'insufficient' || vial.status === 'expiring'
+                            ? 'active' : vial.status;
 
-                        if (vial.status === 'active' && !isExpired && !isEmpty) return 1; // Active at top
-                        if (vial.status === 'dry_stock') return 2; // Dry stock in middle
-                        return 3; // Finished/expired/empty at bottom
+                        if (status === 'active' && !isEmpty) return 1; // Active at top
+                        if (status === 'dry_stock') return 2; // Dry stock in middle
+                        return 3; // Empty at bottom
                     };
 
                     const priorityA = getStatusPriority(a);
@@ -5984,8 +5959,8 @@
                         // Dry stock: sort by order date (newest first)
                         return new Date(b.order_date || 0) - new Date(a.order_date || 0);
                     } else {
-                        // Finished: sort by expiration date (oldest first)
-                        return new Date(a.expiration_date || 0) - new Date(b.expiration_date || 0);
+                        // Empty: sort by order date (oldest first)
+                        return new Date(a.order_date || 0) - new Date(b.order_date || 0);
                     }
                 });
 
@@ -6511,10 +6486,10 @@
 
                 vialsList.innerHTML = '';
 
-                // Sort vials: Active first, then unopened/dry_stock, then empty/expired at bottom
+                // Sort vials: Active first, then dry_stock/unopened, then empty at bottom
                 const sortedVials = [...this.data.trtVials].sort((a, b) => {
-                    const priorityMap = { 'active': 1, 'unopened': 2, 'dry_stock': 2, 'empty': 3, 'expired': 3 };
-                    return priorityMap[a.status] - priorityMap[b.status];
+                    const priorityMap = { 'active': 1, 'unopened': 2, 'dry_stock': 2, 'empty': 3 };
+                    return (priorityMap[a.status] || 3) - (priorityMap[b.status] || 3);
                 });
 
                 if (sortedVials.length === 0) {
@@ -6535,10 +6510,9 @@
 
                 const statusBadges = {
                     'active': '<span class="status-badge active">Active</span>',
-                    'unopened': '<span class="status-badge unopened">Unopened</span>',
-                    'dry_stock': '<span class="status-badge unopened">Unopened</span>',  // Legacy support
-                    'empty': '<span class="status-badge empty">Empty</span>',
-                    'expired': '<span class="status-badge expired">Expired</span>'
+                    'unopened': '<span class="status-badge unopened">Dry Stock</span>',  // Legacy support
+                    'dry_stock': '<span class="status-badge unopened">Dry Stock</span>',
+                    'empty': '<span class="status-badge empty">Empty</span>'
                 };
 
                 div.innerHTML = `
@@ -6553,7 +6527,6 @@
                         <div class="vial-details">
                             ${vial.status === 'active' ? `<div>Remaining: ${vial.remaining_ml.toFixed(2)}ml</div>` : ''}
                             ${vial.status === 'active' && vial.opened_date ? `<div>Opened: ${this.formatDate(vial.opened_date)}</div>` : ''}
-                            <div>Expires: ${this.formatDate(vial.expiry_date)}</div>
                             ${vial.notes ? `<div>Notes: ${vial.notes}</div>` : ''}
                         </div>
                         ${vial.status === 'active' ? `
@@ -8321,8 +8294,9 @@
                 document.getElementById('trt-vial-concentration').value = vial.concentration_mg_ml || '';
                 document.getElementById('trt-vial-volume').value = vial.volume_ml || '';
                 document.getElementById('trt-vial-lot').value = vial.lot_number || '';
-                document.getElementById('trt-vial-expiry').value = vial.expiry_date ? new Date(vial.expiry_date).toISOString().slice(0, 10) : '';
-                document.getElementById('trt-vial-status').value = vial.status === 'dry_stock' ? 'unopened' : (vial.status || 'unopened');
+                // Map legacy 'unopened' status to 'dry_stock'
+                const statusValue = vial.status === 'unopened' ? 'dry_stock' : (vial.status || 'dry_stock');
+                document.getElementById('trt-vial-status').value = statusValue;
                 document.getElementById('trt-vial-notes').value = vial.notes || '';
 
                 // Show/hide opened date and remaining volume based on status
@@ -8556,7 +8530,6 @@
                         bac_water_ml: null,
                         concentration_mg_ml: null,
                         reconstitution_date: null,
-                        expiration_date: this.calculateExpirationDate(null, orderDate),
                         remaining_ml: 0,
                         doses_used: 0,
                         status: 'dry_stock'
@@ -8613,18 +8586,19 @@
                 document.getElementById('edit-vial-supplier').value = vial.supplier || '';
                 document.getElementById('edit-vial-mg').value = vial.total_mg;
 
-                // Populate expiration date
-                const expiryInput = document.getElementById('edit-vial-expiry');
-                if (vial.expiration_date) {
-                    expiryInput.value = new Date(vial.expiration_date).toISOString().split('T')[0];
-                } else {
-                    expiryInput.value = '';
+                // Populate status dropdown (map legacy statuses)
+                const statusSelect = document.getElementById('edit-vial-status');
+                let currentStatus = vial.status || 'dry_stock';
+                // Map legacy statuses to new ones
+                if (currentStatus === 'insufficient' || currentStatus === 'expiring' || currentStatus === 'expired') {
+                    currentStatus = 'active'; // Keep as active, user can set to empty if desired
                 }
+                statusSelect.value = currentStatus;
 
                 // Show volume field for active vials
                 const volumeGroup = document.getElementById('edit-vial-volume-group');
                 const volumeInput = document.getElementById('edit-vial-current-volume');
-                if (vial.status === 'active' || vial.status === 'insufficient' || vial.status === 'expiring') {
+                if (currentStatus === 'active') {
                     volumeGroup.style.display = 'block';
                     const currentVol = vial.current_volume_ml || vial.remaining_ml || 0;
                     volumeInput.value = currentVol.toFixed(2);
@@ -8642,7 +8616,7 @@
                 const orderDate = document.getElementById('edit-vial-order-date').value;
                 const supplier = document.getElementById('edit-vial-supplier').value;
                 const totalMg = parseFloat(document.getElementById('edit-vial-mg').value);
-                const expiryDate = document.getElementById('edit-vial-expiry').value;
+                const newStatus = document.getElementById('edit-vial-status').value;
                 const currentVolumeInput = document.getElementById('edit-vial-current-volume');
                 const newVolume = currentVolumeInput.value ? parseFloat(currentVolumeInput.value) : null;
 
@@ -8661,33 +8635,22 @@
                 vial.order_date = orderDate;
                 vial.supplier = supplier || '';
                 vial.total_mg = totalMg;
+                vial.status = newStatus;
 
                 // Update current volume if provided (active vials only)
-                if (newVolume !== null && (vial.status === 'active' || vial.status === 'insufficient' || vial.status === 'expiring')) {
+                if (newVolume !== null && newStatus === 'active') {
                     vial.current_volume_ml = newVolume;
                     vial.remaining_ml = newVolume;
                     vial.used_volume_ml = vial.bac_water_ml ? (vial.bac_water_ml - newVolume) : 0;
-
-                    // Update status based on new volume
-                    if (newVolume <= 0) {
-                        vial.status = 'empty';
-                    } else if (vial.status === 'empty' || vial.status === 'insufficient') {
-                        vial.status = 'active';
-                    }
-
                     console.log(`Manually adjusted vial ${vialId} volume to ${newVolume.toFixed(2)}ml`);
+                } else if (newStatus === 'empty') {
+                    vial.current_volume_ml = 0;
+                    vial.remaining_ml = 0;
                 }
 
                 // If vial is activated, update concentration
                 if (vial.bac_water_ml && vial.bac_water_ml > 0) {
                     vial.concentration_mg_ml = totalMg / vial.bac_water_ml;
-                }
-
-                // Update expiration date - use form value if provided, otherwise auto-calculate for dry_stock
-                if (expiryDate) {
-                    vial.expiration_date = expiryDate;
-                } else if (vial.status === 'dry_stock') {
-                    vial.expiration_date = this.calculateExpirationDate(null, orderDate);
                 }
 
                 this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
@@ -8705,7 +8668,6 @@
                             currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || 0,
                             usedVolumeMl: vial.used_volume_ml || 0,
                             status: vial.status,
-                            expirationDate: vial.expiration_date,
                             notes: vial.notes || `${totalMg}mg vial`
                         }
                     });
@@ -8737,15 +8699,13 @@
                 // Convert to ISO string
                 const reconstitutionDate = new Date(reconstitutionDateRaw).toISOString();
 
-                // Calculate concentration and expiration
+                // Calculate concentration
                 const concentrationMgMl = vial.total_mg / bacWaterMl;
-                const expirationDate = this.calculateExpirationDate(reconstitutionDate, null);
 
                 // Update vial to active status
                 vial.bac_water_ml = bacWaterMl;
                 vial.concentration_mg_ml = concentrationMgMl;
                 vial.reconstitution_date = reconstitutionDate;
-                vial.expiration_date = expirationDate;
                 vial.remaining_ml = bacWaterMl; // Start with full volume
                 vial.current_volume_ml = bacWaterMl; // Sync property for consistency (Hotfix)
                 vial.status = 'active';
@@ -8762,7 +8722,6 @@
                         data: {
                             id: vial.vial_id,
                             reconstitutionDate: reconstitutionDate,
-                            expirationDate: expirationDate,
                             bacWaterMl: bacWaterMl,
                             concentrationMgMl: concentrationMgMl,
                             currentVolumeMl: bacWaterMl,
@@ -8800,9 +8759,6 @@
                 // Calculate how much volume has been used
                 const usedVolumeMl = bacWaterMl - remainingMl;
 
-                // Calculate expiration date (28 days from reconstitution)
-                const expirationDate = this.calculateExpirationDate(today, null);
-
                 // Create the vial directly as active with partial volume
                 const vial = {
                     vial_id: this.generateId(),
@@ -8812,7 +8768,6 @@
                     bac_water_ml: bacWaterMl,
                     concentration_mg_ml: concentrationMgMl,
                     reconstitution_date: today,
-                    expiration_date: expirationDate,
                     remaining_ml: remainingMl,
                     current_volume_ml: remainingMl, // Sync property for consistency
                     doses_used: 0,
@@ -8987,7 +8942,6 @@
 
                     const concentrationMgMl = parseFloat(document.getElementById('trt-vial-concentration').value);
                     const volumeMl = parseFloat(document.getElementById('trt-vial-volume').value);
-                    const expiryDate = document.getElementById('trt-vial-expiry').value;
                     const status = document.getElementById('trt-vial-status').value;
 
                     if (isNaN(concentrationMgMl) || concentrationMgMl <= 0) {
@@ -9000,16 +8954,10 @@
                         return;
                     }
 
-                    if (!expiryDate) {
-                        alert('Please enter an expiry date');
-                        return;
-                    }
-
                     const vial = {
                         concentration_mg_ml: concentrationMgMl,
                         volume_ml: volumeMl,
                         lot_number: document.getElementById('trt-vial-lot').value || '',
-                        expiry_date: new Date(expiryDate).toISOString(),
                         status: status,
                         notes: document.getElementById('trt-vial-notes').value || ''
                     };
@@ -9083,7 +9031,6 @@
             async handleQuickAddTrtVial() {
                 try {
                     const now = new Date();
-                    const expiryDate = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000); // 1 year from now
 
                     const vial = {
                         concentration_mg_ml: 200,
@@ -9091,7 +9038,6 @@
                         remaining_ml: 10,
                         status: 'active',
                         opened_date: now.toISOString(),
-                        expiry_date: expiryDate.toISOString(),
                         lot_number: '',
                         notes: 'Quick-added vial'
                     };
@@ -9467,23 +9413,29 @@
                 }
 
                 // Handle active and other statuses
-                const now = new Date();
-                const expirationDate = new Date(vial.expiration_date);
-                const isExpired = expirationDate < now;
-                const daysUntilExpiry = Math.ceil((expirationDate - now) / (1000 * 60 * 60 * 24));
+                let status = vial.status || 'dry_stock';
+                const statusLabels = {
+                    'active': 'Active',
+                    'dry_stock': 'Dry Stock',
+                    'empty': 'Empty',
+                    // Map legacy statuses
+                    'insufficient': 'Active',
+                    'expiring': 'Active',
+                    'expired': 'Empty'
+                };
+                let statusText = statusLabels[status] || status;
 
-                let status = vial.status;
-                let statusText = vial.status === 'active' ? 'Active' : vial.status;
+                // Map legacy statuses to new ones
+                if (status === 'insufficient' || status === 'expiring') {
+                    status = 'active';
+                } else if (status === 'expired') {
+                    status = 'empty';
+                }
 
-                if (vial.status === 'active') {
+                // Check if volume is depleted for active vials
+                if (status === 'active') {
                     const currentVolume = vial.remaining_ml || vial.current_volume_ml || 0;
-                    if (isExpired) {
-                        status = 'expired';
-                        statusText = 'Expired';
-                    } else if (daysUntilExpiry <= 3) {
-                        status = 'expiring';
-                        statusText = `${daysUntilExpiry}d left`;
-                    } else if (currentVolume <= 0) {
+                    if (currentVolume <= 0) {
                         status = 'empty';
                         statusText = 'Empty';
                     }
@@ -9528,10 +9480,6 @@
                                 <span>Ready for activation with BAC water</span>
                             </div>
                             `}
-                            <div class="vial-detail-row">
-                                <span>Expires:</span>
-                                <span>${vial.expiration_date ? this.formatDate(vial.expiration_date) : 'Not set'}</span>
-                            </div>
                             ${vial.concentration_mg_ml ? `
                             <div class="vial-detail-row">
                                 <span>Doses Used:</span>
@@ -11400,17 +11348,15 @@
             updateInventoryStats() {
                 const activeVials = this.data.vials.filter(v =>
                     v.status === 'active' &&
-                    v.remaining_ml > 0 &&
-                    new Date(v.expiration_date) > new Date()
+                    v.remaining_ml > 0
                 );
 
                 const dryStockVials = this.data.vials.filter(v =>
-                    v.status === 'dry_stock' &&
-                    new Date(v.expiration_date) > new Date()
+                    v.status === 'dry_stock'
                 );
 
-                const expiredVials = this.data.vials.filter(v =>
-                    new Date(v.expiration_date) < new Date()
+                const emptyVials = this.data.vials.filter(v =>
+                    v.status === 'empty' || v.remaining_ml <= 0
                 );
 
                 const defaultDose = this.data.settings.defaultDose || 2.0;
@@ -11474,10 +11420,10 @@
                 }
 
                 // Update analytics
-                this.updateInventoryAnalytics(totalDoses, daysRemaining, expiredVials);
+                this.updateInventoryAnalytics(totalDoses, daysRemaining, emptyVials);
             }
 
-            updateInventoryAnalytics(totalDoses, daysRemaining, expiredVials) {
+            updateInventoryAnalytics(totalDoses, daysRemaining, emptyVials) {
                 // Reorder Alert
                 let reorderAlert = "Stock levels look good";
                 let reorderColor = '#34C759';
@@ -11510,22 +11456,14 @@
                     usageRateElement.textContent = usageRate;
                 }
 
-                // Waste Tracking
-                let wasteText = "No expired vials";
-                let wasteColor = '#34C759';
-
-                if (expiredVials.length > 0) {
-                    const expiredMg = expiredVials.reduce((sum, vial) => {
-                        return sum + (vial.remaining_ml * vial.concentration_mg_ml);
-                    }, 0);
-                    wasteText = `${expiredVials.length} expired (${expiredMg.toFixed(0)}mg lost)`;
-                    wasteColor = '#FF3B30';
-                }
+                // Vials Summary
+                let vialsText = `${emptyVials.length} empty vials`;
+                let vialsColor = '#888';
 
                 const wasteElement = document.getElementById('waste-tracking');
                 if (wasteElement) {
-                    wasteElement.textContent = wasteText;
-                    wasteElement.style.color = wasteColor;
+                    wasteElement.textContent = vialsText;
+                    wasteElement.style.color = vialsColor;
                 }
 
                 // Next Order Suggestion
@@ -12144,19 +12082,6 @@
                     // Check for vials marked as empty but still have volume
                     if (vial.status === 'empty' && vial.remaining_ml > 0) {
                         issues.push(`Vial ${vial.vial_id}: Marked as empty but has ${vial.remaining_ml}ml remaining`);
-                    }
-
-                    // Check for expired active vials (compare dates only, not times)
-                    if (vial.status === 'active' && vial.expiration_date) {
-                        const expiryDate = new Date(vial.expiration_date);
-                        const today = new Date();
-                        // Set both to midnight for fair comparison
-                        expiryDate.setHours(0, 0, 0, 0);
-                        today.setHours(0, 0, 0, 0);
-
-                        if (expiryDate < today) {
-                            issues.push(`Vial ${vial.vial_id}: Marked as active but expired on ${new Date(vial.expiration_date).toLocaleDateString()}`);
-                        }
                     }
                 });
 
