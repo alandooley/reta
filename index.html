@@ -6734,6 +6734,9 @@
 
                         // Reload UI for new app
                         this.switchApp(targetApp);
+
+                        // Scroll to top when switching apps
+                        window.scrollTo(0, 0);
                     });
                 });
 
@@ -6842,6 +6845,9 @@
                             tab.style.display = 'none';
                         });
                         document.getElementById(targetTab + '-tab').style.display = 'block';
+
+                        // Scroll to top when switching tabs
+                        window.scrollTo(0, 0);
 
                         // Update Reta tabs
                         if (targetTab === 'summary') this.updateSupplyForecast();

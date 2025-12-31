@@ -27,19 +27,14 @@ class AuthManager {
             throw new Error('Firebase SDK not loaded');
         }
 
-        // Always use SESSION persistence for redirect flow compatibility
-        // LOCAL persistence breaks mobile OAuth redirects because:
-        // 1. User starts redirect with one persistence mode
-        // 2. Page reloads after OAuth completes
-        // 3. If we change persistence before getRedirectResult(), Firebase can't find the stored state
-        // 4. Result: "missing initial state" error or silent auth failure
-        //
-        // SESSION persistence works reliably across redirects on all devices
+        // Use LOCAL persistence for 30-day login sessions
+        // Since we now use popup mode exclusively (not redirect), LOCAL persistence works reliably
+        // Combined with a 30-day expiry check, this gives users monthly login sessions
         try {
-            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.SESSION);
-            console.log('Firebase auth persistence set to SESSION (redirect flow compatible)');
+            await firebase.auth().setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+            console.log('Firebase auth persistence set to LOCAL (30-day session enabled)');
         } catch (error) {
-            console.error('Failed to set SESSION persistence:', error);
+            console.error('Failed to set LOCAL persistence:', error);
             // Continue anyway - Firebase will use default persistence
         }
 
@@ -100,6 +95,24 @@ class AuthManager {
             this.user = user;
 
             if (user) {
+                // Check for 30-day session expiry
+                const loginTimestamp = localStorage.getItem('auth_login_timestamp');
+                const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+                if (loginTimestamp) {
+                    const elapsed = Date.now() - parseInt(loginTimestamp, 10);
+                    if (elapsed > THIRTY_DAYS_MS) {
+                        console.log('Session expired (30+ days old). Signing out...');
+                        localStorage.removeItem('auth_login_timestamp');
+                        await this.signOut();
+                        return;
+                    }
+                } else {
+                    // First time seeing this user or timestamp missing - set it now
+                    localStorage.setItem('auth_login_timestamp', Date.now().toString());
+                    console.log('Login timestamp set for 30-day session tracking');
+                }
+
                 // Get fresh ID token
                 await this.refreshIdToken();
             } else {
@@ -154,6 +167,10 @@ class AuthManager {
             const result = await firebase.auth().signInWithPopup(provider);
             console.log('✅ Popup sign-in successful:', result.user.email);
 
+            // Reset 30-day session timestamp on new sign-in
+            localStorage.setItem('auth_login_timestamp', Date.now().toString());
+            console.log('Login timestamp reset for new 30-day session');
+
         } catch (error) {
             console.error('Sign in error:', error);
 
@@ -179,6 +196,8 @@ class AuthManager {
             this.user = null;
             this.idToken = null;
             this.tokenExpiryTime = null;
+            // Clear 30-day session timestamp on sign out
+            localStorage.removeItem('auth_login_timestamp');
             console.log('Signed out successfully');
         } catch (error) {
             console.error('Sign out error:', error);
