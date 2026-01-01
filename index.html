@@ -5189,13 +5189,19 @@
                         localId: newVial.vial_id,
                         data: {
                             id: newVial.vial_id,
-                            startDate: newVial.order_date,
-                            initialVolumeMl: newVial.bac_water_ml,
-                            concentrationMgPerMl: newVial.concentration_mg_ml,
-                            currentVolumeMl: newVial.remaining_ml,
-                            usedVolumeMl: 0,
+                            orderDate: newVial.order_date,
+                            totalMg: newVial.total_mg,
+                            supplier: newVial.supplier || '',
                             status: newVial.status,
-                            source: newVial.supplier || '',
+                            reconstitutionDate: newVial.reconstitution_date,
+                            expirationDate: newVial.expiration_date,
+                            bacWaterMl: newVial.bac_water_ml,
+                            concentrationMgMl: newVial.concentration_mg_ml,
+                            currentVolumeMl: newVial.remaining_ml,
+                            remainingMl: newVial.remaining_ml,
+                            usedVolumeMl: 0,
+                            dosesUsed: 0,
+                            lotNumber: newVial.lot_number || '',
                             notes: ''
                         }
                     });
@@ -5234,13 +5240,19 @@
                         localId: vialId,
                         data: {
                             id: vialId,
-                            startDate: updatedVial.order_date,
-                            initialVolumeMl: updatedVial.bac_water_ml || 0,
-                            concentrationMgPerMl: updatedVial.concentration_mg_ml || 0,
-                            currentVolumeMl: updatedVial.remaining_ml || 0,
-                            usedVolumeMl: (updatedVial.bac_water_ml || 0) - (updatedVial.remaining_ml || 0),
+                            orderDate: updatedVial.order_date,
+                            totalMg: updatedVial.total_mg,
+                            supplier: updatedVial.supplier || '',
                             status: updatedVial.status,
-                            source: updatedVial.supplier || '',
+                            reconstitutionDate: updatedVial.reconstitution_date || null,
+                            expirationDate: updatedVial.expiration_date || null,
+                            bacWaterMl: updatedVial.bac_water_ml || null,
+                            concentrationMgMl: updatedVial.concentration_mg_ml || null,
+                            currentVolumeMl: updatedVial.remaining_ml || 0,
+                            remainingMl: updatedVial.remaining_ml || 0,
+                            usedVolumeMl: (updatedVial.bac_water_ml || 0) - (updatedVial.remaining_ml || 0),
+                            dosesUsed: updatedVial.doses_used || 0,
+                            lotNumber: updatedVial.lot_number || '',
                             notes: updatedVial.notes || ''
                         }
                     });
@@ -5515,7 +5527,23 @@
                 // Push to sync queue if authenticated
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        await cloudStorage.saveTrtInjection(newInjection);
+                        // Convert snake_case to camelCase for cloud API
+                        const cloudInjection = {
+                            id: newInjection.id,
+                            timestamp: newInjection.timestamp,
+                            volumeMl: newInjection.volume_ml,
+                            concentrationMgMl: newInjection.concentration_mg_ml,
+                            doseMg: newInjection.dose_mg,
+                            injectionSite: newInjection.injection_site,
+                            timeOfDay: newInjection.time_of_day,
+                            techniqueNotes: newInjection.technique_notes,
+                            notes: newInjection.notes,
+                            vialId: newInjection.vial_id,
+                            skipped: newInjection.skipped,
+                            plannedVolumeMl: newInjection.planned_volume_ml,
+                            plannedDoseMg: newInjection.planned_dose_mg
+                        };
+                        await cloudStorage.saveTrtInjection(cloudInjection);
                     } catch (error) {
                         console.warn('Failed to sync TRT injection to cloud:', error);
                     }
@@ -5565,7 +5593,23 @@
 
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        await cloudStorage.saveTrtInjection(updatedInjection);
+                        // Convert snake_case to camelCase for cloud API
+                        const cloudInjection = {
+                            id: updatedInjection.id,
+                            timestamp: updatedInjection.timestamp,
+                            volumeMl: updatedInjection.volume_ml,
+                            concentrationMgMl: updatedInjection.concentration_mg_ml,
+                            doseMg: updatedInjection.dose_mg,
+                            injectionSite: updatedInjection.injection_site,
+                            timeOfDay: updatedInjection.time_of_day,
+                            techniqueNotes: updatedInjection.technique_notes,
+                            notes: updatedInjection.notes,
+                            vialId: updatedInjection.vial_id,
+                            skipped: updatedInjection.skipped,
+                            plannedVolumeMl: updatedInjection.planned_volume_ml,
+                            plannedDoseMg: updatedInjection.planned_dose_mg
+                        };
+                        await cloudStorage.saveTrtInjection(cloudInjection);
                     } catch (error) {
                         console.warn('Failed to sync TRT injection update to cloud:', error);
                     }
@@ -9976,12 +10020,13 @@
 
                     const injection = {
                         timestamp: new Date(scheduledDate).toISOString(),
-                        volume_ml: volumeMl,
+                        volume_ml: 0, // Skipped injection has 0 actual volume
                         concentration_mg_ml: concentrationMgMl,
                         injection_site: null,
                         vial_id: null,
                         notes: reason || 'Skipped injection',
                         skipped: true,
+                        planned_volume_ml: volumeMl, // Store the planned volume
                         planned_dose_mg: plannedDoseMg // Store what was planned
                     };
 

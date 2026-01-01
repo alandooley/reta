@@ -352,6 +352,13 @@ class CloudStorage {
             try {
                 let cloudVial;
 
+                // Convert local status to cloud-compatible status
+                // Local uses 'unopened', 'activated', 'finished' but cloud only accepts 'active', 'dry_stock', 'empty', 'expired'
+                let cloudStatus = vial.status;
+                if (cloudStatus === 'unopened') cloudStatus = 'dry_stock';
+                if (cloudStatus === 'activated') cloudStatus = 'active';
+                if (cloudStatus === 'finished') cloudStatus = 'empty';
+
                 const vialData = {
                     concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
                     volumeMl: vial.volume_ml || vial.volumeMl,
@@ -359,7 +366,7 @@ class CloudStorage {
                     lotNumber: vial.lot_number || vial.lotNumber || '',
                     expiryDate: vial.expiry_date || vial.expiryDate,
                     openedDate: vial.opened_date || vial.openedDate || null,
-                    status: vial.status,
+                    status: cloudStatus,
                     notes: vial.notes || '',
                 };
 
