@@ -9612,7 +9612,8 @@
                         reconstitution_date: null,
                         remaining_ml: 0,
                         doses_used: 0,
-                        status: 'dry_stock'
+                        status: 'dry_stock',
+                        cloudSynced: false
                     };
 
                     this.data.vials.push(vial);
@@ -9831,6 +9832,9 @@
                     vial.concentration_mg_ml = totalMg / vial.bac_water_ml;
                 }
 
+                // Mark as pending sync to prevent cloud data from overwriting local edits
+                vial.cloudSynced = false;
+
                 this.data.vials.sort((a, b) => new Date(b.order_date) - new Date(a.order_date));
                 this.saveData();
                 this.updateUI();
@@ -9887,6 +9891,7 @@
                 vial.remaining_ml = bacWaterMl; // Start with full volume
                 vial.current_volume_ml = bacWaterMl; // Sync property for consistency (Hotfix)
                 vial.status = 'active';
+                vial.cloudSynced = false; // Mark as pending sync
 
                 this.saveData();
                 this.updateUI();
