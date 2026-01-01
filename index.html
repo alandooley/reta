@@ -3037,6 +3037,30 @@
                     </p>
                 </div>
 
+                <!-- Data Audit & Cloud Repair -->
+                <div class="settings-section" style="background-color: rgba(59, 130, 246, 0.05); border: 2px solid rgba(59, 130, 246, 0.2); border-radius: var(--border-radius);">
+                    <h3 style="color: #3b82f6; margin-bottom: var(--spacing-md);">🔧 Data Audit & Repair</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                        Check your local data for missing fields, auto-fill where possible, then push to cloud.
+                    </p>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <button id="audit-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px;">
+                            🔍 Audit
+                        </button>
+                        <button id="autofill-vials-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #8b5cf6; border-color: #8b5cf6; color: white;">
+                            🧪 Auto-fill Vials
+                        </button>
+                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
+                            ☁️ Repair Cloud
+                        </button>
+                    </div>
+                    <div id="audit-results" style="display: none; margin-top: 12px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm); max-height: 300px; overflow-y: auto;">
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        💡 "Auto-fill Vials" tries to match TRT injections to vials by concentration, timeline, and surrounding shots.
+                    </p>
+                </div>
+
                 <!-- Danger Zone: Reset Options -->
                 <div class="settings-section" style="background-color: rgba(239, 68, 68, 0.05); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: var(--border-radius);">
                     <h3 style="color: #ef4444; margin-bottom: var(--spacing-md);">⚠️ Danger Zone</h3>
@@ -7984,6 +8008,21 @@
                     this.createCloudBackup();
                 });
 
+                // Audit data
+                document.getElementById('audit-data-btn').addEventListener('click', () => {
+                    this.auditData();
+                });
+
+                // Auto-fill missing vials
+                document.getElementById('autofill-vials-btn').addEventListener('click', () => {
+                    this.autofillMissingVials();
+                });
+
+                // Repair cloud data
+                document.getElementById('repair-cloud-data-btn').addEventListener('click', () => {
+                    this.repairCloudData();
+                });
+
                 // Reset local data and sync from cloud
                 document.getElementById('reset-local-data-btn').addEventListener('click', async () => {
                     await this.resetLocalDataAndSync();
@@ -8371,6 +8410,263 @@
 
                     alert(
                         '❌ Cloud Backup Failed\n\n' +
+                        error.message + '\n\n' +
+                        'Please check your internet connection and try again.'
+                    );
+                }
+            }
+
+            /**
+             * Audit local data for missing fields
+             * Shows which records need to be manually corrected
+             */
+            auditData() {
+                const resultsDiv = document.getElementById('audit-results');
+
+                // Run the audit
+                const issues = cloudStorage.auditLocalData(this);
+
+                // Count total issues
+                const totalIssues = issues.trtInjections.length + issues.trtVials.length +
+                                   issues.retaInjections.length + issues.retaVials.length +
+                                   issues.weights.length;
+
+                if (totalIssues === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ All data looks good!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            No missing fields found. Your data is ready for cloud repair.
+                        </p>
+                    `;
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                // Build results HTML
+                let html = `
+                    <div style="color: #f59e0b; font-weight: 600; margin-bottom: 12px;">
+                        ⚠️ Found ${totalIssues} record(s) with missing fields
+                    </div>
+                `;
+
+                // TRT Injections
+                if (issues.trtInjections.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">TRT Injections (${issues.trtInjections.length})</div>`;
+                    for (const inj of issues.trtInjections) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            📅 ${inj.date} - Missing: <strong>${inj.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // TRT Vials
+                if (issues.trtVials.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">TRT Vials (${issues.trtVials.length})</div>`;
+                    for (const vial of issues.trtVials) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            💉 ${vial.status} - Missing: <strong>${vial.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Reta Injections
+                if (issues.retaInjections.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Reta Injections (${issues.retaInjections.length})</div>`;
+                    for (const inj of issues.retaInjections) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            📅 ${inj.date} - Missing: <strong>${inj.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Reta Vials
+                if (issues.retaVials.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Reta Vials (${issues.retaVials.length})</div>`;
+                    for (const vial of issues.retaVials) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            🧪 ID: ${vial.id?.slice(0,8)}... - Missing: <strong>${vial.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Weights
+                if (issues.weights.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Weights (${issues.weights.length})</div>`;
+                    for (const w of issues.weights) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            ⚖️ Missing: <strong>${w.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `<p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                    Tap on the Shots or Vials tabs to find and edit these records.
+                </p>`;
+
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+            }
+
+            /**
+             * Auto-fill missing vial IDs for TRT injections
+             * Uses concentration, timeline, and surrounding shots to infer vial
+             */
+            autofillMissingVials() {
+                const resultsDiv = document.getElementById('audit-results');
+
+                // Get suggested fixes
+                const fixes = cloudStorage.inferMissingVialIds(this);
+
+                if (fixes.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ No missing vial IDs found!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            All TRT injections already have vials assigned.
+                        </p>
+                    `;
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                // Show suggested fixes
+                let html = `
+                    <div style="color: #8b5cf6; font-weight: 600; margin-bottom: 12px;">
+                        🧪 Found ${fixes.length} injection(s) that can be auto-filled
+                    </div>
+                `;
+
+                for (const fix of fixes) {
+                    html += `<div style="font-size: 12px; padding: 8px; background: rgba(139, 92, 246, 0.1); border-radius: 4px; margin-bottom: 8px;">
+                        <div><strong>📅 ${fix.injectionDate}</strong></div>
+                        <div style="color: var(--text-secondary);">→ Vial: ${fix.vialInfo}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Reason: ${fix.reason}</div>
+                    </div>`;
+                }
+
+                html += `
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button id="apply-vial-fixes-btn" class="btn-primary" style="flex: 1; background-color: #22c55e; border-color: #22c55e;">
+                            ✅ Apply All (${fixes.length})
+                        </button>
+                        <button id="cancel-vial-fixes-btn" class="btn-secondary" style="flex: 1;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+
+                // Add button handlers
+                document.getElementById('apply-vial-fixes-btn').addEventListener('click', () => {
+                    const applied = cloudStorage.applyVialFixes(this, fixes);
+                    this.updateUI();
+
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ Applied ${applied} fix(es)!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            Vial IDs have been filled in. Now run "☁️ Repair Cloud" to push to cloud.
+                        </p>
+                    `;
+                });
+
+                document.getElementById('cancel-vial-fixes-btn').addEventListener('click', () => {
+                    resultsDiv.style.display = 'none';
+                });
+            }
+
+            /**
+             * Repair cloud data by re-pushing all local data with correct field mappings
+             * Use this after fixing sync bugs to reconcile local and cloud data
+             */
+            async repairCloudData() {
+                try {
+                    // Check if authenticated
+                    if (!authManager.isAuthenticated()) {
+                        alert('Please sign in first before repairing cloud data.\n\nGo to Settings → Cloud Sync section.');
+                        return;
+                    }
+
+                    // Get counts for confirmation
+                    const trtInjections = this.data.trtInjections?.length || 0;
+                    const trtVials = this.data.trtVials?.length || 0;
+                    const retaInjections = this.data.injections?.length || 0;
+                    const retaVials = this.data.vials?.length || 0;
+                    const weights = this.data.weights?.length || 0;
+
+                    // Confirm with user
+                    const confirmed = confirm(
+                        '🔧 Repair Cloud Data\n\n' +
+                        'This will re-push ALL your local data to the cloud:\n\n' +
+                        `• TRT Injections: ${trtInjections}\n` +
+                        `• TRT Vials: ${trtVials}\n` +
+                        `• Reta Injections: ${retaInjections}\n` +
+                        `• Reta Vials: ${retaVials}\n` +
+                        `• Weight Entries: ${weights}\n\n` +
+                        'Cloud data will be overwritten with your local data.\n\n' +
+                        'Continue?'
+                    );
+
+                    if (!confirmed) return;
+
+                    // Update button state
+                    const button = document.getElementById('repair-cloud-data-btn');
+                    const originalText = button.textContent;
+                    button.textContent = 'Repairing...';
+                    button.disabled = true;
+
+                    // Call cloudStorage.repairCloudData
+                    const results = await cloudStorage.repairCloudData(this);
+
+                    // Show results
+                    const totalSuccess = results.trtInjections.success + results.trtVials.success +
+                                        results.retaInjections.success + results.retaVials.success +
+                                        results.weights.success;
+                    const totalFailed = results.trtInjections.failed + results.trtVials.failed +
+                                        results.retaInjections.failed + results.retaVials.failed +
+                                        results.weights.failed;
+
+                    alert(
+                        '✅ Cloud Data Repair Complete\n\n' +
+                        `Successfully pushed: ${totalSuccess} items\n` +
+                        `Failed: ${totalFailed} items\n\n` +
+                        'Details:\n' +
+                        `• TRT Injections: ${results.trtInjections.success} ✓, ${results.trtInjections.failed} ✗\n` +
+                        `• TRT Vials: ${results.trtVials.success} ✓, ${results.trtVials.failed} ✗\n` +
+                        `• Reta Injections: ${results.retaInjections.success} ✓, ${results.retaInjections.failed} ✗\n` +
+                        `• Reta Vials: ${results.retaVials.success} ✓, ${results.retaVials.failed} ✗\n` +
+                        `• Weights: ${results.weights.success} ✓, ${results.weights.failed} ✗`
+                    );
+
+                    // Reset button
+                    button.textContent = originalText;
+                    button.disabled = false;
+
+                } catch (error) {
+                    console.error('Failed to repair cloud data:', error);
+
+                    const button = document.getElementById('repair-cloud-data-btn');
+                    button.textContent = 'Repair Cloud Data';
+                    button.disabled = false;
+
+                    alert(
+                        '❌ Cloud Data Repair Failed\n\n' +
                         error.message + '\n\n' +
                         'Please check your internet connection and try again.'
                     );
@@ -13922,6 +14218,12 @@
                     cloudBackupBtn.disabled = false;
                 }
 
+                // Enable repair cloud data button
+                const repairCloudBtn = document.getElementById('repair-cloud-data-btn');
+                if (repairCloudBtn) {
+                    repairCloudBtn.disabled = false;
+                }
+
                 // ALWAYS sync from cloud when authenticated (cloud is source of truth)
                 if (app) {
                     if (isNewAuth) {
@@ -13964,6 +14266,12 @@
                 const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
                 if (cloudBackupBtn) {
                     cloudBackupBtn.disabled = true;
+                }
+
+                // Disable repair cloud data button
+                const repairCloudBtn = document.getElementById('repair-cloud-data-btn');
+                if (repairCloudBtn) {
+                    repairCloudBtn.disabled = true;
                 }
 
                 // Update cloud backup status

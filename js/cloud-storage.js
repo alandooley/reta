@@ -661,6 +661,406 @@ class CloudStorage {
     setAutoSync(enabled) {
         this.autoSyncEnabled = enabled;
     }
+
+    /**
+     * Audit local data to find records with missing fields
+     * Returns a report of which records need manual correction
+     */
+    auditLocalData(app) {
+        const issues = {
+            trtInjections: [],
+            trtVials: [],
+            retaInjections: [],
+            retaVials: [],
+            weights: []
+        };
+
+        // Check TRT Injections
+        const trtInjections = app.data.trtInjections || [];
+        for (const inj of trtInjections) {
+            const missing = [];
+            if (!inj.injection_site && !inj.skipped) missing.push('injection_site');
+            if (!inj.volume_ml && inj.volume_ml !== 0 && !inj.skipped) missing.push('volume_ml');
+            if (!inj.concentration_mg_ml && !inj.skipped) missing.push('concentration_mg_ml');
+            if (!inj.vial_id && !inj.skipped) missing.push('vial_id');
+
+            if (missing.length > 0) {
+                issues.trtInjections.push({
+                    id: inj.id,
+                    timestamp: inj.timestamp,
+                    date: new Date(inj.timestamp).toLocaleDateString(),
+                    missing: missing
+                });
+            }
+        }
+
+        // Check TRT Vials
+        const trtVials = app.data.trtVials || [];
+        for (const vial of trtVials) {
+            const missing = [];
+            if (!vial.concentration_mg_ml) missing.push('concentration_mg_ml');
+            if (!vial.volume_ml) missing.push('volume_ml');
+            if (!vial.expiry_date) missing.push('expiry_date');
+
+            if (missing.length > 0) {
+                issues.trtVials.push({
+                    id: vial.id,
+                    status: vial.status,
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Reta Injections
+        const retaInjections = app.data.injections || [];
+        for (const inj of retaInjections) {
+            const missing = [];
+            if (!inj.injection_site && !inj.skipped) missing.push('injection_site');
+            if (!inj.dose_mg && inj.dose_mg !== 0 && !inj.skipped) missing.push('dose_mg');
+            if (!inj.vial_id && !inj.skipped) missing.push('vial_id');
+
+            if (missing.length > 0) {
+                issues.retaInjections.push({
+                    id: inj.id,
+                    timestamp: inj.timestamp,
+                    date: new Date(inj.timestamp).toLocaleDateString(),
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Reta Vials
+        const retaVials = app.data.vials || [];
+        for (const vial of retaVials) {
+            const missing = [];
+            if (!vial.order_date) missing.push('order_date');
+            if (!vial.total_mg) missing.push('total_mg');
+
+            if (missing.length > 0) {
+                issues.retaVials.push({
+                    id: vial.id || vial.vial_id,
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Weights
+        const weights = app.data.weights || [];
+        for (const w of weights) {
+            const missing = [];
+            if (!w.weight_kg && w.weight_kg !== 0) missing.push('weight_kg');
+            if (!w.timestamp) missing.push('timestamp');
+
+            if (missing.length > 0) {
+                issues.weights.push({
+                    id: w.id,
+                    timestamp: w.timestamp,
+                    missing: missing
+                });
+            }
+        }
+
+        return issues;
+    }
+
+    /**
+     * Try to infer missing vial_id for TRT injections based on:
+     * 1. Concentration matching
+     * 2. Timeline (which vial was active at injection time)
+     * 3. Surrounding injections
+     */
+    inferMissingVialIds(app) {
+        const trtInjections = app.data.trtInjections || [];
+        const trtVials = app.data.trtVials || [];
+
+        const fixes = [];
+
+        for (const inj of trtInjections) {
+            // Skip if already has vial_id or is skipped
+            if (inj.vial_id || inj.skipped) continue;
+
+            const injDate = new Date(inj.timestamp);
+            let bestMatch = null;
+            let matchReason = '';
+
+            // Strategy 1: Match by concentration
+            if (inj.concentration_mg_ml) {
+                const concentrationMatches = trtVials.filter(v =>
+                    v.concentration_mg_ml === inj.concentration_mg_ml
+                );
+
+                if (concentrationMatches.length === 1) {
+                    bestMatch = concentrationMatches[0];
+                    matchReason = 'concentration match (unique)';
+                } else if (concentrationMatches.length > 1) {
+                    // Multiple vials with same concentration - use timeline
+                    const activeAtTime = concentrationMatches.filter(v => {
+                        if (!v.opened_date) return false;
+                        const openedDate = new Date(v.opened_date);
+                        return openedDate <= injDate;
+                    }).sort((a, b) => new Date(b.opened_date) - new Date(a.opened_date));
+
+                    if (activeAtTime.length > 0) {
+                        bestMatch = activeAtTime[0]; // Most recently opened before injection
+                        matchReason = 'concentration + most recently opened';
+                    }
+                }
+            }
+
+            // Strategy 2: Look at surrounding injections
+            if (!bestMatch) {
+                const sortedInjs = [...trtInjections]
+                    .filter(i => i.vial_id && !i.skipped)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Find injections just before and after
+                let before = null, after = null;
+                for (const i of sortedInjs) {
+                    if (new Date(i.timestamp) < injDate) {
+                        before = i;
+                    } else if (new Date(i.timestamp) > injDate && !after) {
+                        after = i;
+                        break;
+                    }
+                }
+
+                // If before and after use same vial, likely this one does too
+                if (before && after && before.vial_id === after.vial_id) {
+                    const vial = trtVials.find(v => v.id === before.vial_id);
+                    if (vial) {
+                        bestMatch = vial;
+                        matchReason = 'surrounding injections use same vial';
+                    }
+                } else if (before) {
+                    // Use the vial from the previous injection
+                    const vial = trtVials.find(v => v.id === before.vial_id);
+                    if (vial) {
+                        bestMatch = vial;
+                        matchReason = 'previous injection vial';
+                    }
+                }
+            }
+
+            // Strategy 3: Find any vial that was active at the time
+            if (!bestMatch) {
+                const activeAtTime = trtVials.filter(v => {
+                    if (!v.opened_date) return false;
+                    const openedDate = new Date(v.opened_date);
+                    return openedDate <= injDate &&
+                           (v.status === 'active' || v.status === 'empty' || v.status === 'finished');
+                }).sort((a, b) => new Date(b.opened_date) - new Date(a.opened_date));
+
+                if (activeAtTime.length === 1) {
+                    bestMatch = activeAtTime[0];
+                    matchReason = 'only vial active at time';
+                } else if (activeAtTime.length > 1) {
+                    bestMatch = activeAtTime[0];
+                    matchReason = 'most recently opened (multiple candidates)';
+                }
+            }
+
+            if (bestMatch) {
+                fixes.push({
+                    injection: inj,
+                    suggestedVial: bestMatch,
+                    reason: matchReason,
+                    injectionDate: injDate.toLocaleDateString(),
+                    vialInfo: `${bestMatch.concentration_mg_ml}mg/ml, opened ${bestMatch.opened_date ? new Date(bestMatch.opened_date).toLocaleDateString() : 'N/A'}`
+                });
+            }
+        }
+
+        return fixes;
+    }
+
+    /**
+     * Apply vial fixes to injections
+     */
+    applyVialFixes(app, fixes) {
+        let applied = 0;
+
+        for (const fix of fixes) {
+            const inj = app.data.trtInjections.find(i => i.id === fix.injection.id);
+            if (inj && !inj.vial_id) {
+                inj.vial_id = fix.suggestedVial.id;
+
+                // Also fill in concentration if missing
+                if (!inj.concentration_mg_ml && fix.suggestedVial.concentration_mg_ml) {
+                    inj.concentration_mg_ml = fix.suggestedVial.concentration_mg_ml;
+                }
+
+                // Recalculate dose if we have volume and concentration
+                if (inj.volume_ml && inj.concentration_mg_ml && !inj.dose_mg) {
+                    inj.dose_mg = inj.volume_ml * inj.concentration_mg_ml;
+                }
+
+                applied++;
+            }
+        }
+
+        if (applied > 0) {
+            app.saveData();
+        }
+
+        return applied;
+    }
+
+    /**
+     * Repair cloud data by re-pushing all local data with correct field mappings
+     * Use this after fixing sync bugs to reconcile local and cloud data
+     * Local data is treated as the source of truth
+     */
+    async repairCloudData(app) {
+        if (!this.isCloudAvailable()) {
+            throw new Error('Not authenticated');
+        }
+
+        console.log('=== Starting Cloud Data Repair ===');
+        const results = {
+            trtInjections: { success: 0, failed: 0 },
+            trtVials: { success: 0, failed: 0 },
+            retaInjections: { success: 0, failed: 0 },
+            retaVials: { success: 0, failed: 0 },
+            weights: { success: 0, failed: 0 }
+        };
+
+        // 1. Repair TRT Injections
+        console.log('Repairing TRT injections...');
+        const trtInjections = app.data.trtInjections || [];
+        for (const injection of trtInjections) {
+            try {
+                // Convert snake_case to camelCase for cloud API
+                const cloudInjection = {
+                    id: injection.id,
+                    timestamp: injection.timestamp,
+                    volumeMl: injection.volume_ml || 0,
+                    concentrationMgMl: injection.concentration_mg_ml || 0,
+                    doseMg: injection.dose_mg || 0,
+                    injectionSite: injection.injection_site,
+                    timeOfDay: injection.time_of_day || null,
+                    techniqueNotes: injection.technique_notes || '',
+                    notes: injection.notes || '',
+                    vialId: injection.vial_id || null,
+                    skipped: injection.skipped || false,
+                    plannedVolumeMl: injection.planned_volume_ml || null,
+                    plannedDoseMg: injection.planned_dose_mg || null
+                };
+                await this.apiClient.createTrtInjection(cloudInjection);
+                results.trtInjections.success++;
+            } catch (error) {
+                console.warn(`Failed to repair TRT injection ${injection.id}:`, error.message);
+                results.trtInjections.failed++;
+            }
+        }
+
+        // 2. Repair TRT Vials
+        console.log('Repairing TRT vials...');
+        const trtVials = app.data.trtVials || [];
+        for (const vial of trtVials) {
+            try {
+                // Convert status to cloud-compatible
+                let cloudStatus = vial.status;
+                if (cloudStatus === 'unopened') cloudStatus = 'dry_stock';
+                if (cloudStatus === 'activated') cloudStatus = 'active';
+                if (cloudStatus === 'finished') cloudStatus = 'empty';
+
+                const cloudVial = {
+                    id: vial.id,
+                    concentrationMgMl: vial.concentration_mg_ml,
+                    volumeMl: vial.volume_ml,
+                    remainingMl: vial.remaining_ml,
+                    lotNumber: vial.lot_number || '',
+                    expiryDate: vial.expiry_date,
+                    openedDate: vial.opened_date || null,
+                    status: cloudStatus,
+                    notes: vial.notes || ''
+                };
+                await this.apiClient.createTrtVial(cloudVial);
+                results.trtVials.success++;
+            } catch (error) {
+                console.warn(`Failed to repair TRT vial ${vial.id}:`, error.message);
+                results.trtVials.failed++;
+            }
+        }
+
+        // 3. Repair Reta Injections (via sync queue processor)
+        console.log('Repairing Reta injections...');
+        const retaInjections = app.data.injections || [];
+        for (const injection of retaInjections) {
+            try {
+                const cloudInjection = {
+                    id: injection.id,
+                    timestamp: injection.timestamp,
+                    doseMg: injection.dose_mg,
+                    site: injection.injection_site,
+                    vialId: injection.vial_id,
+                    notes: injection.notes || '',
+                    skipped: injection.skipped || false,
+                    plannedDoseMg: injection.planned_dose_mg || null
+                };
+                await this.apiClient.createInjection(cloudInjection);
+                results.retaInjections.success++;
+            } catch (error) {
+                console.warn(`Failed to repair Reta injection ${injection.id}:`, error.message);
+                results.retaInjections.failed++;
+            }
+        }
+
+        // 4. Repair Reta Vials
+        console.log('Repairing Reta vials...');
+        const retaVials = app.data.vials || [];
+        for (const vial of retaVials) {
+            try {
+                const vialId = vial.id || vial.vial_id;
+                const cloudVial = {
+                    id: vialId,
+                    orderDate: vial.order_date,
+                    totalMg: vial.total_mg,
+                    supplier: vial.supplier || '',
+                    status: vial.status || 'active',
+                    reconstitutionDate: vial.reconstitution_date || null,
+                    expirationDate: vial.expiration_date || null,
+                    bacWaterMl: vial.bac_water_ml || null,
+                    concentrationMgMl: vial.concentration_mg_ml || null,
+                    currentVolumeMl: vial.remaining_ml || 0,
+                    remainingMl: vial.remaining_ml || 0,
+                    usedVolumeMl: (vial.bac_water_ml || 0) - (vial.remaining_ml || 0),
+                    dosesUsed: vial.doses_used || 0,
+                    lotNumber: vial.lot_number || '',
+                    notes: vial.notes || ''
+                };
+                await this.apiClient.createVial(cloudVial);
+                results.retaVials.success++;
+            } catch (error) {
+                console.warn(`Failed to repair Reta vial ${vial.id || vial.vial_id}:`, error.message);
+                results.retaVials.failed++;
+            }
+        }
+
+        // 5. Repair Weights
+        console.log('Repairing weight entries...');
+        const weights = app.data.weights || [];
+        for (const weight of weights) {
+            try {
+                const cloudWeight = {
+                    id: weight.id,
+                    timestamp: weight.timestamp,
+                    weightKg: weight.weight_kg,
+                    notes: weight.notes || ''
+                };
+                await this.apiClient.createWeight(cloudWeight);
+                results.weights.success++;
+            } catch (error) {
+                console.warn(`Failed to repair weight ${weight.id}:`, error.message);
+                results.weights.failed++;
+            }
+        }
+
+        console.log('=== Cloud Data Repair Complete ===');
+        console.log('Results:', JSON.stringify(results, null, 2));
+
+        return results;
+    }
 }
 
 // Export singleton instance
