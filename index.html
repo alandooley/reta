@@ -8873,9 +8873,9 @@
                 document.getElementById('add-trt-vial-modal-title').textContent = 'Edit TRT Vial';
                 document.getElementById('trt-vial-submit-btn').textContent = 'Save Changes';
 
-                // Display vial ID (short format for readability, full ID on hover)
+                // Display vial ID (short 4-char format, full ID on hover)
                 const fullVialId = vial.id;
-                const shortId = fullVialId.length > 12 ? fullVialId.slice(-8) : fullVialId;
+                const shortId = fullVialId.slice(-4);
                 const vialIdGroup = document.getElementById('trt-vial-id-group');
                 const vialIdDisplay = document.getElementById('trt-vial-id-display');
                 if (vialIdGroup && vialIdDisplay) {
@@ -9181,9 +9181,9 @@
                     return;
                 }
 
-                // Display vial ID (short format for readability, full ID on hover)
+                // Display vial ID (short 4-char format, full ID on hover)
                 const fullVialId = vial.vial_id;
-                const shortId = fullVialId.length > 12 ? fullVialId.slice(-8) : fullVialId;
+                const shortId = fullVialId.slice(-4);
                 const vialIdDisplay = document.getElementById('edit-vial-id-display');
                 vialIdDisplay.textContent = shortId;
                 vialIdDisplay.title = `Full ID: ${fullVialId}`;
