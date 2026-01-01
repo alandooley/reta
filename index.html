@@ -7304,25 +7304,49 @@
             switchApp(appMode) {
                 console.log(`[APP-SWITCH] Switching to ${appMode}`);
 
+                // Get current active tab before switching
+                const activeNavBtn = document.querySelector('.nav-btn.active');
+                const currentTab = activeNavBtn ? activeNavBtn.dataset.tab : null;
+
+                // Map equivalent tabs between Reta and TRT
+                const tabMapping = {
+                    // Reta to TRT
+                    'summary': 'trt-dashboard',
+                    'shots': 'trt-shots',
+                    'results': 'trt-symptoms',
+                    'inventory': 'trt-inventory',
+                    'settings': 'trt-settings',
+                    // TRT to Reta
+                    'trt-dashboard': 'summary',
+                    'trt-shots': 'shots',
+                    'trt-symptoms': 'results',
+                    'trt-inventory': 'inventory',
+                    'trt-settings': 'settings'
+                };
+
+                // Determine target tab in the new app
+                const targetTab = currentTab ? tabMapping[currentTab] : null;
+
                 if (appMode === 'reta') {
                     // Show Reta navigation and content
-                    this.showRetaApp();
+                    this.showRetaApp(targetTab);
                 } else if (appMode === 'trt') {
                     // Show TRT navigation and content
-                    this.showTrtApp();
+                    this.showTrtApp(targetTab);
                 }
 
                 // Reload UI
                 this.updateUI();
             }
 
-            showRetaApp() {
+            showRetaApp(targetTab = 'summary') {
                 const bottomNav = document.getElementById('bottom-nav');
                 const addShotBtn = document.getElementById('add-shot-btn');
 
                 // Show Reta tabs, hide TRT tabs
                 document.querySelectorAll('.nav-btn[data-tab^="trt-"]').forEach(btn => {
                     btn.style.display = 'none';
+                    btn.classList.remove('active');
                 });
                 document.querySelectorAll('.nav-btn:not([data-tab^="trt-"])').forEach(btn => {
                     btn.style.display = 'flex';
@@ -7331,20 +7355,35 @@
                 // Update add button text
                 if (addShotBtn) addShotBtn.textContent = '+ Shot';
 
-                // Show first Reta tab
-                document.getElementById('summary-tab').style.display = 'block';
-                document.querySelectorAll('.tab-content[id^="trt-"]').forEach(tab => {
+                // Hide all tab content first
+                document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.style.display = 'none';
+                });
+
+                // Show target Reta tab (or default to summary)
+                const tabToShow = targetTab || 'summary';
+                const tabContent = document.getElementById(tabToShow + '-tab');
+                if (tabContent) {
+                    tabContent.style.display = 'block';
+                }
+
+                // Update nav button active state
+                document.querySelectorAll('.nav-btn:not([data-tab^="trt-"])').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.tab === tabToShow) {
+                        btn.classList.add('active');
+                    }
                 });
             }
 
-            showTrtApp() {
+            showTrtApp(targetTab = 'trt-dashboard') {
                 const bottomNav = document.getElementById('bottom-nav');
                 const addShotBtn = document.getElementById('add-shot-btn');
 
                 // Hide Reta tabs, show TRT tabs
                 document.querySelectorAll('.nav-btn:not([data-tab^="trt-"])').forEach(btn => {
                     btn.style.display = 'none';
+                    btn.classList.remove('active');
                 });
                 document.querySelectorAll('.nav-btn[data-tab^="trt-"]').forEach(btn => {
                     btn.style.display = 'flex';
@@ -7353,13 +7392,24 @@
                 // Update add button text
                 if (addShotBtn) addShotBtn.textContent = '+ Shot';
 
-                // Show first TRT tab
-                const trtDashboard = document.getElementById('trt-dashboard-tab');
-                if (trtDashboard) {
-                    trtDashboard.style.display = 'block';
-                }
-                document.querySelectorAll('.tab-content:not([id^="trt-"])').forEach(tab => {
+                // Hide all tab content first
+                document.querySelectorAll('.tab-content').forEach(tab => {
                     tab.style.display = 'none';
+                });
+
+                // Show target TRT tab (or default to dashboard)
+                const tabToShow = targetTab || 'trt-dashboard';
+                const tabContent = document.getElementById(tabToShow + '-tab');
+                if (tabContent) {
+                    tabContent.style.display = 'block';
+                }
+
+                // Update nav button active state
+                document.querySelectorAll('.nav-btn[data-tab^="trt-"]').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.tab === tabToShow) {
+                        btn.classList.add('active');
+                    }
                 });
             }
 
@@ -7922,7 +7972,12 @@
                     if (itemContainer.classList.contains('shot-item')) {
                         // Check if it's a skipped injection (not editable)
                         if (itemContainer.classList.contains('skipped')) return;
-                        this.showEditTrtInjectionModal(entityId);
+                        // Use correct edit function based on current app mode
+                        if (this.currentApp === 'trt') {
+                            this.showEditTrtInjectionModal(entityId);
+                        } else {
+                            this.showEditInjectionModal(entityId);
+                        }
                     } else if (itemContainer.classList.contains('vial-item')) {
                         // Use correct edit function based on current app mode
                         if (this.currentApp === 'trt') {
