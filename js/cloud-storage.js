@@ -911,8 +911,16 @@ class CloudStorage {
      * Local data is treated as the source of truth
      */
     async repairCloudData(app) {
-        if (!this.isCloudAvailable()) {
+        // Use global apiClient since initialize() may not have been called
+        const api = this.apiClient || (typeof apiClient !== 'undefined' ? apiClient : null);
+        const auth = this.authManager || (typeof authManager !== 'undefined' ? authManager : null);
+
+        if (!auth || !auth.isAuthenticated()) {
             throw new Error('Not authenticated');
+        }
+
+        if (!api) {
+            throw new Error('API client not available');
         }
 
         console.log('=== Starting Cloud Data Repair ===');
@@ -945,7 +953,7 @@ class CloudStorage {
                     plannedVolumeMl: injection.planned_volume_ml || null,
                     plannedDoseMg: injection.planned_dose_mg || null
                 };
-                await this.apiClient.createTrtInjection(cloudInjection);
+                await api.createTrtInjection(cloudInjection);
                 results.trtInjections.success++;
             } catch (error) {
                 console.warn(`Failed to repair TRT injection ${injection.id}:`, error.message);
@@ -975,7 +983,7 @@ class CloudStorage {
                     status: cloudStatus,
                     notes: vial.notes || ''
                 };
-                await this.apiClient.createTrtVial(cloudVial);
+                await api.createTrtVial(cloudVial);
                 results.trtVials.success++;
             } catch (error) {
                 console.warn(`Failed to repair TRT vial ${vial.id}:`, error.message);
@@ -998,7 +1006,7 @@ class CloudStorage {
                     skipped: injection.skipped || false,
                     plannedDoseMg: injection.planned_dose_mg || null
                 };
-                await this.apiClient.createInjection(cloudInjection);
+                await api.createInjection(cloudInjection);
                 results.retaInjections.success++;
             } catch (error) {
                 console.warn(`Failed to repair Reta injection ${injection.id}:`, error.message);
@@ -1029,7 +1037,7 @@ class CloudStorage {
                     lotNumber: vial.lot_number || '',
                     notes: vial.notes || ''
                 };
-                await this.apiClient.createVial(cloudVial);
+                await api.createVial(cloudVial);
                 results.retaVials.success++;
             } catch (error) {
                 console.warn(`Failed to repair Reta vial ${vial.id || vial.vial_id}:`, error.message);
@@ -1048,7 +1056,7 @@ class CloudStorage {
                     weightKg: weight.weight_kg,
                     notes: weight.notes || ''
                 };
-                await this.apiClient.createWeight(cloudWeight);
+                await api.createWeight(cloudWeight);
                 results.weights.success++;
             } catch (error) {
                 console.warn(`Failed to repair weight ${weight.id}:`, error.message);

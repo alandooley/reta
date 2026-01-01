@@ -3050,7 +3050,7 @@
                         <button id="autofill-vials-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #8b5cf6; border-color: #8b5cf6; color: white;">
                             🧪 Auto-fill Vials
                         </button>
-                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
+                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #3b82f6; border-color: #3b82f6; color: white;">
                             ☁️ Repair Cloud
                         </button>
                     </div>
@@ -8421,10 +8421,19 @@
              * Shows which records need to be manually corrected
              */
             auditData() {
+                console.log('[AUDIT] Starting data audit...');
                 const resultsDiv = document.getElementById('audit-results');
 
-                // Run the audit
-                const issues = cloudStorage.auditLocalData(this);
+                if (!resultsDiv) {
+                    console.error('[AUDIT] Results div not found!');
+                    alert('Error: Audit results area not found');
+                    return;
+                }
+
+                try {
+                    // Run the audit
+                    const issues = cloudStorage.auditLocalData(this);
+                    console.log('[AUDIT] Issues found:', issues);
 
                 // Count total issues
                 const totalIssues = issues.trtInjections.length + issues.trtVials.length +
@@ -8517,6 +8526,11 @@
 
                 resultsDiv.innerHTML = html;
                 resultsDiv.style.display = 'block';
+                } catch (error) {
+                    console.error('[AUDIT] Error:', error);
+                    resultsDiv.innerHTML = `<div style="color: #ef4444;">Error running audit: ${error.message}</div>`;
+                    resultsDiv.style.display = 'block';
+                }
             }
 
             /**
@@ -8524,10 +8538,19 @@
              * Uses concentration, timeline, and surrounding shots to infer vial
              */
             autofillMissingVials() {
+                console.log('[AUTOFILL] Starting auto-fill for missing vials...');
                 const resultsDiv = document.getElementById('audit-results');
 
-                // Get suggested fixes
-                const fixes = cloudStorage.inferMissingVialIds(this);
+                if (!resultsDiv) {
+                    console.error('[AUTOFILL] Results div not found!');
+                    alert('Error: Audit results area not found');
+                    return;
+                }
+
+                try {
+                    // Get suggested fixes
+                    const fixes = cloudStorage.inferMissingVialIds(this);
+                    console.log('[AUTOFILL] Suggested fixes:', fixes);
 
                 if (fixes.length === 0) {
                     resultsDiv.innerHTML = `
@@ -8589,6 +8612,11 @@
                 document.getElementById('cancel-vial-fixes-btn').addEventListener('click', () => {
                     resultsDiv.style.display = 'none';
                 });
+                } catch (error) {
+                    console.error('[AUTOFILL] Error:', error);
+                    resultsDiv.innerHTML = `<div style="color: #ef4444;">Error running auto-fill: ${error.message}</div>`;
+                    resultsDiv.style.display = 'block';
+                }
             }
 
             /**
@@ -8596,9 +8624,12 @@
              * Use this after fixing sync bugs to reconcile local and cloud data
              */
             async repairCloudData() {
+                console.log('[REPAIR] Starting cloud data repair...');
                 try {
                     // Check if authenticated
                     if (!authManager.isAuthenticated()) {
+                        console.log('[REPAIR] Not authenticated');
+
                         alert('Please sign in first before repairing cloud data.\n\nGo to Settings → Cloud Sync section.');
                         return;
                     }
