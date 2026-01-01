@@ -3037,6 +3037,20 @@
                     </p>
                 </div>
 
+                <!-- Cloud Data Repair -->
+                <div class="settings-section" style="background-color: rgba(59, 130, 246, 0.05); border: 2px solid rgba(59, 130, 246, 0.2); border-radius: var(--border-radius);">
+                    <h3 style="color: #3b82f6; margin-bottom: var(--spacing-md);">🔧 Cloud Data Repair</h3>
+                    <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
+                        Re-push all local data to cloud with correct field mappings. Use this if cloud data is missing fields like injection site, volume, or other info. Your local data is the source of truth.
+                    </p>
+                    <button id="repair-cloud-data-btn" class="btn-secondary" style="margin-bottom: 8px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
+                        Repair Cloud Data
+                    </button>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        ⚠️ This will overwrite cloud data with your local data. Sign in required.
+                    </p>
+                </div>
+
                 <!-- Danger Zone: Reset Options -->
                 <div class="settings-section" style="background-color: rgba(239, 68, 68, 0.05); border: 2px solid rgba(239, 68, 68, 0.2); border-radius: var(--border-radius);">
                     <h3 style="color: #ef4444; margin-bottom: var(--spacing-md);">⚠️ Danger Zone</h3>
@@ -7984,6 +7998,11 @@
                     this.createCloudBackup();
                 });
 
+                // Repair cloud data
+                document.getElementById('repair-cloud-data-btn').addEventListener('click', () => {
+                    this.repairCloudData();
+                });
+
                 // Reset local data and sync from cloud
                 document.getElementById('reset-local-data-btn').addEventListener('click', async () => {
                     await this.resetLocalDataAndSync();
@@ -8371,6 +8390,88 @@
 
                     alert(
                         '❌ Cloud Backup Failed\n\n' +
+                        error.message + '\n\n' +
+                        'Please check your internet connection and try again.'
+                    );
+                }
+            }
+
+            /**
+             * Repair cloud data by re-pushing all local data with correct field mappings
+             * Use this after fixing sync bugs to reconcile local and cloud data
+             */
+            async repairCloudData() {
+                try {
+                    // Check if authenticated
+                    if (!authManager.isAuthenticated()) {
+                        alert('Please sign in first before repairing cloud data.\n\nGo to Settings → Cloud Sync section.');
+                        return;
+                    }
+
+                    // Get counts for confirmation
+                    const trtInjections = this.data.trtInjections?.length || 0;
+                    const trtVials = this.data.trtVials?.length || 0;
+                    const retaInjections = this.data.injections?.length || 0;
+                    const retaVials = this.data.vials?.length || 0;
+                    const weights = this.data.weights?.length || 0;
+
+                    // Confirm with user
+                    const confirmed = confirm(
+                        '🔧 Repair Cloud Data\n\n' +
+                        'This will re-push ALL your local data to the cloud:\n\n' +
+                        `• TRT Injections: ${trtInjections}\n` +
+                        `• TRT Vials: ${trtVials}\n` +
+                        `• Reta Injections: ${retaInjections}\n` +
+                        `• Reta Vials: ${retaVials}\n` +
+                        `• Weight Entries: ${weights}\n\n` +
+                        'Cloud data will be overwritten with your local data.\n\n' +
+                        'Continue?'
+                    );
+
+                    if (!confirmed) return;
+
+                    // Update button state
+                    const button = document.getElementById('repair-cloud-data-btn');
+                    const originalText = button.textContent;
+                    button.textContent = 'Repairing...';
+                    button.disabled = true;
+
+                    // Call cloudStorage.repairCloudData
+                    const results = await cloudStorage.repairCloudData(this);
+
+                    // Show results
+                    const totalSuccess = results.trtInjections.success + results.trtVials.success +
+                                        results.retaInjections.success + results.retaVials.success +
+                                        results.weights.success;
+                    const totalFailed = results.trtInjections.failed + results.trtVials.failed +
+                                        results.retaInjections.failed + results.retaVials.failed +
+                                        results.weights.failed;
+
+                    alert(
+                        '✅ Cloud Data Repair Complete\n\n' +
+                        `Successfully pushed: ${totalSuccess} items\n` +
+                        `Failed: ${totalFailed} items\n\n` +
+                        'Details:\n' +
+                        `• TRT Injections: ${results.trtInjections.success} ✓, ${results.trtInjections.failed} ✗\n` +
+                        `• TRT Vials: ${results.trtVials.success} ✓, ${results.trtVials.failed} ✗\n` +
+                        `• Reta Injections: ${results.retaInjections.success} ✓, ${results.retaInjections.failed} ✗\n` +
+                        `• Reta Vials: ${results.retaVials.success} ✓, ${results.retaVials.failed} ✗\n` +
+                        `• Weights: ${results.weights.success} ✓, ${results.weights.failed} ✗`
+                    );
+
+                    // Reset button
+                    button.textContent = originalText;
+                    button.disabled = false;
+
+                } catch (error) {
+                    console.error('Failed to repair cloud data:', error);
+
+                    const button = document.getElementById('repair-cloud-data-btn');
+                    button.textContent = 'Repair Cloud Data';
+                    button.disabled = false;
+
+                    alert(
+                        '❌ Cloud Data Repair Failed\n\n' +
                         error.message + '\n\n' +
                         'Please check your internet connection and try again.'
                     );
@@ -13922,6 +14023,12 @@
                     cloudBackupBtn.disabled = false;
                 }
 
+                // Enable repair cloud data button
+                const repairCloudBtn = document.getElementById('repair-cloud-data-btn');
+                if (repairCloudBtn) {
+                    repairCloudBtn.disabled = false;
+                }
+
                 // ALWAYS sync from cloud when authenticated (cloud is source of truth)
                 if (app) {
                     if (isNewAuth) {
@@ -13964,6 +14071,12 @@
                 const cloudBackupBtn = document.getElementById('create-cloud-backup-btn');
                 if (cloudBackupBtn) {
                     cloudBackupBtn.disabled = true;
+                }
+
+                // Disable repair cloud data button
+                const repairCloudBtn = document.getElementById('repair-cloud-data-btn');
+                if (repairCloudBtn) {
+                    repairCloudBtn.disabled = true;
                 }
 
                 // Update cloud backup status
