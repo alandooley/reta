@@ -359,10 +359,11 @@ class CloudStorage {
                 if (cloudStatus === 'activated') cloudStatus = 'active';
                 if (cloudStatus === 'finished') cloudStatus = 'empty';
 
+                // Use nullish coalescing (??) for numeric fields where 0 is a valid value
                 const vialData = {
-                    concentrationMgMl: vial.concentration_mg_ml || vial.concentrationMgMl,
-                    volumeMl: vial.volume_ml || vial.volumeMl,
-                    remainingMl: vial.remaining_ml || vial.remainingMl,
+                    concentrationMgMl: vial.concentration_mg_ml ?? vial.concentrationMgMl,
+                    volumeMl: vial.volume_ml ?? vial.volumeMl,
+                    remainingMl: vial.remaining_ml ?? vial.remainingMl ?? vial.volume_ml ?? vial.volumeMl,
                     lotNumber: vial.lot_number || vial.lotNumber || '',
                     expiryDate: vial.expiry_date || vial.expiryDate,
                     openedDate: vial.opened_date || vial.openedDate || null,
