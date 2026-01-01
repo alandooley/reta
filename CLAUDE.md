@@ -73,6 +73,104 @@ The application uses a **monolithic single-file architecture** with vanilla Java
 - **Auth Gate**: Login screen shown before app content (see `index.html` lines ~2423-2500)
 - **SEO Blocking**: robots.txt blocks all crawlers including AI bots
 
+## Change Management & Impact Analysis
+
+**CRITICAL**: Before implementing ANY change, you MUST follow these guidelines to ensure complete, working functionality without regressions.
+
+### Pre-Change Impact Analysis
+
+Before making changes, analyze and document:
+
+1. **Identify all affected components**:
+   - Search for all usages of functions/variables being modified
+   - Check both frontend (`index.html`, `js/`) and backend (`reta-cloud-infrastructure/`)
+   - Look for related event handlers, callbacks, and data flows
+   - Consider localStorage ↔ API data format mappings (snake_case vs camelCase)
+
+2. **Map dependencies**:
+   - What calls this code? What does this code call?
+   - Are there UI elements that depend on this functionality?
+   - Are there calculations or metrics that use this data?
+   - Does this affect cloud sync, backups, or data persistence?
+
+3. **Identify test coverage**:
+   - Which existing tests cover the affected functionality?
+   - Run `npm test -- --grep "{feature}"` to find related tests
+   - Note any gaps in test coverage for the change
+
+### Complete Implementation Requirements
+
+When adding or changing functionality, ensure **ALL** supporting pieces are built:
+
+1. **Full data flow**: If adding a field, ensure it flows through:
+   - UI input/display elements
+   - JavaScript data handling
+   - localStorage persistence
+   - API serialization/deserialization (with correct naming conventions)
+   - DynamoDB schema (if backend change)
+   - Cloud sync bidirectional merge logic
+
+2. **UI completeness**: If adding a feature visible to users:
+   - Add necessary HTML elements
+   - Add CSS styling (including dark theme, mobile responsive)
+   - Add JavaScript event handlers
+   - Add validation and error handling
+   - Add loading states if async
+
+3. **CRUD completeness**: If adding a data type, implement ALL operations:
+   - Create, Read, Update, Delete
+   - List/query functionality
+   - Cloud sync support
+   - Backup inclusion
+
+### Regression Prevention
+
+**Before finalizing any change**:
+
+1. **Run the full test suite**: `npm test`
+   - All tests MUST pass before considering work complete
+   - If tests fail, fix the regression before proceeding
+
+2. **Test related functionality manually**:
+   - If changing injections → verify vial tracking still works
+   - If changing vials → verify supply forecast still calculates correctly
+   - If changing weights → verify Results page metrics still work
+   - If changing auth → verify cloud sync still works
+
+3. **Verify no console errors**: Check browser dev tools for JavaScript errors
+
+4. **Test edge cases**:
+   - Empty states (no data)
+   - Single item
+   - Many items (performance)
+   - Invalid input
+
+### Post-Change Verification Checklist
+
+After implementing changes, verify:
+
+- [ ] Feature works as intended (happy path)
+- [ ] All existing tests pass (`npm test`)
+- [ ] No console errors in browser
+- [ ] Data persists correctly (refresh page, data still there)
+- [ ] Cloud sync works (if applicable)
+- [ ] Mobile/responsive layout not broken
+- [ ] Related features still work (see dependency mapping)
+
+### Common Cross-Cutting Concerns
+
+Changes often have hidden impacts on:
+
+| If you change... | Also check... |
+|-----------------|---------------|
+| Injection data | Vial volume tracking, supply forecast, Results metrics |
+| Vial data | Injection vial selection, supply forecast, "Level at Last Shot" |
+| Weight data | Results page chart, BMI calculation, all 6 metric cards |
+| Settings | Any feature that reads from settings (height for BMI, etc.) |
+| Auth flow | All cloud operations, sync, backup, API calls |
+| Data format | localStorage, API mapping, cloud sync merge logic |
+| CSS styles | Dark theme, mobile responsive, all pages using those styles |
+
 ## Development Commands
 
 ### Frontend Development
