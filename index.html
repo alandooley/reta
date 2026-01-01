@@ -4655,17 +4655,35 @@
             // ====================================
 
             mergeArrays(localData, cloudData, keyField) {
-                // Intelligent merge: prefer local data for items not yet in cloud
+                // Intelligent merge: prefer local data that hasn't synced yet
                 const merged = new Map();
+
+                // Build a map of local items with their sync status
+                const localItemsMap = new Map();
+                localData.forEach(item => {
+                    const itemId = item[keyField];
+                    localItemsMap.set(itemId, item);
+                });
 
                 // First, add all cloud items (source of truth for synced data)
                 // BUT exclude items that are pending deletion
+                // AND exclude items that have local modifications pending sync
                 cloudData.forEach(item => {
                     const itemId = item[keyField];
-                    if (!this._pendingDeletions.has(itemId)) {
-                        merged.set(itemId, item);
-                    } else {
+                    if (this._pendingDeletions.has(itemId)) {
                         console.log(`Skipping ${itemId} from cloud sync - pending deletion`);
+                        return;
+                    }
+
+                    // Check if local item has unsycned changes (cloudSynced === false)
+                    const localItem = localItemsMap.get(itemId);
+                    if (localItem && localItem.cloudSynced === false) {
+                        // Local item has pending changes - keep local version
+                        console.log(`Keeping local version of ${itemId} - pending sync`);
+                        merged.set(itemId, localItem);
+                    } else {
+                        // Use cloud version (already synced or no local version)
+                        merged.set(itemId, item);
                     }
                 });
 
@@ -4673,12 +4691,11 @@
                 // These are likely pending sync or were just added
                 localData.forEach(item => {
                     const itemId = item[keyField];
-                    const cloudItem = merged.get(itemId);
-                    if (!cloudItem && !this._pendingDeletions.has(itemId)) {
+                    const existingItem = merged.get(itemId);
+                    if (!existingItem && !this._pendingDeletions.has(itemId)) {
                         // Item exists locally but not in cloud - keep it (pending sync)
                         merged.set(itemId, item);
                     }
-                    // If item exists in cloud, cloud version is source of truth
                 });
 
                 return Array.from(merged.values()).sort(
@@ -5542,7 +5559,8 @@
                     vial_id: injection.vial_id || null,
                     skipped: injection.skipped || false,
                     planned_volume_ml: injection.planned_volume_ml || null,
-                    planned_dose_mg: injection.planned_dose_mg || null
+                    planned_dose_mg: injection.planned_dose_mg || null,
+                    cloudSynced: false  // Mark as pending sync until confirmed
                 };
 
                 this.data.trtInjections.push(newInjection);
@@ -5576,8 +5594,12 @@
                             plannedDoseMg: newInjection.planned_dose_mg
                         };
                         await cloudStorage.saveTrtInjection(cloudInjection);
+                        // Mark as synced after successful cloud update
+                        newInjection.cloudSynced = true;
+                        this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT injection to cloud:', error);
+                        // cloudSynced already false, no need to update
                     }
                 }
 
@@ -5603,7 +5625,8 @@
                     injection_site: updates.injection_site,
                     time_of_day: updates.time_of_day || null,
                     technique_notes: updates.technique_notes || '',
-                    notes: updates.notes || ''
+                    notes: updates.notes || '',
+                    cloudSynced: false  // Mark as pending sync until confirmed
                 };
 
                 this.data.trtInjections[injectionIndex] = updatedInjection;
@@ -5642,8 +5665,12 @@
                             plannedDoseMg: updatedInjection.planned_dose_mg
                         };
                         await cloudStorage.saveTrtInjection(cloudInjection);
+                        // Mark as synced after successful cloud update
+                        updatedInjection.cloudSynced = true;
+                        this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT injection update to cloud:', error);
+                        // cloudSynced already false, no need to update
                     }
                 }
 
@@ -5685,12 +5712,13 @@
                     id: this.generateId(),
                     concentration_mg_ml: parseFloat(vial.concentration_mg_ml),
                     volume_ml: parseFloat(vial.volume_ml),
-                    remaining_ml: parseFloat(vial.remaining_ml || vial.volume_ml),
+                    remaining_ml: parseFloat(vial.remaining_ml ?? vial.volume_ml),
                     lot_number: vial.lot_number || '',
                     expiry_date: vial.expiry_date,
                     opened_date: vial.opened_date || null,
                     status: vial.status || 'unopened',
-                    notes: vial.notes || ''
+                    notes: vial.notes || '',
+                    cloudSynced: false  // Mark as pending sync until confirmed
                 };
 
                 this.data.trtVials.push(newVial);
@@ -5705,8 +5733,7 @@
                         this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT vial to cloud:', error);
-                        newVial.cloudSynced = false;
-                        this.saveData();
+                        // cloudSynced already false, no need to update
                     }
                 }
 
@@ -5723,7 +5750,8 @@
                 const updatedVial = {
                     ...existingVial,
                     ...updates,
-                    id: vialId  // Ensure ID is preserved
+                    id: vialId,  // Ensure ID is preserved
+                    cloudSynced: false  // Mark as pending sync until confirmed
                 };
 
                 this.data.trtVials[vialIndex] = updatedVial;
@@ -5732,17 +5760,17 @@
 
                 if (authManager && authManager.isAuthenticated() && cloudStorage) {
                     try {
-                        // Mark as synced to cloud so saveTrtVial knows to use PATCH
                         await cloudStorage.saveTrtVial({
                             ...updatedVial,
-                            cloudSynced: existingVial.cloudSynced !== false  // Preserve sync status or default to true for updates
+                            cloudSynced: existingVial.cloudSynced !== false  // Tell cloud-storage if this existed in cloud
                         });
+                        // Mark as synced after successful cloud update
+                        updatedVial.cloudSynced = true;
+                        this.saveData();
                         console.log('TRT vial update synced to cloud:', vialId);
                     } catch (error) {
                         console.warn('Failed to sync TRT vial update to cloud:', error);
-                        // Mark as needing sync
-                        updatedVial.cloudSynced = false;
-                        this.saveData();
+                        // cloudSynced already false, no need to update
                     }
                 }
 
@@ -5777,13 +5805,18 @@
                     return;
                 }
 
-                vial.remaining_ml = Math.max(0, vial.remaining_ml - volumeMl);
+                // Ensure remaining_ml is initialized (fallback to volume_ml if undefined)
+                const currentRemaining = vial.remaining_ml ?? vial.volume_ml ?? 0;
+                vial.remaining_ml = Math.max(0, currentRemaining - volumeMl);
 
                 // Mark as empty if no volume remaining
                 if (vial.remaining_ml === 0) {
                     vial.status = 'empty';
                 }
 
+                // Mark as pending sync until confirmed
+                const wasCloudSynced = vial.cloudSynced !== false;
+                vial.cloudSynced = false;
                 this.saveData();
 
                 // Sync vial usage to cloud
@@ -5791,12 +5824,14 @@
                     try {
                         await cloudStorage.saveTrtVial({
                             ...vial,
-                            cloudSynced: true  // Mark as existing vial to use PATCH
+                            cloudSynced: wasCloudSynced  // Tell cloud-storage if this existed in cloud
                         });
+                        // Mark as synced after successful cloud update
+                        vial.cloudSynced = true;
+                        this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT vial usage to cloud:', error);
-                        vial.cloudSynced = false;
-                        this.saveData();
+                        // cloudSynced already false, no need to update
                     }
                 }
             }
@@ -5810,13 +5845,19 @@
                     return;
                 }
 
-                vial.remaining_ml = Math.min(vial.volume_ml, vial.remaining_ml + volumeMl);
+                // Ensure remaining_ml is initialized (fallback to 0 for empty vials)
+                const currentRemaining = vial.remaining_ml ?? 0;
+                const maxVolume = vial.volume_ml ?? 0;
+                vial.remaining_ml = Math.min(maxVolume, currentRemaining + volumeMl);
 
                 // Restore status if was empty
                 if (vial.status === 'empty' && vial.remaining_ml > 0) {
                     vial.status = 'active';
                 }
 
+                // Mark as pending sync until confirmed
+                const wasCloudSynced = vial.cloudSynced !== false;
+                vial.cloudSynced = false;
                 this.saveData();
 
                 // Sync reversed vial usage to cloud
@@ -5824,12 +5865,14 @@
                     try {
                         await cloudStorage.saveTrtVial({
                             ...vial,
-                            cloudSynced: true  // Mark as existing vial to use PATCH
+                            cloudSynced: wasCloudSynced  // Tell cloud-storage if this existed in cloud
                         });
+                        // Mark as synced after successful cloud update
+                        vial.cloudSynced = true;
+                        this.saveData();
                     } catch (error) {
                         console.warn('Failed to sync TRT vial reversal to cloud:', error);
-                        vial.cloudSynced = false;
-                        this.saveData();
+                        // cloudSynced already false, no need to update
                     }
                 }
             }
