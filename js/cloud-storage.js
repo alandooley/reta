@@ -663,6 +663,107 @@ class CloudStorage {
     }
 
     /**
+     * Audit local data to find records with missing fields
+     * Returns a report of which records need manual correction
+     */
+    auditLocalData(app) {
+        const issues = {
+            trtInjections: [],
+            trtVials: [],
+            retaInjections: [],
+            retaVials: [],
+            weights: []
+        };
+
+        // Check TRT Injections
+        const trtInjections = app.data.trtInjections || [];
+        for (const inj of trtInjections) {
+            const missing = [];
+            if (!inj.injection_site && !inj.skipped) missing.push('injection_site');
+            if (!inj.volume_ml && inj.volume_ml !== 0 && !inj.skipped) missing.push('volume_ml');
+            if (!inj.concentration_mg_ml && !inj.skipped) missing.push('concentration_mg_ml');
+            if (!inj.vial_id && !inj.skipped) missing.push('vial_id');
+
+            if (missing.length > 0) {
+                issues.trtInjections.push({
+                    id: inj.id,
+                    timestamp: inj.timestamp,
+                    date: new Date(inj.timestamp).toLocaleDateString(),
+                    missing: missing
+                });
+            }
+        }
+
+        // Check TRT Vials
+        const trtVials = app.data.trtVials || [];
+        for (const vial of trtVials) {
+            const missing = [];
+            if (!vial.concentration_mg_ml) missing.push('concentration_mg_ml');
+            if (!vial.volume_ml) missing.push('volume_ml');
+            if (!vial.expiry_date) missing.push('expiry_date');
+
+            if (missing.length > 0) {
+                issues.trtVials.push({
+                    id: vial.id,
+                    status: vial.status,
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Reta Injections
+        const retaInjections = app.data.injections || [];
+        for (const inj of retaInjections) {
+            const missing = [];
+            if (!inj.injection_site && !inj.skipped) missing.push('injection_site');
+            if (!inj.dose_mg && inj.dose_mg !== 0 && !inj.skipped) missing.push('dose_mg');
+            if (!inj.vial_id && !inj.skipped) missing.push('vial_id');
+
+            if (missing.length > 0) {
+                issues.retaInjections.push({
+                    id: inj.id,
+                    timestamp: inj.timestamp,
+                    date: new Date(inj.timestamp).toLocaleDateString(),
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Reta Vials
+        const retaVials = app.data.vials || [];
+        for (const vial of retaVials) {
+            const missing = [];
+            if (!vial.order_date) missing.push('order_date');
+            if (!vial.total_mg) missing.push('total_mg');
+
+            if (missing.length > 0) {
+                issues.retaVials.push({
+                    id: vial.id || vial.vial_id,
+                    missing: missing
+                });
+            }
+        }
+
+        // Check Weights
+        const weights = app.data.weights || [];
+        for (const w of weights) {
+            const missing = [];
+            if (!w.weight_kg && w.weight_kg !== 0) missing.push('weight_kg');
+            if (!w.timestamp) missing.push('timestamp');
+
+            if (missing.length > 0) {
+                issues.weights.push({
+                    id: w.id,
+                    timestamp: w.timestamp,
+                    missing: missing
+                });
+            }
+        }
+
+        return issues;
+    }
+
+    /**
      * Repair cloud data by re-pushing all local data with correct field mappings
      * Use this after fixing sync bugs to reconcile local and cloud data
      * Local data is treated as the source of truth

@@ -3037,17 +3037,24 @@
                     </p>
                 </div>
 
-                <!-- Cloud Data Repair -->
+                <!-- Data Audit & Cloud Repair -->
                 <div class="settings-section" style="background-color: rgba(59, 130, 246, 0.05); border: 2px solid rgba(59, 130, 246, 0.2); border-radius: var(--border-radius);">
-                    <h3 style="color: #3b82f6; margin-bottom: var(--spacing-md);">🔧 Cloud Data Repair</h3>
+                    <h3 style="color: #3b82f6; margin-bottom: var(--spacing-md);">🔧 Data Audit & Repair</h3>
                     <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
-                        Re-push all local data to cloud with correct field mappings. Use this if cloud data is missing fields like injection site, volume, or other info. Your local data is the source of truth.
+                        Check your local data for missing fields, then push corrected data to cloud.
                     </p>
-                    <button id="repair-cloud-data-btn" class="btn-secondary" style="margin-bottom: 8px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
-                        Repair Cloud Data
-                    </button>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <button id="audit-data-btn" class="btn-secondary" style="flex: 1; min-width: 120px;">
+                            🔍 Audit Data
+                        </button>
+                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 120px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
+                            ☁️ Repair Cloud
+                        </button>
+                    </div>
+                    <div id="audit-results" style="display: none; margin-top: 12px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm); max-height: 300px; overflow-y: auto;">
+                    </div>
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-                        ⚠️ This will overwrite cloud data with your local data. Sign in required.
+                        💡 Run "Audit Data" to see which records have missing fields. Fix them by tapping to edit, then run "Repair Cloud".
                     </p>
                 </div>
 
@@ -7998,6 +8005,11 @@
                     this.createCloudBackup();
                 });
 
+                // Audit data
+                document.getElementById('audit-data-btn').addEventListener('click', () => {
+                    this.auditData();
+                });
+
                 // Repair cloud data
                 document.getElementById('repair-cloud-data-btn').addEventListener('click', () => {
                     this.repairCloudData();
@@ -8394,6 +8406,109 @@
                         'Please check your internet connection and try again.'
                     );
                 }
+            }
+
+            /**
+             * Audit local data for missing fields
+             * Shows which records need to be manually corrected
+             */
+            auditData() {
+                const resultsDiv = document.getElementById('audit-results');
+
+                // Run the audit
+                const issues = cloudStorage.auditLocalData(this);
+
+                // Count total issues
+                const totalIssues = issues.trtInjections.length + issues.trtVials.length +
+                                   issues.retaInjections.length + issues.retaVials.length +
+                                   issues.weights.length;
+
+                if (totalIssues === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ All data looks good!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            No missing fields found. Your data is ready for cloud repair.
+                        </p>
+                    `;
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                // Build results HTML
+                let html = `
+                    <div style="color: #f59e0b; font-weight: 600; margin-bottom: 12px;">
+                        ⚠️ Found ${totalIssues} record(s) with missing fields
+                    </div>
+                `;
+
+                // TRT Injections
+                if (issues.trtInjections.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">TRT Injections (${issues.trtInjections.length})</div>`;
+                    for (const inj of issues.trtInjections) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            📅 ${inj.date} - Missing: <strong>${inj.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // TRT Vials
+                if (issues.trtVials.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">TRT Vials (${issues.trtVials.length})</div>`;
+                    for (const vial of issues.trtVials) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            💉 ${vial.status} - Missing: <strong>${vial.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Reta Injections
+                if (issues.retaInjections.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Reta Injections (${issues.retaInjections.length})</div>`;
+                    for (const inj of issues.retaInjections) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            📅 ${inj.date} - Missing: <strong>${inj.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Reta Vials
+                if (issues.retaVials.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Reta Vials (${issues.retaVials.length})</div>`;
+                    for (const vial of issues.retaVials) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            🧪 ID: ${vial.id?.slice(0,8)}... - Missing: <strong>${vial.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                // Weights
+                if (issues.weights.length > 0) {
+                    html += `<div style="margin-bottom: 12px;">
+                        <div style="font-weight: 600; font-size: 13px; margin-bottom: 4px;">Weights (${issues.weights.length})</div>`;
+                    for (const w of issues.weights) {
+                        html += `<div style="font-size: 12px; padding: 4px 8px; background: rgba(239, 68, 68, 0.1); border-radius: 4px; margin-bottom: 4px;">
+                            ⚖️ Missing: <strong>${w.missing.join(', ')}</strong>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `<p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                    Tap on the Shots or Vials tabs to find and edit these records.
+                </p>`;
+
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
             }
 
             /**
