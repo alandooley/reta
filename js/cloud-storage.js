@@ -764,6 +764,148 @@ class CloudStorage {
     }
 
     /**
+     * Try to infer missing vial_id for TRT injections based on:
+     * 1. Concentration matching
+     * 2. Timeline (which vial was active at injection time)
+     * 3. Surrounding injections
+     */
+    inferMissingVialIds(app) {
+        const trtInjections = app.data.trtInjections || [];
+        const trtVials = app.data.trtVials || [];
+
+        const fixes = [];
+
+        for (const inj of trtInjections) {
+            // Skip if already has vial_id or is skipped
+            if (inj.vial_id || inj.skipped) continue;
+
+            const injDate = new Date(inj.timestamp);
+            let bestMatch = null;
+            let matchReason = '';
+
+            // Strategy 1: Match by concentration
+            if (inj.concentration_mg_ml) {
+                const concentrationMatches = trtVials.filter(v =>
+                    v.concentration_mg_ml === inj.concentration_mg_ml
+                );
+
+                if (concentrationMatches.length === 1) {
+                    bestMatch = concentrationMatches[0];
+                    matchReason = 'concentration match (unique)';
+                } else if (concentrationMatches.length > 1) {
+                    // Multiple vials with same concentration - use timeline
+                    const activeAtTime = concentrationMatches.filter(v => {
+                        if (!v.opened_date) return false;
+                        const openedDate = new Date(v.opened_date);
+                        return openedDate <= injDate;
+                    }).sort((a, b) => new Date(b.opened_date) - new Date(a.opened_date));
+
+                    if (activeAtTime.length > 0) {
+                        bestMatch = activeAtTime[0]; // Most recently opened before injection
+                        matchReason = 'concentration + most recently opened';
+                    }
+                }
+            }
+
+            // Strategy 2: Look at surrounding injections
+            if (!bestMatch) {
+                const sortedInjs = [...trtInjections]
+                    .filter(i => i.vial_id && !i.skipped)
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                // Find injections just before and after
+                let before = null, after = null;
+                for (const i of sortedInjs) {
+                    if (new Date(i.timestamp) < injDate) {
+                        before = i;
+                    } else if (new Date(i.timestamp) > injDate && !after) {
+                        after = i;
+                        break;
+                    }
+                }
+
+                // If before and after use same vial, likely this one does too
+                if (before && after && before.vial_id === after.vial_id) {
+                    const vial = trtVials.find(v => v.id === before.vial_id);
+                    if (vial) {
+                        bestMatch = vial;
+                        matchReason = 'surrounding injections use same vial';
+                    }
+                } else if (before) {
+                    // Use the vial from the previous injection
+                    const vial = trtVials.find(v => v.id === before.vial_id);
+                    if (vial) {
+                        bestMatch = vial;
+                        matchReason = 'previous injection vial';
+                    }
+                }
+            }
+
+            // Strategy 3: Find any vial that was active at the time
+            if (!bestMatch) {
+                const activeAtTime = trtVials.filter(v => {
+                    if (!v.opened_date) return false;
+                    const openedDate = new Date(v.opened_date);
+                    return openedDate <= injDate &&
+                           (v.status === 'active' || v.status === 'empty' || v.status === 'finished');
+                }).sort((a, b) => new Date(b.opened_date) - new Date(a.opened_date));
+
+                if (activeAtTime.length === 1) {
+                    bestMatch = activeAtTime[0];
+                    matchReason = 'only vial active at time';
+                } else if (activeAtTime.length > 1) {
+                    bestMatch = activeAtTime[0];
+                    matchReason = 'most recently opened (multiple candidates)';
+                }
+            }
+
+            if (bestMatch) {
+                fixes.push({
+                    injection: inj,
+                    suggestedVial: bestMatch,
+                    reason: matchReason,
+                    injectionDate: injDate.toLocaleDateString(),
+                    vialInfo: `${bestMatch.concentration_mg_ml}mg/ml, opened ${bestMatch.opened_date ? new Date(bestMatch.opened_date).toLocaleDateString() : 'N/A'}`
+                });
+            }
+        }
+
+        return fixes;
+    }
+
+    /**
+     * Apply vial fixes to injections
+     */
+    applyVialFixes(app, fixes) {
+        let applied = 0;
+
+        for (const fix of fixes) {
+            const inj = app.data.trtInjections.find(i => i.id === fix.injection.id);
+            if (inj && !inj.vial_id) {
+                inj.vial_id = fix.suggestedVial.id;
+
+                // Also fill in concentration if missing
+                if (!inj.concentration_mg_ml && fix.suggestedVial.concentration_mg_ml) {
+                    inj.concentration_mg_ml = fix.suggestedVial.concentration_mg_ml;
+                }
+
+                // Recalculate dose if we have volume and concentration
+                if (inj.volume_ml && inj.concentration_mg_ml && !inj.dose_mg) {
+                    inj.dose_mg = inj.volume_ml * inj.concentration_mg_ml;
+                }
+
+                applied++;
+            }
+        }
+
+        if (applied > 0) {
+            app.saveData();
+        }
+
+        return applied;
+    }
+
+    /**
      * Repair cloud data by re-pushing all local data with correct field mappings
      * Use this after fixing sync bugs to reconcile local and cloud data
      * Local data is treated as the source of truth

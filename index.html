@@ -3041,20 +3041,23 @@
                 <div class="settings-section" style="background-color: rgba(59, 130, 246, 0.05); border: 2px solid rgba(59, 130, 246, 0.2); border-radius: var(--border-radius);">
                     <h3 style="color: #3b82f6; margin-bottom: var(--spacing-md);">🔧 Data Audit & Repair</h3>
                     <p style="font-size: 14px; color: var(--text-secondary); margin-bottom: 12px;">
-                        Check your local data for missing fields, then push corrected data to cloud.
+                        Check your local data for missing fields, auto-fill where possible, then push to cloud.
                     </p>
                     <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-                        <button id="audit-data-btn" class="btn-secondary" style="flex: 1; min-width: 120px;">
-                            🔍 Audit Data
+                        <button id="audit-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px;">
+                            🔍 Audit
                         </button>
-                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 120px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
+                        <button id="autofill-vials-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #8b5cf6; border-color: #8b5cf6; color: white;">
+                            🧪 Auto-fill Vials
+                        </button>
+                        <button id="repair-cloud-data-btn" class="btn-secondary" style="flex: 1; min-width: 100px; background-color: #3b82f6; border-color: #3b82f6; color: white;" disabled>
                             ☁️ Repair Cloud
                         </button>
                     </div>
                     <div id="audit-results" style="display: none; margin-top: 12px; padding: 12px; background-color: var(--secondary-bg); border-radius: var(--border-radius-sm); max-height: 300px; overflow-y: auto;">
                     </div>
                     <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
-                        💡 Run "Audit Data" to see which records have missing fields. Fix them by tapping to edit, then run "Repair Cloud".
+                        💡 "Auto-fill Vials" tries to match TRT injections to vials by concentration, timeline, and surrounding shots.
                     </p>
                 </div>
 
@@ -8010,6 +8013,11 @@
                     this.auditData();
                 });
 
+                // Auto-fill missing vials
+                document.getElementById('autofill-vials-btn').addEventListener('click', () => {
+                    this.autofillMissingVials();
+                });
+
                 // Repair cloud data
                 document.getElementById('repair-cloud-data-btn').addEventListener('click', () => {
                     this.repairCloudData();
@@ -8509,6 +8517,78 @@
 
                 resultsDiv.innerHTML = html;
                 resultsDiv.style.display = 'block';
+            }
+
+            /**
+             * Auto-fill missing vial IDs for TRT injections
+             * Uses concentration, timeline, and surrounding shots to infer vial
+             */
+            autofillMissingVials() {
+                const resultsDiv = document.getElementById('audit-results');
+
+                // Get suggested fixes
+                const fixes = cloudStorage.inferMissingVialIds(this);
+
+                if (fixes.length === 0) {
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ No missing vial IDs found!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            All TRT injections already have vials assigned.
+                        </p>
+                    `;
+                    resultsDiv.style.display = 'block';
+                    return;
+                }
+
+                // Show suggested fixes
+                let html = `
+                    <div style="color: #8b5cf6; font-weight: 600; margin-bottom: 12px;">
+                        🧪 Found ${fixes.length} injection(s) that can be auto-filled
+                    </div>
+                `;
+
+                for (const fix of fixes) {
+                    html += `<div style="font-size: 12px; padding: 8px; background: rgba(139, 92, 246, 0.1); border-radius: 4px; margin-bottom: 8px;">
+                        <div><strong>📅 ${fix.injectionDate}</strong></div>
+                        <div style="color: var(--text-secondary);">→ Vial: ${fix.vialInfo}</div>
+                        <div style="font-size: 11px; color: var(--text-muted);">Reason: ${fix.reason}</div>
+                    </div>`;
+                }
+
+                html += `
+                    <div style="margin-top: 12px; display: flex; gap: 8px;">
+                        <button id="apply-vial-fixes-btn" class="btn-primary" style="flex: 1; background-color: #22c55e; border-color: #22c55e;">
+                            ✅ Apply All (${fixes.length})
+                        </button>
+                        <button id="cancel-vial-fixes-btn" class="btn-secondary" style="flex: 1;">
+                            ❌ Cancel
+                        </button>
+                    </div>
+                `;
+
+                resultsDiv.innerHTML = html;
+                resultsDiv.style.display = 'block';
+
+                // Add button handlers
+                document.getElementById('apply-vial-fixes-btn').addEventListener('click', () => {
+                    const applied = cloudStorage.applyVialFixes(this, fixes);
+                    this.updateUI();
+
+                    resultsDiv.innerHTML = `
+                        <div style="color: #22c55e; font-weight: 600; margin-bottom: 8px;">
+                            ✅ Applied ${applied} fix(es)!
+                        </div>
+                        <p style="font-size: 13px; color: var(--text-secondary);">
+                            Vial IDs have been filled in. Now run "☁️ Repair Cloud" to push to cloud.
+                        </p>
+                    `;
+                });
+
+                document.getElementById('cancel-vial-fixes-btn').addEventListener('click', () => {
+                    resultsDiv.style.display = 'none';
+                });
             }
 
             /**
