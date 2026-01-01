@@ -5098,14 +5098,22 @@
             async updateVialUsage(vialId, doseMg) {
                 const vial = this.findVialById(vialId);
                 if (vial) {
-                    const doseVolumeML = doseMg / vial.concentration_mg_ml;
-                    vial.remaining_ml = Math.max(0, vial.remaining_ml - doseVolumeML);
+                    // Get concentration (support both property names)
+                    const concentration = vial.concentration_mg_ml || vial.concentration_mg_per_ml;
+                    if (!concentration || concentration <= 0) {
+                        console.warn(`Cannot update vial usage: invalid concentration for vial ${vialId}`);
+                        return;
+                    }
+
+                    const doseVolumeML = doseMg / concentration;
+                    const currentRemainingMl = vial.remaining_ml ?? vial.current_volume_ml ?? vial.bac_water_ml ?? 0;
+                    vial.remaining_ml = Math.max(0, currentRemainingMl - doseVolumeML);
                     vial.current_volume_ml = vial.remaining_ml; // Sync property for consistency (Hotfix)
-                    vial.doses_used++;
+                    vial.doses_used = (vial.doses_used || 0) + 1;
 
                     // Check if vial has less than next required dose
                     const plannedDose = parseFloat(document.getElementById('planned-dose')?.value || 4.0);
-                    const remainingMg = vial.remaining_ml * vial.concentration_mg_ml;
+                    const remainingMg = vial.remaining_ml * concentration;
 
                     if (remainingMg < plannedDose && remainingMg > 0) {
                         // Mark vial as empty if it can't provide the next dose
@@ -6079,16 +6087,18 @@
                 // Calculate remaining vial volume after last shot
                 let vialRemainingMl = 0;
                 if (lastInjection && lastInjection.vial_id) {
-                    const vial = this.data.vials.find(v => v.id === lastInjection.vial_id);
+                    const vial = this.findVialById(lastInjection.vial_id);
                     if (vial) {
                         // Calculate total used from this vial (excluding skipped injections)
+                        const vialId = this.getVialId(vial);
                         const injectionsFromVial = this.data.injections
-                            .filter(inj => inj.vial_id === vial.id && !inj.skipped)
+                            .filter(inj => inj.vial_id === vialId && !inj.skipped)
                             .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
                         const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
                         const totalUsedMl = totalUsedMg / vial.concentration_mg_ml;
-                        vialRemainingMl = 1.0 - totalUsedMl; // Assuming 1ml bac water per vial
+                        const initialVolume = vial.bac_water_ml || 1.0;
+                        vialRemainingMl = initialVolume - totalUsedMl;
                     }
                 }
 
@@ -9206,8 +9216,8 @@
             }
 
             showEditVialModal(vialId) {
-                // Find vial by ID
-                const vial = this.data.vials.find(v => v.id === vialId);
+                // Find vial by ID (uses helper to support both vial_id and id formats)
+                const vial = this.findVialById(vialId);
                 if (!vial) {
                     console.error('Vial not found:', vialId);
                     return;
