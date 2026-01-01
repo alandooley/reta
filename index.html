@@ -3499,6 +3499,11 @@
             </div>
             <form id="edit-vial-form">
                 <input type="hidden" id="edit-vial-id">
+                <!-- Vial ID Display -->
+                <div class="form-group" style="background: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+                    <label style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">Vial ID</label>
+                    <div id="edit-vial-id-display" style="font-family: monospace; font-size: 13px; color: var(--accent-color); user-select: all;"></div>
+                </div>
                 <div class="form-group">
                     <label for="edit-vial-order-date">Order Date</label>
                     <input type="date" id="edit-vial-order-date" required>
@@ -3525,6 +3530,16 @@
                     <p style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">
                         Manually adjust remaining volume in this vial (active vials only)
                     </p>
+                </div>
+                <!-- Shot History Section -->
+                <div class="form-group" id="edit-vial-shot-history-group" style="border-top: 1px solid var(--border-color); padding-top: var(--spacing-md); margin-top: var(--spacing-md);">
+                    <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                        Shot History
+                        <span id="edit-vial-shot-count" style="font-size: 11px; color: var(--text-secondary); font-weight: normal;"></span>
+                    </label>
+                    <div id="edit-vial-shot-history" style="max-height: 200px; overflow-y: auto; background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: var(--spacing-sm);">
+                        <p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin: 0;">No shots from this vial</p>
+                    </div>
                 </div>
                 <div class="form-group">
                     <button type="submit" class="btn-primary">Save Changes</button>
@@ -3698,6 +3713,11 @@
                 <button class="modal-close" data-modal="add-trt-vial-modal">&times;</button>
             </div>
             <form id="add-trt-vial-form">
+                <!-- Vial ID Display (only visible in edit mode) -->
+                <div id="trt-vial-id-group" class="form-group" style="display: none; background: var(--bg-tertiary); padding: var(--spacing-sm); border-radius: var(--radius-sm); margin-bottom: var(--spacing-md);">
+                    <label style="font-size: 11px; color: var(--text-secondary); margin-bottom: 2px;">Vial ID</label>
+                    <div id="trt-vial-id-display" style="font-family: monospace; font-size: 13px; color: var(--accent-color); user-select: all;"></div>
+                </div>
                 <!-- Quick Add Section -->
                 <div class="form-group" style="margin-bottom: var(--spacing-lg); padding-bottom: var(--spacing-md); border-bottom: 1px solid var(--border-color);">
                     <button type="button" id="trt-vial-quick-add-btn" class="btn-secondary" style="width: 100%; padding: var(--spacing-md);">
@@ -3752,6 +3772,16 @@
                 <div class="form-group">
                     <label for="trt-vial-notes">Notes - Optional</label>
                     <textarea id="trt-vial-notes" placeholder="Storage location, batch info, etc."></textarea>
+                </div>
+                <!-- Shot History Section (only visible in edit mode) -->
+                <div id="trt-vial-shot-history-group" class="form-group" style="display: none; border-top: 1px solid var(--border-color); padding-top: var(--spacing-md); margin-top: var(--spacing-md);">
+                    <label style="display: flex; align-items: center; gap: var(--spacing-sm);">
+                        Shot History
+                        <span id="trt-vial-shot-count" style="font-size: 11px; color: var(--text-secondary); font-weight: normal;"></span>
+                    </label>
+                    <div id="trt-vial-shot-history" style="max-height: 200px; overflow-y: auto; background: var(--bg-tertiary); border-radius: var(--radius-sm); padding: var(--spacing-sm);">
+                        <p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin: 0;">No shots from this vial</p>
+                    </div>
                 </div>
                 <div class="form-group">
                     <button type="submit" id="trt-vial-submit-btn" class="btn-primary">Add Vial</button>
@@ -8676,6 +8706,12 @@
                 document.getElementById('add-trt-injection-modal-title').textContent = 'Add TRT Injection';
                 document.getElementById('trt-injection-submit-btn').textContent = 'Add Injection';
 
+                // Hide vial ID and shot history sections (only shown in edit mode)
+                const trtVialIdGroup = document.getElementById('trt-vial-id-group');
+                const trtShotHistoryGroup = document.getElementById('trt-vial-shot-history-group');
+                if (trtVialIdGroup) trtVialIdGroup.style.display = 'none';
+                if (trtShotHistoryGroup) trtShotHistoryGroup.style.display = 'none';
+
                 // Reset forms
                 document.querySelectorAll('form').forEach(form => form.reset());
             }
@@ -8837,6 +8873,17 @@
                 document.getElementById('add-trt-vial-modal-title').textContent = 'Edit TRT Vial';
                 document.getElementById('trt-vial-submit-btn').textContent = 'Save Changes';
 
+                // Display vial ID (short format for readability, full ID on hover)
+                const fullVialId = vial.id;
+                const shortId = fullVialId.length > 12 ? fullVialId.slice(-8) : fullVialId;
+                const vialIdGroup = document.getElementById('trt-vial-id-group');
+                const vialIdDisplay = document.getElementById('trt-vial-id-display');
+                if (vialIdGroup && vialIdDisplay) {
+                    vialIdDisplay.textContent = shortId;
+                    vialIdDisplay.title = `Full ID: ${fullVialId}`;
+                    vialIdGroup.style.display = 'block';
+                }
+
                 // Pre-fill form with existing data
                 document.getElementById('trt-vial-concentration').value = vial.concentration_mg_ml || '';
                 document.getElementById('trt-vial-volume').value = vial.volume_ml || '';
@@ -8859,6 +8906,13 @@
                 } else {
                     if (trtOpenedDateGroup) trtOpenedDateGroup.style.display = 'none';
                     if (trtRemainingVolumeGroup) trtRemainingVolumeGroup.style.display = 'none';
+                }
+
+                // Show shot history section and populate it
+                const shotHistoryGroup = document.getElementById('trt-vial-shot-history-group');
+                if (shotHistoryGroup) {
+                    shotHistoryGroup.style.display = 'block';
+                    this.populateVialShotHistory(vial.id, 'trt-vial-shot-history', 'trt-vial-shot-count', 'trt');
                 }
 
                 // Show modal
@@ -9127,6 +9181,13 @@
                     return;
                 }
 
+                // Display vial ID (short format for readability, full ID on hover)
+                const fullVialId = vial.vial_id;
+                const shortId = fullVialId.length > 12 ? fullVialId.slice(-8) : fullVialId;
+                const vialIdDisplay = document.getElementById('edit-vial-id-display');
+                vialIdDisplay.textContent = shortId;
+                vialIdDisplay.title = `Full ID: ${fullVialId}`;
+
                 // Populate the form with vial data
                 document.getElementById('edit-vial-id').value = vial.vial_id;
                 document.getElementById('edit-vial-order-date').value = new Date(vial.order_date).toISOString().split('T')[0];
@@ -9154,8 +9215,99 @@
                     volumeInput.value = '';
                 }
 
+                // Populate shot history
+                this.populateVialShotHistory(vial.vial_id, 'edit-vial-shot-history', 'edit-vial-shot-count');
+
                 // Open the modal
                 this.openModal('edit-vial-modal');
+            }
+
+            /**
+             * Populates shot history for a vial in the edit modal
+             * @param {string} vialId - The vial ID to find injections for
+             * @param {string} containerId - ID of the container element for shot history
+             * @param {string} countId - ID of the element to show shot count
+             * @param {string} type - 'reta' for Reta injections, 'trt' for TRT injections
+             */
+            populateVialShotHistory(vialId, containerId, countId, type = 'reta') {
+                const container = document.getElementById(containerId);
+                const countEl = document.getElementById(countId);
+
+                if (!container) return;
+
+                // Get injections for this vial
+                let injections = [];
+                if (type === 'trt') {
+                    injections = (this.data.trtInjections || []).filter(inj => inj.vial_id === vialId && !inj.skipped);
+                } else {
+                    injections = (this.data.injections || []).filter(inj => inj.vial_id === vialId);
+                }
+
+                // Sort by date (newest first)
+                injections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                // Update count display
+                if (countEl) {
+                    const totalDose = injections.reduce((sum, inj) => sum + (inj.dose_mg || 0), 0);
+                    if (type === 'trt') {
+                        const totalVolume = injections.reduce((sum, inj) => sum + (inj.volume_ml || 0), 0);
+                        countEl.textContent = `(${injections.length} shots, ${totalVolume.toFixed(2)} ml, ${totalDose.toFixed(0)} mg total)`;
+                    } else {
+                        countEl.textContent = `(${injections.length} shots, ${totalDose.toFixed(1)} mg total)`;
+                    }
+                }
+
+                // Populate list
+                if (injections.length === 0) {
+                    container.innerHTML = '<p style="font-size: 13px; color: var(--text-secondary); text-align: center; margin: 0;">No shots from this vial</p>';
+                    return;
+                }
+
+                // Helper to format site name for display
+                const formatSite = (site) => {
+                    if (!site) return 'Unknown';
+                    // Convert snake_case to Title Case (e.g., 'abdomen_right' -> 'Abdomen Right')
+                    return site.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                };
+
+                let html = '<div style="display: flex; flex-direction: column; gap: 6px;">';
+                for (const inj of injections) {
+                    const date = new Date(inj.timestamp);
+                    const dateStr = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                    const site = formatSite(inj.injection_site);
+
+                    if (type === 'trt') {
+                        const volumeMl = inj.volume_ml || 0;
+                        const doseMg = inj.dose_mg || 0;
+                        html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 12px;">
+                                <div>
+                                    <span style="color: var(--text-primary); font-weight: 500;">${dateStr}</span>
+                                    <span style="color: var(--text-secondary); margin-left: 6px;">${timeStr}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="color: var(--accent-color); font-weight: 600;">${volumeMl.toFixed(2)} ml</span>
+                                    <span style="color: var(--text-secondary); margin-left: 4px;">(${doseMg.toFixed(0)} mg)</span>
+                                </div>
+                            </div>`;
+                    } else {
+                        const doseMg = inj.dose_mg || 0;
+                        html += `
+                            <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; background: var(--bg-secondary); border-radius: var(--radius-sm); font-size: 12px;">
+                                <div>
+                                    <span style="color: var(--text-primary); font-weight: 500;">${dateStr}</span>
+                                    <span style="color: var(--text-secondary); margin-left: 6px;">${timeStr}</span>
+                                </div>
+                                <div style="text-align: right;">
+                                    <span style="color: var(--accent-color); font-weight: 600;">${doseMg.toFixed(1)} mg</span>
+                                    <span style="color: var(--text-secondary); margin-left: 4px;">@ ${site}</span>
+                                </div>
+                            </div>`;
+                    }
+                }
+                html += '</div>';
+                container.innerHTML = html;
             }
 
             async handleEditVial() {
@@ -9559,6 +9711,12 @@
                     // Reset modal title and button for next use
                     document.getElementById('add-trt-vial-modal-title').textContent = 'Add TRT Vial';
                     document.getElementById('trt-vial-submit-btn').textContent = 'Add Vial';
+
+                    // Hide vial ID and shot history sections
+                    const vialIdGroup = document.getElementById('trt-vial-id-group');
+                    const shotHistoryGroup = document.getElementById('trt-vial-shot-history-group');
+                    if (vialIdGroup) vialIdGroup.style.display = 'none';
+                    if (shotHistoryGroup) shotHistoryGroup.style.display = 'none';
 
                 } catch (error) {
                     console.error('Error adding/updating TRT vial:', error);
