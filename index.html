@@ -2571,6 +2571,9 @@
                                     stroke-dasharray="565.48" stroke-dashoffset="0"/>
                         </svg>
                     </div>
+                    <div id="schedule-recommendation" style="margin-top: 12px; padding: 8px 12px; background: var(--secondary-bg); border-radius: var(--border-radius-sm); font-size: 12px; color: var(--text-secondary); text-align: center; display: none;">
+                        <!-- Scheduling recommendation will appear here -->
+                    </div>
                 </div>
 
                 <div class="supply-forecast-container">
@@ -2861,6 +2864,49 @@
                         Common intervals: 7 (weekly), 14 (bi-weekly), 21 (every 3 weeks), 28 (monthly)
                     </p>
                     <label>
+                        Scheduling Mode:
+                        <div class="setting-input-wrapper">
+                            <select id="scheduling-mode">
+                                <option value="smart">Smart (Recommended)</option>
+                                <option value="rolling">Rolling (from actual date)</option>
+                                <option value="fixed">Fixed (maintain schedule)</option>
+                            </select>
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        Smart: Uses grace period logic. Rolling: Next due shifts with actual injection. Fixed: Always return to original schedule.
+                    </p>
+                    <label>
+                        Grace Period (days):
+                        <div class="setting-input-wrapper">
+                            <input type="number" id="grace-period-days" step="1" min="1" max="14" value="4" placeholder="Days">
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        For Smart mode: Doses within grace period return to schedule. Beyond grace period resets schedule. (Default: 4 days for peptides)
+                    </p>
+                    <label>
+                        Preferred Injection Day:
+                        <div class="setting-input-wrapper">
+                            <select id="preferred-injection-day">
+                                <option value="">No preference</option>
+                                <option value="0">Sunday</option>
+                                <option value="1">Monday</option>
+                                <option value="2">Tuesday</option>
+                                <option value="3">Wednesday</option>
+                                <option value="4">Thursday</option>
+                                <option value="5">Friday</option>
+                                <option value="6">Saturday</option>
+                            </select>
+                            <span class="save-indicator">Saved</span>
+                        </div>
+                    </label>
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: -12px; margin-left: 8px;">
+                        Optional: Set your preferred injection day to help track schedule adherence.
+                    </p>
+                    <label>
                         Default Dose (mg):
                         <div class="setting-input-wrapper">
                             <input type="number" id="default-dose" step="0.1" min="0" max="50" value="2.0">
@@ -2895,6 +2941,70 @@
                         </div>
                     </label>
                 </div>
+
+                <!-- Schedule History Section -->
+                <div class="settings-section">
+                    <h3>Schedule History & Adherence</h3>
+
+                    <!-- Adherence Stats Cards -->
+                    <div id="schedule-adherence-stats" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px;">
+                        <div style="background: var(--secondary-bg); padding: 12px; border-radius: var(--border-radius-sm); text-align: center;">
+                            <div id="adherence-rate" style="font-size: 24px; font-weight: bold; color: var(--accent-color);">--%</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Adherence Rate</div>
+                        </div>
+                        <div style="background: var(--secondary-bg); padding: 12px; border-radius: var(--border-radius-sm); text-align: center;">
+                            <div id="avg-variance" style="font-size: 24px; font-weight: bold; color: var(--text-primary);">-- days</div>
+                            <div style="font-size: 12px; color: var(--text-secondary);">Avg Variance</div>
+                        </div>
+                    </div>
+
+                    <!-- Status Breakdown -->
+                    <div id="schedule-status-breakdown" style="margin-bottom: 16px; padding: 12px; background: var(--secondary-bg); border-radius: var(--border-radius-sm);">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 10px; height: 10px; border-radius: 50%; background: #34C759;"></span>
+                                On Time
+                            </span>
+                            <span id="stat-on-time">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 10px; height: 10px; border-radius: 50%; background: #5AC8FA;"></span>
+                                Early
+                            </span>
+                            <span id="stat-early">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 10px; height: 10px; border-radius: 50%; background: #FF9500;"></span>
+                                Late (Within Grace)
+                            </span>
+                            <span id="stat-late-grace">0</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span style="display: flex; align-items: center; gap: 6px;">
+                                <span style="width: 10px; height: 10px; border-radius: 50%; background: #FF3B30;"></span>
+                                Late (Reset)
+                            </span>
+                            <span id="stat-late-reset">0</span>
+                        </div>
+                    </div>
+
+                    <!-- Schedule History List -->
+                    <div style="margin-bottom: 8px;">
+                        <strong style="font-size: 14px;">Recent Schedule Events</strong>
+                    </div>
+                    <div id="schedule-history-list" style="max-height: 300px; overflow-y: auto; background: var(--secondary-bg); border-radius: var(--border-radius-sm); padding: 8px;">
+                        <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                            No schedule history yet. History will be tracked for new injections.
+                        </p>
+                    </div>
+
+                    <p style="font-size: 0.85em; color: var(--text-secondary); margin-top: 12px;">
+                        Schedule history tracks when doses were scheduled vs. when they were actually taken. New injections will automatically be tracked.
+                    </p>
+                </div>
+
                 <div class="settings-section">
                     <h3>Data Management</h3>
                     <button id="export-data-btn" class="btn-secondary">Export Data</button>
@@ -3705,6 +3815,7 @@
                     injections: [],
                     vials: [],
                     weights: [],
+                    scheduleHistory: [], // Track scheduled vs actual injection dates
                     settings: {
                         injectionFrequency: 7,
                         defaultDose: 2.0,
@@ -3712,7 +3823,11 @@
                         heightCm: null,
                         goalWeightKg: null,
                         units: 'metric',
-                        lastSync: null
+                        lastSync: null,
+                        // Smart scheduling settings
+                        schedulingMode: 'smart', // 'smart', 'rolling', 'fixed'
+                        gracePeriodDays: 4, // Default for peptides like tirzepatide
+                        preferredInjectionDay: null // 0-6 (Sunday-Saturday) or null
                     },
                     // TRT tracking
                     trtInjections: [],
@@ -4827,6 +4942,9 @@
                     skipped: injection.skipped || false,
                     planned_dose_mg: injection.planned_dose_mg || null
                 };
+
+                // Track schedule history before adding the injection
+                this.recordScheduleHistory(newInjection);
 
                 this.data.injections.push(newInjection);
                 this.data.injections.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -5976,6 +6094,23 @@
                 // Update injection frequency
                 document.getElementById('injection-frequency').value = this.data.settings.injectionFrequency;
 
+                // Update scheduling mode
+                if (this.data.settings.schedulingMode) {
+                    document.getElementById('scheduling-mode').value = this.data.settings.schedulingMode;
+                }
+
+                // Update grace period
+                if (this.data.settings.gracePeriodDays) {
+                    document.getElementById('grace-period-days').value = this.data.settings.gracePeriodDays;
+                }
+
+                // Update preferred injection day
+                const preferredDayEl = document.getElementById('preferred-injection-day');
+                if (preferredDayEl) {
+                    preferredDayEl.value = this.data.settings.preferredInjectionDay !== null ?
+                        this.data.settings.preferredInjectionDay : '';
+                }
+
                 // Update default dose
                 if (this.data.settings.defaultDose) {
                     document.getElementById('default-dose').value = this.data.settings.defaultDose;
@@ -5995,6 +6130,115 @@
                 if (this.data.settings.goalWeightKg) {
                     document.getElementById('goal-weight').value = this.data.settings.goalWeightKg;
                 }
+
+                // Update schedule history section
+                this.updateScheduleHistoryUI();
+            }
+
+            // Update the schedule history UI in settings
+            updateScheduleHistoryUI() {
+                const stats = this.getScheduleAdherenceStats();
+
+                // Update adherence stats
+                const adherenceRateEl = document.getElementById('adherence-rate');
+                if (adherenceRateEl) {
+                    adherenceRateEl.textContent = stats.totalInjections > 0 ? `${stats.adherenceRate}%` : '--%';
+                    // Color code based on adherence
+                    if (stats.adherenceRate >= 90) {
+                        adherenceRateEl.style.color = '#34C759'; // Green
+                    } else if (stats.adherenceRate >= 70) {
+                        adherenceRateEl.style.color = '#FF9500'; // Orange
+                    } else if (stats.adherenceRate > 0) {
+                        adherenceRateEl.style.color = '#FF3B30'; // Red
+                    }
+                }
+
+                const avgVarianceEl = document.getElementById('avg-variance');
+                if (avgVarianceEl) {
+                    avgVarianceEl.textContent = stats.totalInjections > 0 ?
+                        `${stats.averageVariance} days` : '-- days';
+                }
+
+                // Update status breakdown
+                const onTimeEl = document.getElementById('stat-on-time');
+                const earlyEl = document.getElementById('stat-early');
+                const lateGraceEl = document.getElementById('stat-late-grace');
+                const lateResetEl = document.getElementById('stat-late-reset');
+
+                if (onTimeEl) onTimeEl.textContent = stats.onTime;
+                if (earlyEl) earlyEl.textContent = stats.early;
+                if (lateGraceEl) lateGraceEl.textContent = stats.lateWithinGrace;
+                if (lateResetEl) lateResetEl.textContent = stats.lateBeyondGrace;
+
+                // Update history list
+                const historyListEl = document.getElementById('schedule-history-list');
+                if (historyListEl) {
+                    if (!this.data.scheduleHistory || this.data.scheduleHistory.length === 0) {
+                        historyListEl.innerHTML = `
+                            <p style="color: var(--text-muted); text-align: center; padding: 20px;">
+                                No schedule history yet. History will be tracked for new injections.
+                            </p>
+                        `;
+                    } else {
+                        // Show most recent events first
+                        const sortedHistory = [...this.data.scheduleHistory]
+                            .filter(h => h.event === 'injection')
+                            .sort((a, b) => new Date(b.actualDate) - new Date(a.actualDate))
+                            .slice(0, 20); // Show last 20 entries
+
+                        historyListEl.innerHTML = sortedHistory.map(entry => {
+                            const actualDate = new Date(entry.actualDate);
+                            const scheduledDate = new Date(entry.scheduledDate);
+                            const dateStr = actualDate.toLocaleDateString('en-US', {
+                                month: 'short', day: 'numeric', year: 'numeric'
+                            });
+
+                            let statusColor, statusIcon, statusText;
+                            switch (entry.status) {
+                                case 'on_time':
+                                    statusColor = '#34C759';
+                                    statusIcon = '✓';
+                                    statusText = 'On time';
+                                    break;
+                                case 'early':
+                                    statusColor = '#5AC8FA';
+                                    statusIcon = '↑';
+                                    statusText = `${Math.abs(entry.daysVariance)} day(s) early`;
+                                    break;
+                                case 'late_grace':
+                                    statusColor = '#FF9500';
+                                    statusIcon = '↓';
+                                    statusText = `${entry.daysVariance} day(s) late (within grace)`;
+                                    break;
+                                case 'late_reset':
+                                    statusColor = '#FF3B30';
+                                    statusIcon = '⚠';
+                                    statusText = `${entry.daysVariance} day(s) late (schedule reset)`;
+                                    break;
+                                default:
+                                    statusColor = 'var(--text-secondary)';
+                                    statusIcon = '•';
+                                    statusText = 'Unknown';
+                            }
+
+                            return `
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px; border-bottom: 1px solid var(--border-color);">
+                                    <div>
+                                        <div style="font-weight: 500; font-size: 14px;">${dateStr}</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">
+                                            ${entry.doseMg ? entry.doseMg + ' mg' : ''}
+                                            ${entry.skipped ? '(Skipped)' : ''}
+                                        </div>
+                                    </div>
+                                    <div style="display: flex; align-items: center; gap: 6px;">
+                                        <span style="color: ${statusColor}; font-size: 14px;">${statusIcon}</span>
+                                        <span style="font-size: 12px; color: ${statusColor};">${statusText}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                    }
+                }
             }
 
             updateHeaderTimestamp() {
@@ -6006,20 +6250,299 @@
             }
 
             calculateNextShotDays() {
-                if (this.data.injections.length === 0) return 0;
+                const nextShotInfo = this.getNextShotInfo();
+                return nextShotInfo.daysUntil;
+            }
+
+            // Get comprehensive next shot information including scheduling mode logic
+            getNextShotInfo() {
+                if (this.data.injections.length === 0) {
+                    return {
+                        nextDate: null,
+                        daysUntil: 0,
+                        scheduledDate: null,
+                        isOverdue: false,
+                        daysOverdue: 0,
+                        mode: this.data.settings.schedulingMode || 'smart',
+                        recommendation: 'No injections recorded yet'
+                    };
+                }
 
                 const lastInjection = this.getMostRecentInjection();
                 const lastShot = new Date(lastInjection.timestamp);
-                const nextShot = new Date(lastShot);
                 const frequency = this.data.settings.injectionFrequency ||
                                 this.data.settings.injectionFrequencyDays || 7;
-                nextShot.setDate(nextShot.getDate() + frequency);
-
+                const mode = this.data.settings.schedulingMode || 'smart';
+                const gracePeriod = this.data.settings.gracePeriodDays || 4;
                 const now = new Date();
+
+                let nextShot;
+                let scheduledDate;
+                let recommendation = '';
+
+                // Calculate the originally scheduled date (what the due date SHOULD have been)
+                const previousScheduledDate = this.getLastScheduledDate();
+
+                if (mode === 'rolling') {
+                    // Rolling: Always calculate from actual injection date
+                    nextShot = new Date(lastShot);
+                    nextShot.setDate(nextShot.getDate() + frequency);
+                    scheduledDate = new Date(nextShot);
+                    recommendation = 'Next due calculated from your last injection date';
+
+                } else if (mode === 'fixed') {
+                    // Fixed: Maintain the original schedule
+                    if (previousScheduledDate) {
+                        // Calculate next occurrence of the scheduled pattern
+                        nextShot = this.getNextScheduledOccurrence(previousScheduledDate, frequency);
+                        // Ensure it's in the future
+                        while (nextShot <= now) {
+                            nextShot.setDate(nextShot.getDate() + frequency);
+                        }
+                    } else {
+                        // No previous schedule, start fresh from last injection
+                        nextShot = new Date(lastShot);
+                        nextShot.setDate(nextShot.getDate() + frequency);
+                    }
+                    scheduledDate = new Date(nextShot);
+                    recommendation = 'Next due based on your regular schedule';
+
+                } else {
+                    // Smart mode: Use grace period logic
+                    const rollingNext = new Date(lastShot);
+                    rollingNext.setDate(rollingNext.getDate() + frequency);
+
+                    // Calculate what the scheduled date was
+                    const expectedScheduledDate = previousScheduledDate ?
+                        this.getNextScheduledOccurrence(previousScheduledDate, frequency) :
+                        new Date(lastShot);
+
+                    // How late was the last injection?
+                    const lastScheduledDue = this.getScheduledDueForInjection(lastInjection);
+                    let daysLate = 0;
+                    if (lastScheduledDue) {
+                        daysLate = Math.floor((lastShot - lastScheduledDue) / (1000 * 60 * 60 * 24));
+                    }
+
+                    if (daysLate <= 0) {
+                        // On time or early - maintain schedule
+                        nextShot = new Date(lastShot);
+                        nextShot.setDate(nextShot.getDate() + frequency);
+                        recommendation = 'On schedule - next due in ' + frequency + ' days';
+                    } else if (daysLate <= gracePeriod) {
+                        // Within grace period - return to original schedule
+                        if (previousScheduledDate) {
+                            nextShot = this.getNextScheduledOccurrence(previousScheduledDate, frequency);
+                            while (nextShot <= now) {
+                                nextShot.setDate(nextShot.getDate() + frequency);
+                            }
+                            recommendation = `Taken ${daysLate} day(s) late (within grace period) - returning to regular schedule`;
+                        } else {
+                            nextShot = rollingNext;
+                            recommendation = `Taken ${daysLate} day(s) late - schedule adjusted`;
+                        }
+                    } else {
+                        // Beyond grace period - reset schedule from actual date
+                        nextShot = rollingNext;
+                        recommendation = `Taken ${daysLate} day(s) late (beyond ${gracePeriod}-day grace period) - schedule reset`;
+                        // Record the schedule reset
+                        this.recordScheduleReset(lastInjection, daysLate);
+                    }
+                    scheduledDate = new Date(nextShot);
+                }
+
                 const diffTime = nextShot - now;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                const isOverdue = diffDays < 0;
+                const daysOverdue = isOverdue ? Math.abs(diffDays) : 0;
 
-                return Math.max(0, diffDays);
+                return {
+                    nextDate: nextShot,
+                    daysUntil: Math.max(0, diffDays),
+                    scheduledDate: scheduledDate,
+                    isOverdue: isOverdue,
+                    daysOverdue: daysOverdue,
+                    mode: mode,
+                    recommendation: recommendation,
+                    gracePeriod: gracePeriod
+                };
+            }
+
+            // Get the last established scheduled date from history or calculate from first injection
+            getLastScheduledDate() {
+                // Check schedule history for the most recent scheduled date
+                if (this.data.scheduleHistory && this.data.scheduleHistory.length > 0) {
+                    const lastEntry = this.data.scheduleHistory[this.data.scheduleHistory.length - 1];
+                    return new Date(lastEntry.scheduledDate);
+                }
+
+                // Fall back to calculating from the first injection + preferred day
+                if (this.data.injections.length > 0) {
+                    const firstInjection = [...this.data.injections]
+                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
+                    return new Date(firstInjection.timestamp);
+                }
+
+                return null;
+            }
+
+            // Get the next occurrence of a scheduled pattern
+            getNextScheduledOccurrence(baseDate, frequency) {
+                const now = new Date();
+                const next = new Date(baseDate);
+
+                // Move forward by frequency until we're past now
+                while (next <= now) {
+                    next.setDate(next.getDate() + frequency);
+                }
+
+                return next;
+            }
+
+            // Get the scheduled due date for a specific injection
+            getScheduledDueForInjection(injection) {
+                // Look up in schedule history
+                if (this.data.scheduleHistory) {
+                    const historyEntry = this.data.scheduleHistory.find(
+                        h => h.injectionId === injection.id
+                    );
+                    if (historyEntry) {
+                        return new Date(historyEntry.scheduledDate);
+                    }
+                }
+
+                // Calculate based on previous injection
+                const injectionDate = new Date(injection.timestamp);
+                const sortedInjections = [...this.data.injections]
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const injectionIndex = sortedInjections.findIndex(i => i.id === injection.id);
+
+                if (injectionIndex > 0) {
+                    const prevInjection = sortedInjections[injectionIndex - 1];
+                    const prevDate = new Date(prevInjection.timestamp);
+                    const frequency = this.data.settings.injectionFrequency || 7;
+                    const scheduledDue = new Date(prevDate);
+                    scheduledDue.setDate(scheduledDue.getDate() + frequency);
+                    return scheduledDue;
+                }
+
+                return null;
+            }
+
+            // Record a schedule reset in history
+            recordScheduleReset(injection, daysLate) {
+                if (!this.data.scheduleHistory) {
+                    this.data.scheduleHistory = [];
+                }
+
+                // Only record if not already recorded
+                const exists = this.data.scheduleHistory.some(h =>
+                    h.injectionId === injection.id && h.event === 'reset'
+                );
+
+                if (!exists) {
+                    this.data.scheduleHistory.push({
+                        id: Date.now().toString(),
+                        injectionId: injection.id,
+                        event: 'reset',
+                        timestamp: new Date().toISOString(),
+                        scheduledDate: new Date(injection.timestamp).toISOString(),
+                        actualDate: injection.timestamp,
+                        daysLate: daysLate,
+                        reason: `Schedule reset after ${daysLate} days late (beyond grace period)`
+                    });
+                    this.saveData();
+                }
+            }
+
+            // Record schedule history for a new injection
+            recordScheduleHistory(injection) {
+                if (!this.data.scheduleHistory) {
+                    this.data.scheduleHistory = [];
+                }
+
+                const injectionDate = new Date(injection.timestamp);
+                const frequency = this.data.settings.injectionFrequency || 7;
+
+                // Get the previous injection to calculate scheduled date
+                const sortedInjections = [...this.data.injections]
+                    .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+                let scheduledDate;
+                let daysVariance = 0;
+                let status = 'on_time';
+
+                if (sortedInjections.length === 0) {
+                    // First injection - scheduled date equals actual date
+                    scheduledDate = new Date(injectionDate);
+                } else {
+                    // Calculate scheduled date from previous injection
+                    const lastInjection = sortedInjections[sortedInjections.length - 1];
+                    scheduledDate = new Date(lastInjection.timestamp);
+                    scheduledDate.setDate(scheduledDate.getDate() + frequency);
+
+                    // Calculate variance
+                    daysVariance = Math.floor((injectionDate - scheduledDate) / (1000 * 60 * 60 * 24));
+
+                    // Determine status
+                    const gracePeriod = this.data.settings.gracePeriodDays || 4;
+                    if (daysVariance < -1) {
+                        status = 'early';
+                    } else if (daysVariance <= 0) {
+                        status = 'on_time';
+                    } else if (daysVariance <= gracePeriod) {
+                        status = 'late_grace';
+                    } else {
+                        status = 'late_reset';
+                    }
+                }
+
+                this.data.scheduleHistory.push({
+                    id: Date.now().toString(),
+                    injectionId: injection.id,
+                    event: 'injection',
+                    timestamp: new Date().toISOString(),
+                    scheduledDate: scheduledDate.toISOString(),
+                    actualDate: injection.timestamp,
+                    daysVariance: daysVariance,
+                    status: status,
+                    doseMg: injection.dose_mg,
+                    skipped: injection.skipped || false
+                });
+            }
+
+            // Get schedule adherence statistics
+            getScheduleAdherenceStats() {
+                if (!this.data.scheduleHistory || this.data.scheduleHistory.length === 0) {
+                    return {
+                        totalInjections: 0,
+                        onTime: 0,
+                        early: 0,
+                        lateWithinGrace: 0,
+                        lateBeyondGrace: 0,
+                        adherenceRate: 0,
+                        averageVariance: 0
+                    };
+                }
+
+                const injectionEvents = this.data.scheduleHistory.filter(h => h.event === 'injection' && !h.skipped);
+
+                const stats = {
+                    totalInjections: injectionEvents.length,
+                    onTime: injectionEvents.filter(h => h.status === 'on_time').length,
+                    early: injectionEvents.filter(h => h.status === 'early').length,
+                    lateWithinGrace: injectionEvents.filter(h => h.status === 'late_grace').length,
+                    lateBeyondGrace: injectionEvents.filter(h => h.status === 'late_reset').length,
+                    averageVariance: 0
+                };
+
+                if (injectionEvents.length > 0) {
+                    const totalVariance = injectionEvents.reduce((sum, h) => sum + Math.abs(h.daysVariance || 0), 0);
+                    stats.averageVariance = (totalVariance / injectionEvents.length).toFixed(1);
+                    stats.adherenceRate = Math.round(((stats.onTime + stats.early) / stats.totalInjections) * 100);
+                }
+
+                return stats;
             }
 
             // ====================================
@@ -7251,6 +7774,30 @@
                 // Settings form handlers
                 document.getElementById('injection-frequency').addEventListener('change', (e) => {
                     this.data.settings.injectionFrequency = parseInt(e.target.value);
+                    this.saveData();
+                    this.updateUI();
+                    this.showSettingSaveIndicator(e.target);
+                });
+
+                // Scheduling mode handler
+                document.getElementById('scheduling-mode').addEventListener('change', (e) => {
+                    this.data.settings.schedulingMode = e.target.value;
+                    this.saveData();
+                    this.updateUI();
+                    this.showSettingSaveIndicator(e.target);
+                });
+
+                // Grace period handler
+                document.getElementById('grace-period-days').addEventListener('change', (e) => {
+                    this.data.settings.gracePeriodDays = parseInt(e.target.value);
+                    this.saveData();
+                    this.updateUI();
+                    this.showSettingSaveIndicator(e.target);
+                });
+
+                // Preferred injection day handler
+                document.getElementById('preferred-injection-day').addEventListener('change', (e) => {
+                    this.data.settings.preferredInjectionDay = e.target.value === '' ? null : parseInt(e.target.value);
                     this.saveData();
                     this.updateUI();
                     this.showSettingSaveIndicator(e.target);
@@ -9316,6 +9863,9 @@
                 div.setAttribute('data-item-id', injection.id);
                 div.setAttribute('data-timestamp', injection.timestamp);
 
+                // Get schedule timing info for this injection
+                const timingInfo = this.getInjectionTimingInfo(injection);
+
                 if (injection.skipped) {
                     // Skipped injection display
                     const plannedDose = injection.planned_dose_mg || injection.dose_mg || 0;
@@ -9343,15 +9893,19 @@
                         <div class="delete-action">Delete</div>
                     `;
                 } else {
-                    // Normal injection display
+                    // Normal injection display with timing indicator
                     div.innerHTML = `
                         <div class="shot-content">
                             <div class="shot-header">
-                                <div class="shot-dose">${injection.dose_mg} mg</div>
+                                <div class="shot-dose">
+                                    ${injection.dose_mg} mg
+                                    ${timingInfo.badge}
+                                </div>
                                 <div class="shot-date">${this.formatDate(injection.timestamp)}</div>
                             </div>
                             <div class="shot-details">
                                 <div>Site: ${this.formatInjectionSite(injection.injection_site)}</div>
+                                ${timingInfo.details ? `<div style="font-size: 11px; color: ${timingInfo.color}; margin-top: 2px;">${timingInfo.details}</div>` : ''}
                             </div>
                         </div>
                         <div class="item-actions">
@@ -9370,6 +9924,74 @@
                 this.addSwipeToDeleteHandlers(div);
 
                 return div;
+            }
+
+            // Get timing info for an injection (for display in shots list)
+            getInjectionTimingInfo(injection) {
+                // Check schedule history first
+                if (this.data.scheduleHistory) {
+                    const historyEntry = this.data.scheduleHistory.find(
+                        h => h.injectionId === injection.id && h.event === 'injection'
+                    );
+                    if (historyEntry) {
+                        return this.formatTimingBadge(historyEntry.status, historyEntry.daysVariance);
+                    }
+                }
+
+                // Calculate timing if not in history
+                const scheduledDue = this.getScheduledDueForInjection(injection);
+                if (!scheduledDue) {
+                    return { badge: '', details: '', color: 'var(--text-secondary)' };
+                }
+
+                const injectionDate = new Date(injection.timestamp);
+                const daysVariance = Math.floor((injectionDate - scheduledDue) / (1000 * 60 * 60 * 24));
+                const gracePeriod = this.data.settings.gracePeriodDays || 4;
+
+                let status;
+                if (daysVariance < -1) {
+                    status = 'early';
+                } else if (daysVariance <= 0) {
+                    status = 'on_time';
+                } else if (daysVariance <= gracePeriod) {
+                    status = 'late_grace';
+                } else {
+                    status = 'late_reset';
+                }
+
+                return this.formatTimingBadge(status, daysVariance);
+            }
+
+            // Format timing badge for display
+            formatTimingBadge(status, daysVariance) {
+                switch (status) {
+                    case 'on_time':
+                        return {
+                            badge: '<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #34C759; color: white; margin-left: 6px;">On Time</span>',
+                            details: '',
+                            color: '#34C759'
+                        };
+                    case 'early':
+                        return {
+                            badge: '<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #5AC8FA; color: white; margin-left: 6px;">Early</span>',
+                            details: `${Math.abs(daysVariance)} day(s) early`,
+                            color: '#5AC8FA'
+                        };
+                    case 'late_grace':
+                        return {
+                            badge: '<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #FF9500; color: white; margin-left: 6px;">Late</span>',
+                            details: `${daysVariance} day(s) late (within grace period)`,
+                            color: '#FF9500'
+                        };
+                    case 'late_reset':
+                        return {
+                            badge: '<span style="font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #FF3B30; color: white; margin-left: 6px;">Reset</span>',
+                            details: `${daysVariance} day(s) late (schedule reset)`,
+                            color: '#FF3B30'
+                        };
+                    default:
+                        return { badge: '', details: '', color: 'var(--text-secondary)' };
+                }
             }
 
             createVialListItem(vial) {
@@ -11503,11 +12125,14 @@
             }
 
             updateCountdown() {
+                const recommendationEl = document.getElementById('schedule-recommendation');
+
                 if (this.data.injections.length === 0) {
                     document.getElementById('next-shot-day').textContent = 'No shots recorded';
                     document.getElementById('next-shot-date').textContent = '';
                     document.getElementById('next-shot-time').textContent = '';
                     this.updateCountdownProgress(0);
+                    if (recommendationEl) recommendationEl.style.display = 'none';
                     return;
                 }
 
@@ -11515,11 +12140,11 @@
                 const lastInjection = this.getMostRecentInjection();
                 const lastShot = new Date(lastInjection.timestamp);
 
-                // Calculate next shot based on injection frequency
+                // Use the smart scheduling system
+                const shotInfo = this.getNextShotInfo();
+                const nextShot = shotInfo.nextDate;
                 const frequency = this.data.settings.injectionFrequency ||
                                 this.data.settings.injectionFrequencyDays || 7;
-                const nextShot = new Date(lastShot);
-                nextShot.setDate(nextShot.getDate() + frequency);
 
                 // Format the date display
                 const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -11553,12 +12178,12 @@
                 const dayElement = document.getElementById('next-shot-day');
                 const dateElement = document.getElementById('next-shot-date');
 
-                if (timeDiff <= 0) {
+                if (shotInfo.isOverdue || timeDiff <= 0) {
                     // Shot is overdue
                     dayElement.style.color = '#FF3B30';
                     dateElement.style.color = '#FF3B30';
                     dayElement.textContent = 'OVERDUE';
-                    dateElement.textContent = '';
+                    dateElement.textContent = `${shotInfo.daysOverdue || Math.abs(Math.floor(timeDiff / (1000 * 60 * 60 * 24)))} day(s)`;
                 } else if (timeDiff <= 24 * 60 * 60 * 1000) {
                     // Due within 24 hours
                     dayElement.style.color = '#FF9500';
@@ -11567,6 +12192,21 @@
                     // Normal timing
                     dayElement.style.color = 'var(--accent-color)';
                     dateElement.style.color = 'var(--text-primary)';
+                }
+
+                // Show scheduling recommendation
+                if (recommendationEl && shotInfo.recommendation) {
+                    recommendationEl.textContent = shotInfo.recommendation;
+                    recommendationEl.style.display = 'block';
+
+                    // Color the recommendation based on mode
+                    if (shotInfo.mode === 'smart') {
+                        recommendationEl.style.borderLeft = '3px solid var(--accent-color)';
+                    } else if (shotInfo.mode === 'rolling') {
+                        recommendationEl.style.borderLeft = '3px solid #FF9500';
+                    } else {
+                        recommendationEl.style.borderLeft = '3px solid #34C759';
+                    }
                 }
             }
 
