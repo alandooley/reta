@@ -3996,6 +3996,7 @@
                 this.setupCountdownInteraction();
                 this.setupSwipeToDelete();
                 this.setupSyncStatusUI(); // Phase 1B: Sync status indicator
+                this.setupVisibilityHandler(); // Navigate to summary when dormant tab becomes active
             }
 
             // Floating Action Button (context-aware)
@@ -4061,6 +4062,45 @@
                 window.addEventListener('offline', () => {
                     if (indicator) indicator.classList.add('show');
                     this.showNotification('Offline - changes saved locally', 'warning');
+                });
+            }
+
+            // Visibility Change Handler - Navigate to summary when dormant tab becomes active
+            setupVisibilityHandler() {
+                document.addEventListener('visibilitychange', () => {
+                    if (!document.hidden) {
+                        console.log('[VISIBILITY] Tab became visible, navigating to summary');
+
+                        // Navigate to summary (or trt-dashboard for TRT app)
+                        const targetTab = this.currentApp === 'trt' ? 'trt-dashboard' : 'summary';
+                        const targetBtn = document.querySelector(`.nav-btn[data-tab="${targetTab}"]`);
+
+                        if (targetBtn) {
+                            // Remove active from all nav buttons and set target as active
+                            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                            targetBtn.classList.add('active');
+
+                            // Hide all tab content and show target
+                            document.querySelectorAll('.tab-content').forEach(tab => {
+                                tab.style.display = 'none';
+                            });
+                            const tabContent = document.getElementById(targetTab + '-tab');
+                            if (tabContent) {
+                                tabContent.style.display = 'block';
+                            }
+
+                            // Update the summary/dashboard data
+                            if (this.currentApp === 'trt') {
+                                this.updateTrtDashboard();
+                                this.updateTrtSupplyForecast();
+                            } else {
+                                this.updateSupplyForecast();
+                            }
+
+                            // Scroll to top
+                            window.scrollTo(0, 0);
+                        }
+                    }
                 });
             }
 
