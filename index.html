@@ -3782,6 +3782,10 @@
                     <input type="text" id="trt-vial-lot" placeholder="LOT123456">
                 </div>
                 <div class="form-group">
+                    <label for="trt-vial-expiry">Expiry Date - Optional</label>
+                    <input type="date" id="trt-vial-expiry">
+                </div>
+                <div class="form-group">
                     <label for="trt-vial-status">Status</label>
                     <select id="trt-vial-status" required>
                         <option value="dry_stock">Dry Stock (Sealed)</option>
@@ -4747,13 +4751,19 @@
                         dose_mg: inj.doseMg,
                         injection_site: inj.site,
                         vial_id: inj.vialId,
-                        notes: inj.notes || ''
+                        notes: inj.notes || '',
+                        skipped: inj.skipped || false,
+                        planned_dose_mg: inj.plannedDoseMg || null
                     }));
 
                     const cloudWeights = weightsAPI.map(wt => ({
                         id: wt.id,
                         timestamp: wt.timestamp,
                         weight_kg: wt.weightKg,
+                        weight_lbs: this.kgToLbs(wt.weightKg),
+                        source: wt.source || 'manual',
+                        bmi: wt.bmi || null,
+                        body_fat_percentage: wt.bodyFatPercentage || null,
                         notes: wt.notes || ''
                     }));
 
@@ -4803,6 +4813,8 @@
                         notes: inj.notes || '',
                         vial_id: inj.vialId || null,
                         skipped: inj.skipped || false,
+                        planned_volume_ml: inj.plannedVolumeMl || null,
+                        planned_dose_mg: inj.plannedDoseMg || null,
                         cloudSynced: true
                     }));
 
@@ -5105,7 +5117,9 @@
                             doseMg: updatedInjection.dose_mg,
                             site: updatedInjection.injection_site,
                             vialId: updatedInjection.vial_id,
-                            notes: updatedInjection.notes
+                            notes: updatedInjection.notes,
+                            skipped: updatedInjection.skipped || false,
+                            plannedDoseMg: updatedInjection.planned_dose_mg || null
                         }
                     });
                     console.log('Injection update added to sync queue');
@@ -9367,6 +9381,12 @@
                 document.getElementById('trt-vial-concentration').value = vial.concentration_mg_ml || '';
                 document.getElementById('trt-vial-volume').value = vial.volume_ml || '';
                 document.getElementById('trt-vial-lot').value = vial.lot_number || '';
+                // Pre-fill expiry date (convert ISO to YYYY-MM-DD for date input)
+                if (vial.expiry_date) {
+                    document.getElementById('trt-vial-expiry').value = new Date(vial.expiry_date).toISOString().slice(0, 10);
+                } else {
+                    document.getElementById('trt-vial-expiry').value = '';
+                }
                 // Map legacy 'unopened' status to 'dry_stock'
                 const statusValue = vial.status === 'unopened' ? 'dry_stock' : (vial.status || 'dry_stock');
                 document.getElementById('trt-vial-status').value = statusValue;
@@ -10137,10 +10157,12 @@
                         return;
                     }
 
+                    const expiryDateInput = document.getElementById('trt-vial-expiry').value;
                     const vial = {
                         concentration_mg_ml: concentrationMgMl,
                         volume_ml: volumeMl,
                         lot_number: document.getElementById('trt-vial-lot').value || '',
+                        expiry_date: expiryDateInput ? new Date(expiryDateInput).toISOString() : null,
                         status: status,
                         notes: document.getElementById('trt-vial-notes').value || ''
                     };
