@@ -3,6 +3,9 @@
  * Provides seamless sync between local IndexedDB and cloud API
  */
 
+// Import DataMapper utilities if available (for consistent field mapping)
+// Note: DataMapper is exposed globally via window.DataMapper in data-mapper.js
+
 class CloudStorage {
     constructor() {
         this.authManager = null;
@@ -124,10 +127,15 @@ class CloudStorage {
             try {
                 let cloudVial;
 
+                // Use DataMapper.getConcentration if available for robust field extraction
+                const concentration = (typeof window !== 'undefined' && window.DataMapper)
+                    ? window.DataMapper.getConcentration(vial)
+                    : (vial.concentration_mg_ml ?? vial.concentrationMgMl ?? vial.concentrationMgPerMl);
+
                 const vialData = {
                     startDate: vial.order_date || vial.startDate,
                     initialVolumeMl: vial.bac_water_ml || vial.initialVolumeMl,
-                    concentrationMgPerMl: vial.concentration_mg_ml || vial.concentrationMgPerMl,
+                    concentrationMgMl: concentration,  // Issue #2 fix: Use canonical API field name
                     currentVolumeMl: vial.current_volume_ml || vial.remaining_ml || vial.currentVolumeMl || vial.initialVolumeMl,
                     usedVolumeMl: vial.used_volume_ml || vial.usedVolumeMl || 0,
                     status: vial.status || 'active',
@@ -136,8 +144,12 @@ class CloudStorage {
                 };
 
                 // If vial has an ID, try to update it first
-                if (vial.id || vial.vial_id) {
-                    const vialId = vial.id || vial.vial_id;
+                // Issue #4 fix: Use DataMapper.getVialId for consistent ID extraction
+                const vialId = (typeof window !== 'undefined' && window.DataMapper)
+                    ? window.DataMapper.getVialId(vial)
+                    : (vial.id || vial.vial_id);
+
+                if (vialId) {
                     try {
                         cloudVial = await this.apiClient.updateVial(vialId, vialData);
                         console.log('Vial updated in cloud:', vialId);
@@ -569,7 +581,8 @@ class CloudStorage {
     }
 
     /**
-     * Sync cloud data to local (download)
+     * Sync cloud data to local (download) with deduplication
+     * Issue #3 fix: Properly deduplicates records to prevent duplicates
      */
     async syncFromCloud() {
         if (!this.isCloudAvailable()) {
@@ -586,40 +599,84 @@ class CloudStorage {
         try {
             console.log('Starting sync from cloud...');
 
-            // Get all cloud data
-            const [cloudInjections, cloudVials, cloudWeights] = await Promise.all([
+            // Get all cloud data and existing local data in parallel
+            const [cloudInjections, cloudVials, cloudWeights, localInjections, localVials, localWeights] = await Promise.all([
                 this.apiClient.getInjections(),
                 this.apiClient.getVials(),
                 this.apiClient.getWeights(),
+                this.localStorage.getInjections(),
+                this.localStorage.getVials(),
+                this.localStorage.getWeights(),
             ]);
 
-            // Save to local storage
+            // Build lookup maps for existing local data (by ID and timestamp)
+            // Issue #4 fix: Use DataMapper.getVialId for consistent vial ID extraction
+            const getVialIdFn = (typeof window !== 'undefined' && window.DataMapper)
+                ? window.DataMapper.getVialId
+                : (v => v.id || v.vial_id);
+
+            const existingInjectionIds = new Set(localInjections.map(i => i.id).filter(Boolean));
+            const existingInjectionTimestamps = new Set(localInjections.map(i => i.timestamp).filter(Boolean));
+            const existingVialIds = new Set(localVials.map(v => getVialIdFn(v)).filter(Boolean));
+            const existingWeightIds = new Set(localWeights.map(w => w.id).filter(Boolean));
+            const existingWeightTimestamps = new Set(localWeights.map(w => w.timestamp).filter(Boolean));
+
+            let added = { injections: 0, vials: 0, weights: 0 };
+            let skipped = { injections: 0, vials: 0, weights: 0 };
+
+            // Merge injections with deduplication
             for (const injection of cloudInjections) {
-                injection.cloudSynced = true;
-                await this.localStorage.saveInjection(injection);
+                const isDuplicate = existingInjectionIds.has(injection.id) ||
+                                   existingInjectionTimestamps.has(injection.timestamp);
+                if (!isDuplicate) {
+                    injection.cloudSynced = true;
+                    await this.localStorage.saveInjection(injection);
+                    added.injections++;
+                } else {
+                    skipped.injections++;
+                }
             }
 
+            // Merge vials with deduplication
+            // Issue #4 fix: Use getVialIdFn for consistent ID extraction
             for (const vial of cloudVials) {
-                vial.cloudSynced = true;
-                await this.localStorage.saveVial(vial);
+                const vialId = getVialIdFn(vial);
+                const isDuplicate = existingVialIds.has(vialId);
+                if (!isDuplicate) {
+                    vial.cloudSynced = true;
+                    await this.localStorage.saveVial(vial);
+                    added.vials++;
+                } else {
+                    skipped.vials++;
+                }
             }
 
+            // Merge weights with deduplication (check both ID and timestamp)
             for (const weight of cloudWeights) {
-                weight.cloudSynced = true;
-                await this.localStorage.saveWeight(weight);
+                const isDuplicate = existingWeightIds.has(weight.id) ||
+                                   existingWeightTimestamps.has(weight.timestamp);
+                if (!isDuplicate) {
+                    weight.cloudSynced = true;
+                    await this.localStorage.saveWeight(weight);
+                    added.weights++;
+                } else {
+                    skipped.weights++;
+                }
             }
 
             this.lastSyncTime = new Date().toISOString();
 
-            console.log(`Synced from cloud: ${cloudInjections.length} injections, ${cloudVials.length} vials, ${cloudWeights.length} weights`);
+            console.log(`Synced from cloud: added ${added.injections} injections, ${added.vials} vials, ${added.weights} weights`);
+            console.log(`Skipped duplicates: ${skipped.injections} injections, ${skipped.vials} vials, ${skipped.weights} weights`);
 
             return {
                 success: true,
                 counts: {
-                    injections: cloudInjections.length,
-                    vials: cloudVials.length,
-                    weights: cloudWeights.length,
+                    injections: added.injections,
+                    vials: added.vials,
+                    weights: added.weights,
                 },
+                skipped: skipped,
             };
 
         } finally {
@@ -891,8 +948,12 @@ class CloudStorage {
                 }
 
                 // Recalculate dose if we have volume and concentration
+                // Issue #5 fix: Use DataMapper.calculateDose for consistent calculation
                 if (inj.volume_ml && inj.concentration_mg_ml && !inj.dose_mg) {
-                    inj.dose_mg = inj.volume_ml * inj.concentration_mg_ml;
+                    const calculatedDose = (typeof window !== 'undefined' && window.DataMapper)
+                        ? window.DataMapper.calculateDose(inj)
+                        : inj.volume_ml * inj.concentration_mg_ml;
+                    inj.dose_mg = calculatedDose;
                 }
 
                 applied++;
@@ -1020,7 +1081,12 @@ class CloudStorage {
         const retaVials = app.data.vials || [];
         for (const vial of retaVials) {
             try {
-                const vialId = vial.id || vial.vial_id;
+                // Issue #4 fix: Use DataMapper.getVialId for consistent ID extraction
+                const getVialIdFn = (typeof window !== 'undefined' && window.DataMapper)
+                    ? window.DataMapper.getVialId
+                    : (v => v.id || v.vial_id);
+                const vialId = getVialIdFn(vial);
+
                 const cloudVial = {
                     id: vialId,
                     orderDate: vial.order_date,
@@ -1041,7 +1107,10 @@ class CloudStorage {
                 await api.createVial(cloudVial);
                 results.retaVials.success++;
             } catch (error) {
-                console.warn(`Failed to repair Reta vial ${vial.id || vial.vial_id}:`, error.message);
+                const vialIdForError = (typeof window !== 'undefined' && window.DataMapper)
+                    ? window.DataMapper.getVialId(vial)
+                    : (vial.id || vial.vial_id);
+                console.warn(`Failed to repair Reta vial ${vialIdForError}:`, error.message);
                 results.retaVials.failed++;
             }
         }

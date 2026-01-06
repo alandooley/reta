@@ -50,7 +50,8 @@ exports.handler = async (event) => {
               GSI1SK: `VIAL#${vial.startDate}`,
               startDate: vial.startDate,
               initialVolumeMl: vial.initialVolumeMl,
-              concentrationMgPerMl: vial.concentrationMgPerMl,
+              // Issue #6 fix: Use canonical concentrationMgMl, accept both field names for backwards compatibility
+              concentrationMgMl: vial.concentrationMgMl ?? vial.concentrationMgPerMl,
               currentVolumeMl: vial.currentVolumeMl || vial.initialVolumeMl,
               usedVolumeMl: vial.usedVolumeMl || 0,
               status: vial.status || 'active',

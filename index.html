@@ -66,6 +66,7 @@
     <script src="js/auth-manager.js"></script>
     <script src="js/api-client.js"></script>
     <script src="js/sync-queue.js"></script>
+    <script src="js/data-mapper.js"></script>
     <script src="js/cloud-storage.js"></script>
 
     <style>
@@ -4585,12 +4586,18 @@
                     // If vial is in API format (has 'id' instead of 'vial_id'), convert it
                     if (vial.id && !vial.vial_id) {
                         console.log('Converting vial from API format to app format:', vial.id);
+                        // Issue #5 fix: Use DataMapper for robust concentration extraction
+                        const concentration = (typeof window !== 'undefined' && window.DataMapper)
+                            ? window.DataMapper.getConcentration(vial)
+                            : (vial.concentrationMgMl ?? vial.concentrationMgPerMl ?? vial.concentration_mg_ml);
+                        const volume = vial.initialVolumeMl ?? vial.volumeMl ?? vial.bac_water_ml;
+
                         return {
                             vial_id: vial.id,
                             order_date: vial.startDate,
-                            total_mg: vial.initialVolumeMl * vial.concentrationMgPerMl,
-                            bac_water_ml: vial.initialVolumeMl,
-                            concentration_mg_per_ml: vial.concentrationMgPerMl,
+                            total_mg: (volume && concentration) ? volume * concentration : null,
+                            bac_water_ml: volume,
+                            concentration_mg_ml: concentration,  // Issue #5 fix: Use canonical field name
                             current_volume_ml: vial.currentVolumeMl,
                             used_volume_ml: vial.usedVolumeMl,
                             status: vial.status,
@@ -4905,6 +4912,27 @@
                     }
                     if (cloudSettings.injectionFrequencyDays !== null && cloudSettings.injectionFrequencyDays !== undefined) {
                         this.data.settings.injectionFrequencyDays = cloudSettings.injectionFrequencyDays;
+                    }
+
+                    // Sync TRT settings from cloud (Issue #1 fix)
+                    if (cloudSettings.trtSettings) {
+                        const trt = cloudSettings.trtSettings;
+                        if (trt.injectionFrequency !== null && trt.injectionFrequency !== undefined) {
+                            this.data.trtSettings.injectionFrequency = trt.injectionFrequency;
+                        }
+                        if (trt.defaultDoseMl !== null && trt.defaultDoseMl !== undefined) {
+                            this.data.trtSettings.defaultDoseMl = trt.defaultDoseMl;
+                        }
+                        if (trt.defaultDoseMg !== null && trt.defaultDoseMg !== undefined) {
+                            this.data.trtSettings.defaultDoseMg = trt.defaultDoseMg;
+                        }
+                        if (trt.concentrationMgMl !== null && trt.concentrationMgMl !== undefined) {
+                            this.data.trtSettings.concentrationMgMl = trt.concentrationMgMl;
+                        }
+                        if (trt.injectionSites !== null && trt.injectionSites !== undefined) {
+                            this.data.trtSettings.injectionSites = trt.injectionSites;
+                        }
+                        console.log('TRT settings synced from cloud:', trt);
                     }
 
                     // Save to localStorage
