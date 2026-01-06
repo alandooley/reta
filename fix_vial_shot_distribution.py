@@ -172,7 +172,7 @@ def main():
     for vial_id, shots in sorted(vial_shots.items(), key=lambda x: str(x[0])):
         total_mg = sum(s['doseMg'] or 0 for s in shots)
         is_dry_stock = any(ds in str(vial_id) for ds in DRY_STOCK_VIALS)
-        warning = " ⚠️  SHOULD NOT HAVE SHOTS!" if is_dry_stock else ""
+        warning = " [WARNING] SHOULD NOT HAVE SHOTS!" if is_dry_stock else ""
         print(f"  {vial_id}: {len(shots)} shots, {total_mg}mg total{warning}")
         for shot in sorted(shots, key=lambda x: x['timestamp'] or ''):
             print(f"    - {shot['timestamp'][:10] if shot['timestamp'] else 'unknown'}: {shot['doseMg']}mg")
@@ -191,7 +191,7 @@ def main():
         correct_vial = get_correct_vial_for_date(timestamp)
 
         if not correct_vial:
-            print(f"  ⚠️  Cannot determine vial for {timestamp}")
+            print(f"  [!] Cannot determine vial for {timestamp}")
             continue
 
         # Check if current assignment is wrong
@@ -264,10 +264,10 @@ def main():
                     ':updatedAt': format_dynamo_value(datetime.utcnow().isoformat() + 'Z')
                 }
             )
-            print(f"    ✓ Updated to {change['correct_vial']}")
+            print(f"    [OK] Updated to {change['correct_vial']}")
             success_count += 1
         except Exception as e:
-            print(f"    ✗ Error: {e}")
+            print(f"    [FAIL] Error: {e}")
             error_count += 1
 
     print(f"\nDone! Updated {success_count} injections, {error_count} errors")
