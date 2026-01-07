@@ -3857,7 +3857,7 @@
         // VERSION INFORMATION
         // ====================================
         const APP_VERSION = {
-            timestamp: '2026-01-07 09:35:18'
+            timestamp: '2026-01-07 09:59:00'
         };
 
         // ====================================
@@ -14426,8 +14426,16 @@
                     // Check if auto-backup is needed
                     app.checkAutoBackup();
 
-                    // Sync data from cloud - ALWAYS (protected by guard to prevent concurrent syncs)
-                    app.syncFromCloud();
+                    // Use fullSync to push pending local data AND pull cloud data
+                    // This ensures local changes (cloudSynced: false) get pushed to cloud
+                    if (typeof cloudStorage !== 'undefined' && cloudStorage.fullSync) {
+                        cloudStorage.fullSync().catch(err => {
+                            console.warn('Full sync failed, falling back to syncFromCloud:', err);
+                            app.syncFromCloud();
+                        });
+                    } else {
+                        app.syncFromCloud();
+                    }
 
                     // Sync settings from cloud
                     app.syncSettingsFromCloud();
