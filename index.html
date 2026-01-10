@@ -6570,7 +6570,7 @@
                         // On time or early - maintain schedule
                         nextShot = new Date(lastShot);
                         nextShot.setDate(nextShot.getDate() + frequency);
-                        recommendation = 'On schedule - next due in ' + frequency + ' days';
+                        recommendation = 'On schedule';
                     } else if (daysLate <= gracePeriod) {
                         // Within grace period - return to original schedule
                         if (previousScheduledDate) {
@@ -6597,6 +6597,12 @@
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 const isOverdue = diffDays < 0;
                 const daysOverdue = isOverdue ? Math.abs(diffDays) : 0;
+
+                // Update "On schedule" recommendation with actual calculated days
+                if (recommendation === 'On schedule') {
+                    const actualDays = Math.max(0, diffDays);
+                    recommendation = `On schedule - next due in ${actualDays} day${actualDays !== 1 ? 's' : ''}`;
+                }
 
                 return {
                     nextDate: nextShot,
