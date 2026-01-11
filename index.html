@@ -4066,41 +4066,19 @@
                 });
             }
 
-            // Visibility Change Handler - Navigate to summary when dormant tab becomes active
+            // Visibility Change Handler - Refresh current tab when dormant tab becomes active
             setupVisibilityHandler() {
                 document.addEventListener('visibilitychange', () => {
                     if (!document.hidden) {
-                        console.log('[VISIBILITY] Tab became visible, navigating to summary');
+                        // Get the current active tab (don't change views, just refresh)
+                        const activeBtn = document.querySelector('.nav-btn.active');
+                        const currentTab = activeBtn ? activeBtn.dataset.tab :
+                            (this.currentApp === 'trt' ? 'trt-dashboard' : 'summary');
 
-                        // Navigate to summary (or trt-dashboard for TRT app)
-                        const targetTab = this.currentApp === 'trt' ? 'trt-dashboard' : 'summary';
-                        const targetBtn = document.querySelector(`.nav-btn[data-tab="${targetTab}"]`);
+                        console.log('[VISIBILITY] Tab became visible, refreshing current view:', currentTab);
 
-                        if (targetBtn) {
-                            // Remove active from all nav buttons and set target as active
-                            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-                            targetBtn.classList.add('active');
-
-                            // Hide all tab content and show target
-                            document.querySelectorAll('.tab-content').forEach(tab => {
-                                tab.style.display = 'none';
-                            });
-                            const tabContent = document.getElementById(targetTab + '-tab');
-                            if (tabContent) {
-                                tabContent.style.display = 'block';
-                            }
-
-                            // Update the summary/dashboard data
-                            if (this.currentApp === 'trt') {
-                                this.updateTrtDashboard();
-                                this.updateTrtSupplyForecast();
-                            } else {
-                                this.updateSupplyForecast();
-                            }
-
-                            // Scroll to top
-                            window.scrollTo(0, 0);
-                        }
+                        // Refresh the current tab's content without changing views
+                        this.refreshTabContent(currentTab);
                     }
                 });
             }
@@ -7647,6 +7625,9 @@
                         });
                         document.getElementById(targetTab + '-tab').style.display = 'block';
 
+                        // Persist current tab to localStorage
+                        localStorage.setItem('currentTab', targetTab);
+
                         // Scroll to top when switching tabs
                         window.scrollTo(0, 0);
 
@@ -7680,21 +7661,58 @@
                 document.getElementById('loading-screen').style.display = 'none';
                 document.getElementById('current-date').textContent = new Date().toLocaleDateString();
 
+                // Restore saved tab from localStorage, or use default
+                const savedTab = localStorage.getItem('currentTab');
+                const retaTabs = ['summary', 'shots', 'results', 'inventory', 'settings'];
+                const trtTabs = ['trt-dashboard', 'trt-shots', 'trt-symptoms', 'trt-inventory', 'trt-settings'];
+
                 // Show the correct app and tab based on currentApp setting
                 if (this.currentApp === 'trt') {
                     this.showTrtApp();
-                    // Set TRT dashboard as active
+                    // Restore saved TRT tab or default to dashboard
+                    const targetTab = (savedTab && trtTabs.includes(savedTab)) ? savedTab : 'trt-dashboard';
                     document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-                    const trtDashboardBtn = document.querySelector('.nav-btn[data-tab="trt-dashboard"]');
-                    if (trtDashboardBtn) trtDashboardBtn.classList.add('active');
+                    const targetBtn = document.querySelector(`.nav-btn[data-tab="${targetTab}"]`);
+                    if (targetBtn) targetBtn.classList.add('active');
+                    // Show the target tab content
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+                    const tabContent = document.getElementById(targetTab + '-tab');
+                    if (tabContent) tabContent.style.display = 'block';
                     // Update app switcher button
                     document.querySelectorAll('.app-switcher-btn').forEach(btn => btn.classList.remove('active'));
                     const trtSwitcherBtn = document.querySelector('.app-switcher-btn[data-app="trt"]');
                     if (trtSwitcherBtn) trtSwitcherBtn.classList.add('active');
+                    // Update tab-specific content
+                    this.refreshTabContent(targetTab);
                 } else {
                     this.showRetaApp();
-                    document.getElementById('summary-tab').style.display = 'block';
+                    // Restore saved Reta tab or default to summary
+                    const targetTab = (savedTab && retaTabs.includes(savedTab)) ? savedTab : 'summary';
+                    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                    const targetBtn = document.querySelector(`.nav-btn[data-tab="${targetTab}"]`);
+                    if (targetBtn) targetBtn.classList.add('active');
+                    // Show the target tab content
+                    document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+                    const tabContent = document.getElementById(targetTab + '-tab');
+                    if (tabContent) tabContent.style.display = 'block';
+                    // Update tab-specific content
+                    this.refreshTabContent(targetTab);
                 }
+            }
+
+            // Helper method to refresh tab-specific content
+            refreshTabContent(targetTab) {
+                if (targetTab === 'summary') this.updateSupplyForecast();
+                if (targetTab === 'results') this.updateWeightChart();
+                if (targetTab === 'settings') this.updateSettingsTab();
+                if (targetTab === 'trt-dashboard') {
+                    this.updateTrtDashboard();
+                    this.updateTrtSupplyForecast();
+                }
+                if (targetTab === 'trt-shots') this.updateTrtInjectionsList();
+                if (targetTab === 'trt-symptoms') this.updateTodayCheckinIndicator();
+                if (targetTab === 'trt-inventory') this.updateTrtVialsList();
+                if (targetTab === 'trt-settings') this.updateTrtSettingsTab();
             }
 
             // ====================================
