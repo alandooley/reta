@@ -78,15 +78,29 @@ test.describe('Data Integrity Verification', () => {
 
     // Get displayed values
     const totalShots = await page.locator('#total-shots').textContent();
+    const lastDose = await page.locator('#last-dose').textContent();
+    const currentLevel = await page.locator('#current-level').textContent();
+    const nextShot = await page.locator('#next-shot').textContent();
     const totalSupply = await page.locator('#total-supply').textContent();
+    const displayedNextShotDay = await page.locator('#next-shot-day').textContent();
+    const displayedNextShotDate = await page.locator('#next-shot-date').textContent();
+    const displayedNextShotTime = await page.locator('#next-shot-time').textContent();
 
     console.log(`Displayed Total Shots: "${totalShots}"`);
+    console.log(`Displayed Last Dose: "${lastDose}"`);
+    console.log(`Displayed Level at Last Shot: "${currentLevel}"`);
+    console.log(`Displayed Next Shot: "${nextShot}"`);
     console.log(`Displayed Total Supply: "${totalSupply}"`);
+    console.log(`Displayed Next Shot Day: "${displayedNextShotDay}"`);
+    console.log(`Displayed Next Shot Date: "${displayedNextShotDate}"`);
+    console.log(`Displayed Next Shot Time: "${displayedNextShotTime}"`);
 
     console.log('=== EXPECTED VS ACTUAL ===');
 
     // Verify values against expected
     console.log(`Total Shots - Expected: ${importData.injections.length}, Actual: ${totalShots}`);
+    console.log(`Last Dose - Expected: ${lastInjection.dose_mg} mg, Actual: ${lastDose}`);
+    console.log(`Level at Last Shot - Expected: ${lastInjection.medication_level_at_injection} mg, Actual: ${currentLevel}`);
     console.log(`Total Supply - Expected: ${totalSupplyMg} mg, Actual: ${totalSupply}`);
 
     // Check if next shot calculation is reasonable

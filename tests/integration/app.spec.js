@@ -188,6 +188,13 @@ test.describe('Retatrutide Tracker App', () => {
     // Check statistics
     const totalShots = page.locator('#total-shots');
     await expect(totalShots).toContainText('1');
+
+    const lastDose = page.locator('#last-dose');
+    await expect(lastDose).toContainText('2 mg');
+
+    // Check that countdown is visible
+    await expect(page.locator('.countdown-container')).toBeVisible();
+    await expect(page.locator('#countdown-days')).toBeVisible();
   });
 
   test('can add weight entry', async ({ page }) => {
@@ -311,6 +318,51 @@ test.describe('Retatrutide Tracker App', () => {
     await page.click('#add-vial-modal .modal-close');
     await page.waitForTimeout(500);
     await expect(page.locator('#add-vial-modal')).not.toBeVisible();
+  });
+
+  test('countdown timer updates', async ({ page }) => {
+    // Add an injection to start countdown
+    await page.click('[data-tab="inventory"]');
+    await page.click('#add-vial-btn');
+
+    const today = new Date().toISOString().split('T')[0];
+    await page.fill('#vial-order-date', today);
+    await page.fill('#vial-mg', '15');
+    await page.fill('#vial-bac-water', '1.5');
+    const reconDate = new Date().toISOString().slice(0, 16);
+    await page.fill('#vial-reconstitution-date', reconDate);
+    await page.click('#add-vial-form button[type="submit"]');
+    await page.waitForTimeout(500);
+
+    await page.click('[data-tab="shots"]');
+    await page.click('#add-shot-modal-btn');
+    const shotDate = new Date().toISOString().slice(0, 16);
+    await page.fill('#shot-date', shotDate);
+    await page.fill('#shot-dose', '2.0');
+    await page.selectOption('#shot-site', 'left_thigh');
+    await page.selectOption('#shot-vial', { index: 1 });
+    await page.click('#add-shot-form button[type="submit"]');
+    await page.waitForTimeout(500);
+
+    // Go to summary tab
+    await page.click('[data-tab="summary"]');
+
+    // Check countdown is displayed
+    const countdownDays = page.locator('#countdown-days');
+    await expect(countdownDays).toBeVisible();
+
+    const countdownTime = page.locator('#countdown-time');
+    await expect(countdownTime).toBeVisible();
+
+    // Get initial time
+    const initialTime = await countdownTime.textContent();
+
+    // Wait 2 seconds
+    await page.waitForTimeout(2000);
+
+    // Check time has changed
+    const updatedTime = await countdownTime.textContent();
+    expect(updatedTime).not.toBe(initialTime);
   });
 
   test('localStorage persists data', async ({ page }) => {
