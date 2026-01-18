@@ -70,39 +70,12 @@ test.describe('Live Site Values Check', () => {
       const totalShots = await totalShotsElement.textContent({ timeout: 10000 });
       console.log(`Live site Total Shots: "${totalShots}"`);
 
-      const lastDoseElement = page.locator('#last-dose');
-      const lastDose = await lastDoseElement.textContent({ timeout: 10000 });
-      console.log(`Live site Last Dose: "${lastDose}"`);
-
-      const currentLevelElement = page.locator('#current-level');
-      const currentLevel = await currentLevelElement.textContent({ timeout: 10000 });
-      console.log(`Live site Level at Last Shot: "${currentLevel}"`);
-
-      const nextShotElement = page.locator('#next-shot');
-      const nextShot = await nextShotElement.textContent({ timeout: 10000 });
-      console.log(`Live site Next Shot: "${nextShot}"`);
-
       const totalSupplyElement = page.locator('#total-supply');
       const totalSupply = await totalSupplyElement.textContent({ timeout: 10000 });
       console.log(`Live site Total Supply: "${totalSupply}"`);
 
-      // Get additional next shot details
-      try {
-        const nextShotDay = await page.locator('#next-shot-day').textContent();
-        const nextShotDate = await page.locator('#next-shot-date').textContent();
-        const nextShotTime = await page.locator('#next-shot-time').textContent();
-
-        console.log(`Live site Next Shot Day: "${nextShotDay}"`);
-        console.log(`Live site Next Shot Date: "${nextShotDate}"`);
-        console.log(`Live site Next Shot Time: "${nextShotTime}"`);
-      } catch (e) {
-        console.log('Could not get detailed next shot info:', e.message);
-      }
-
       console.log('=== COMPARISON ===');
       console.log(`Total Shots - Expected: ${totalExpectedShots}, Actual: "${totalShots}"`);
-      console.log(`Last Dose - Expected: ${expectedLastDose} mg, Actual: "${lastDose}"`);
-      console.log(`Level at Last Shot - Expected: ${expectedLevel} mg, Actual: "${currentLevel}"`);
       console.log(`Total Supply - Expected: ${totalSupplyMg} mg, Actual: "${totalSupply}"`);
 
       // Check what data is actually loaded

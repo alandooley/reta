@@ -553,22 +553,6 @@
             border-top-color: rgba(0, 0, 0, 0.9);
         }
 
-        /* Stat card validation enhancement */
-        .stat-card .stat-value-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .stat-card.has-validation-issue {
-            border-left: 3px solid var(--warning-color);
-        }
-
-        .stat-card.has-validation-error {
-            border-left: 3px solid var(--danger-color);
-        }
-
         /* Validation summary in sync status modal */
         .validation-summary {
             padding: 12px;
@@ -616,10 +600,6 @@
 
         /* Responsive design */
         @media (min-width: 768px) {
-            .stats-grid {
-                grid-template-columns: repeat(4, 1fr);
-            }
-
             .results-stats {
                 grid-template-columns: repeat(4, 1fr);
             }
@@ -643,11 +623,6 @@
             .form-container {
                 max-width: 600px;
                 margin: 0 auto;
-            }
-
-            .countdown-container {
-                max-width: 600px;
-                margin: 0 auto var(--spacing-lg);
             }
         }
 
@@ -682,41 +657,6 @@
 
         .tab-content.active {
             display: block;
-        }
-
-        /* Stats Grid */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-xl);
-        }
-
-        .stat-card {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-lg);
-            text-align: center;
-            transition: background-color 0.2s;
-            min-width: 0; /* Allow cards to shrink */
-        }
-
-        .stat-card:hover {
-            background-color: #353535;
-        }
-
-        .stat-value {
-            font-size: clamp(20px, 4vw, 24px); /* Fluid typography */
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .stat-label {
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
         }
 
         /* Chart Container */
@@ -804,65 +744,6 @@
         .forecast-unit {
             color: var(--text-secondary);
             font-size: 14px;
-        }
-
-        /* Countdown Container */
-        .countdown-container {
-            background-color: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: var(--border-radius);
-            padding: var(--spacing-lg);
-            margin-bottom: var(--spacing-lg);
-            text-align: center;
-        }
-
-        .countdown-container h3 {
-            margin-bottom: var(--spacing-md);
-            color: var(--text-primary);
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .countdown-circle {
-            position: relative;
-            display: inline-block;
-        }
-
-        .countdown-content {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-        }
-
-        .next-shot-day {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-color);
-            line-height: 1;
-        }
-
-        .next-shot-date {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin: 4px 0;
-        }
-
-        .next-shot-time {
-            font-size: 18px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .countdown-progress {
-            width: 200px;
-            height: 200px;
-        }
-
-        .countdown-progress circle {
-            transition: stroke-dashoffset 1s ease;
         }
 
         /* Buttons */
@@ -1786,11 +1667,6 @@
                 padding: var(--spacing-md) var(--spacing-sm);
             }
 
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: var(--spacing-sm);
-            }
-
             .header-content {
                 padding: 0 var(--spacing-sm);
                 flex-wrap: wrap;
@@ -1912,10 +1788,6 @@
                 max-width: 95%;
             }
 
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-
             .shot-details {
                 grid-template-columns: repeat(2, 1fr);
             }
@@ -1938,10 +1810,6 @@
         @media (min-width: 769px) and (max-width: 1024px) {
             .container {
                 max-width: 90%;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(3, 1fr);
             }
 
             .tab-button {
@@ -2415,30 +2283,6 @@
             animation: spin 0.8s linear infinite;
         }
 
-        /* Countdown Timer Enhancements */
-        .countdown-circle {
-            cursor: pointer;
-            user-select: none;
-        }
-
-        .countdown-circle:active {
-            transform: scale(0.98);
-        }
-
-        .countdown-pulse {
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-                transform: scale(1);
-            }
-            50% {
-                opacity: 0.8;
-                transform: scale(1.02);
-            }
-        }
     </style>
 </head>
 <body>
@@ -2532,48 +2376,9 @@
                         <span class="insight-trend" id="insight-weight-trend">--</span>
                     </div>
                     <div class="insight-stat">
-                        <span class="insight-label">Avg Dose/Shot</span>
-                        <span class="insight-value" id="insight-avg-dose">--</span>
-                        <span class="insight-trend">--</span>
-                    </div>
-                </div>
-
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="total-shots">0</div>
-                        <div class="stat-label">Total Shots</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="last-dose">0 mg</div>
-                        <div class="stat-label">Last Dose</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="current-level">0%</div>
-                        <div class="stat-label">Level at Last Shot</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="next-shot">0 days</div>
-                        <div class="stat-label">Next Shot</div>
-                    </div>
-                </div>
-
-                <div class="countdown-container">
-                    <h3>Next Shot Due</h3>
-                    <div class="countdown-circle">
-                        <div class="countdown-content">
-                            <div class="next-shot-day" id="next-shot-day">Saturday</div>
-                            <div class="next-shot-date" id="next-shot-date">Jan 1</div>
-                            <div class="next-shot-time" id="next-shot-time">8:00 AM</div>
-                        </div>
-                        <svg class="countdown-progress" width="200" height="200">
-                            <circle cx="100" cy="100" r="90" stroke="#333333" stroke-width="8" fill="none"/>
-                            <circle id="countdown-circle" cx="100" cy="100" r="90" stroke="#007AFF" stroke-width="8"
-                                    fill="none" stroke-linecap="round" transform="rotate(-90 100 100)"
-                                    stroke-dasharray="565.48" stroke-dashoffset="0"/>
-                        </svg>
-                    </div>
-                    <div id="schedule-recommendation" style="margin-top: 12px; padding: 8px 12px; background: var(--secondary-bg); border-radius: var(--border-radius-sm); font-size: 12px; color: var(--text-secondary); text-align: center; display: none;">
-                        <!-- Scheduling recommendation will appear here -->
+                        <span class="insight-label">Total Shots</span>
+                        <span class="insight-value" id="total-shots">0</span>
+                        <span class="insight-trend"></span>
                     </div>
                 </div>
 
@@ -3973,7 +3778,6 @@
                     this.setupUXEnhancements(); // NEW: Setup all UX improvements
                     this.updateUI();
                     this.updateHeaderTimestamp(); // Update build timestamp in header
-                    this.startCountdownTimer();
                     this.validateDataIntegrity();
                     this.updateWeeklyInsights(); // NEW: Update insights on load
                 } catch (error) {
@@ -3994,7 +3798,6 @@
                 this.setupPullToRefresh();
                 this.setupKeyboardShortcuts();
                 this.setupTimeRangeSelector();
-                this.setupCountdownInteraction();
                 this.setupSwipeToDelete();
                 this.setupSyncStatusUI(); // Phase 1B: Sync status indicator
                 this.setupVisibilityHandler(); // Navigate to summary when dormant tab becomes active
@@ -4201,17 +4004,6 @@
                 `;
 
                 tableDiv.innerHTML = html;
-            }
-
-            // Enhanced Countdown Interaction
-            setupCountdownInteraction() {
-                const countdown = document.querySelector('.countdown-circle');
-                if (countdown) {
-                    countdown.addEventListener('click', () => {
-                        this.triggerHaptic('medium');
-                        this.openModal('add-shot-modal');
-                    });
-                }
             }
 
             // Swipe to Delete
@@ -4465,11 +4257,6 @@
                     new Date(w.timestamp) >= oneWeekAgo
                 ).sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 
-                // Get this week's injections (exclude skipped for avg dose)
-                const weekInjections = this.data.injections.filter(i =>
-                    new Date(i.timestamp) >= oneWeekAgo && !i.skipped
-                );
-
                 // Weight change
                 if (weekWeights.length >= 2) {
                     const firstWeight = weekWeights[0].weight_kg;
@@ -4493,15 +4280,6 @@
                 } else {
                     document.getElementById('insight-weight-change').textContent = 'No data';
                     document.getElementById('insight-weight-trend').textContent = '';
-                }
-
-                // Average dose
-                if (weekInjections.length > 0) {
-                    const avgDose = weekInjections.reduce((sum, inj) => sum + inj.dose_mg, 0) / weekInjections.length;
-                    document.getElementById('insight-avg-dose').textContent =
-                        `${avgDose.toFixed(1)} mg`;
-                } else {
-                    document.getElementById('insight-avg-dose').textContent = 'No shots';
                 }
             }
 
@@ -6194,35 +5972,8 @@
 
             updateSummaryTab() {
                 const totalShots = this.data.injections.length;
-                const lastInjection = this.getMostRecentInjection();
-
-                // Calculate remaining vial volume after last shot
-                let vialRemainingMl = 0;
-                if (lastInjection && lastInjection.vial_id) {
-                    const vial = this.findVialById(lastInjection.vial_id);
-                    if (vial) {
-                        // Calculate total used from this vial (excluding skipped injections)
-                        const vialId = this.getVialId(vial);
-                        const injectionsFromVial = this.data.injections
-                            .filter(inj => inj.vial_id === vialId && !inj.skipped)
-                            .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-                        const totalUsedMg = injectionsFromVial.reduce((sum, inj) => sum + inj.dose_mg, 0);
-                        const totalUsedMl = totalUsedMg / vial.concentration_mg_ml;
-                        const initialVolume = vial.bac_water_ml || 1.0;
-                        vialRemainingMl = initialVolume - totalUsedMl;
-                    }
-                }
-
-                const nextShotDays = this.calculateNextShotDays();
-
                 document.getElementById('total-shots').textContent = totalShots;
-                document.getElementById('last-dose').textContent = lastInjection ?
-                    `${lastInjection.dose_mg} mg` : '0 mg';
-                document.getElementById('current-level').textContent = `${vialRemainingMl.toFixed(2)} ml`;
-                document.getElementById('next-shot').textContent = `${nextShotDays} days`;
 
-                this.updateCountdown();
                 this.updateSupplyForecast();
                 this.updateWeeklyInsights();
             }
@@ -6469,162 +6220,6 @@
                 }
             }
 
-            calculateNextShotDays() {
-                const nextShotInfo = this.getNextShotInfo();
-                return nextShotInfo.daysUntil;
-            }
-
-            // Get comprehensive next shot information including scheduling mode logic
-            getNextShotInfo() {
-                if (this.data.injections.length === 0) {
-                    return {
-                        nextDate: null,
-                        daysUntil: 0,
-                        scheduledDate: null,
-                        isOverdue: false,
-                        daysOverdue: 0,
-                        mode: this.data.settings.schedulingMode || 'smart',
-                        recommendation: 'No injections recorded yet'
-                    };
-                }
-
-                const lastInjection = this.getMostRecentInjection();
-                const lastShot = new Date(lastInjection.timestamp);
-                const frequency = this.data.settings.injectionFrequency ||
-                                this.data.settings.injectionFrequencyDays || 7;
-                const mode = this.data.settings.schedulingMode || 'smart';
-                const gracePeriod = this.data.settings.gracePeriodDays || 4;
-                const now = new Date();
-
-                let nextShot;
-                let scheduledDate;
-                let recommendation = '';
-
-                // Calculate the originally scheduled date (what the due date SHOULD have been)
-                const previousScheduledDate = this.getLastScheduledDate();
-
-                if (mode === 'rolling') {
-                    // Rolling: Always calculate from actual injection date
-                    nextShot = new Date(lastShot);
-                    nextShot.setDate(nextShot.getDate() + frequency);
-                    scheduledDate = new Date(nextShot);
-                    recommendation = 'Next due calculated from your last injection date';
-
-                } else if (mode === 'fixed') {
-                    // Fixed: Maintain the original schedule
-                    if (previousScheduledDate) {
-                        // Calculate next occurrence of the scheduled pattern
-                        nextShot = this.getNextScheduledOccurrence(previousScheduledDate, frequency);
-                        // Ensure it's in the future
-                        while (nextShot <= now) {
-                            nextShot.setDate(nextShot.getDate() + frequency);
-                        }
-                    } else {
-                        // No previous schedule, start fresh from last injection
-                        nextShot = new Date(lastShot);
-                        nextShot.setDate(nextShot.getDate() + frequency);
-                    }
-                    scheduledDate = new Date(nextShot);
-                    recommendation = 'Next due based on your regular schedule';
-
-                } else {
-                    // Smart mode: Use grace period logic
-                    const rollingNext = new Date(lastShot);
-                    rollingNext.setDate(rollingNext.getDate() + frequency);
-
-                    // Calculate what the scheduled date was
-                    const expectedScheduledDate = previousScheduledDate ?
-                        this.getNextScheduledOccurrence(previousScheduledDate, frequency) :
-                        new Date(lastShot);
-
-                    // How late was the last injection?
-                    const lastScheduledDue = this.getScheduledDueForInjection(lastInjection);
-                    let daysLate = 0;
-                    if (lastScheduledDue) {
-                        daysLate = Math.floor((lastShot - lastScheduledDue) / (1000 * 60 * 60 * 24));
-                    }
-
-                    if (daysLate <= 0) {
-                        // On time or early - maintain schedule
-                        nextShot = new Date(lastShot);
-                        nextShot.setDate(nextShot.getDate() + frequency);
-                        recommendation = 'On schedule';
-                    } else if (daysLate <= gracePeriod) {
-                        // Within grace period - return to original schedule
-                        if (previousScheduledDate) {
-                            nextShot = this.getNextScheduledOccurrence(previousScheduledDate, frequency);
-                            while (nextShot <= now) {
-                                nextShot.setDate(nextShot.getDate() + frequency);
-                            }
-                            recommendation = `Taken ${daysLate} day(s) late (within grace period) - returning to regular schedule`;
-                        } else {
-                            nextShot = rollingNext;
-                            recommendation = `Taken ${daysLate} day(s) late - schedule adjusted`;
-                        }
-                    } else {
-                        // Beyond grace period - reset schedule from actual date
-                        nextShot = rollingNext;
-                        recommendation = `Taken ${daysLate} day(s) late (beyond ${gracePeriod}-day grace period) - schedule reset`;
-                        // Record the schedule reset
-                        this.recordScheduleReset(lastInjection, daysLate);
-                    }
-                    scheduledDate = new Date(nextShot);
-                }
-
-                const diffTime = nextShot - now;
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                const isOverdue = diffDays < 0;
-                const daysOverdue = isOverdue ? Math.abs(diffDays) : 0;
-
-                // Update "On schedule" recommendation with actual calculated days
-                if (recommendation === 'On schedule') {
-                    const actualDays = Math.max(0, diffDays);
-                    recommendation = `On schedule - next due in ${actualDays} day${actualDays !== 1 ? 's' : ''}`;
-                }
-
-                return {
-                    nextDate: nextShot,
-                    daysUntil: Math.max(0, diffDays),
-                    scheduledDate: scheduledDate,
-                    isOverdue: isOverdue,
-                    daysOverdue: daysOverdue,
-                    mode: mode,
-                    recommendation: recommendation,
-                    gracePeriod: gracePeriod
-                };
-            }
-
-            // Get the last established scheduled date from history or calculate from first injection
-            getLastScheduledDate() {
-                // Check schedule history for the most recent scheduled date
-                if (this.data.scheduleHistory && this.data.scheduleHistory.length > 0) {
-                    const lastEntry = this.data.scheduleHistory[this.data.scheduleHistory.length - 1];
-                    return new Date(lastEntry.scheduledDate);
-                }
-
-                // Fall back to calculating from the first injection + preferred day
-                if (this.data.injections.length > 0) {
-                    const firstInjection = [...this.data.injections]
-                        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp))[0];
-                    return new Date(firstInjection.timestamp);
-                }
-
-                return null;
-            }
-
-            // Get the next occurrence of a scheduled pattern
-            getNextScheduledOccurrence(baseDate, frequency) {
-                const now = new Date();
-                const next = new Date(baseDate);
-
-                // Move forward by frequency until we're past now
-                while (next <= now) {
-                    next.setDate(next.getDate() + frequency);
-                }
-
-                return next;
-            }
-
             // Get the scheduled due date for a specific injection
             getScheduledDueForInjection(injection) {
                 // Look up in schedule history
@@ -6653,32 +6248,6 @@
                 }
 
                 return null;
-            }
-
-            // Record a schedule reset in history
-            recordScheduleReset(injection, daysLate) {
-                if (!this.data.scheduleHistory) {
-                    this.data.scheduleHistory = [];
-                }
-
-                // Only record if not already recorded
-                const exists = this.data.scheduleHistory.some(h =>
-                    h.injectionId === injection.id && h.event === 'reset'
-                );
-
-                if (!exists) {
-                    this.data.scheduleHistory.push({
-                        id: Date.now().toString(),
-                        injectionId: injection.id,
-                        event: 'reset',
-                        timestamp: new Date().toISOString(),
-                        scheduledDate: new Date(injection.timestamp).toISOString(),
-                        actualDate: injection.timestamp,
-                        daysLate: daysLate,
-                        reason: `Schedule reset after ${daysLate} days late (beyond grace period)`
-                    });
-                    this.saveData();
-                }
             }
 
             // Record schedule history for a new injection
@@ -12874,113 +12443,6 @@
                     nextOrderElement.textContent = nextOrderText;
                     nextOrderElement.style.color = nextOrderColor;
                 }
-            }
-
-            // ====================================
-            // COUNTDOWN FUNCTIONALITY
-            // ====================================
-
-            startCountdownTimer() {
-                if (this.countdownInterval) {
-                    clearInterval(this.countdownInterval);
-                }
-
-                this.countdownInterval = setInterval(() => {
-                    this.updateCountdown();
-                }, 1000);
-            }
-
-            updateCountdown() {
-                const recommendationEl = document.getElementById('schedule-recommendation');
-
-                if (this.data.injections.length === 0) {
-                    document.getElementById('next-shot-day').textContent = 'No shots recorded';
-                    document.getElementById('next-shot-date').textContent = '';
-                    document.getElementById('next-shot-time').textContent = '';
-                    this.updateCountdownProgress(0);
-                    if (recommendationEl) recommendationEl.style.display = 'none';
-                    return;
-                }
-
-                const now = new Date();
-                const lastInjection = this.getMostRecentInjection();
-                const lastShot = new Date(lastInjection.timestamp);
-
-                // Use the smart scheduling system
-                const shotInfo = this.getNextShotInfo();
-                const nextShot = shotInfo.nextDate;
-                const frequency = this.data.settings.injectionFrequency ||
-                                this.data.settings.injectionFrequencyDays || 7;
-
-                // Format the date display
-                const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-                const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-                const dayName = dayNames[nextShot.getDay()];
-                const monthName = monthNames[nextShot.getMonth()];
-                const date = nextShot.getDate();
-
-                // Format time
-                let hours = nextShot.getHours();
-                const minutes = nextShot.getMinutes();
-                const ampm = hours >= 12 ? 'PM' : 'AM';
-                hours = hours % 12;
-                hours = hours ? hours : 12; // 0 should be 12
-                const timeString = `${hours}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-
-                document.getElementById('next-shot-day').textContent = dayName;
-                document.getElementById('next-shot-date').textContent = `${monthName} ${date}`;
-                document.getElementById('next-shot-time').textContent = timeString;
-
-                // Calculate progress and update colors
-                const timeDiff = nextShot.getTime() - now.getTime();
-                const totalTime = frequency * 24 * 60 * 60 * 1000;
-                const elapsedTime = now.getTime() - lastShot.getTime();
-                const progress = Math.min(100, (elapsedTime / totalTime) * 100);
-
-                this.updateCountdownProgress(progress);
-
-                // Update colors based on timing
-                const dayElement = document.getElementById('next-shot-day');
-                const dateElement = document.getElementById('next-shot-date');
-
-                if (shotInfo.isOverdue || timeDiff <= 0) {
-                    // Shot is overdue
-                    dayElement.style.color = '#FF3B30';
-                    dateElement.style.color = '#FF3B30';
-                    dayElement.textContent = 'OVERDUE';
-                    dateElement.textContent = `${shotInfo.daysOverdue || Math.abs(Math.floor(timeDiff / (1000 * 60 * 60 * 24)))} day(s)`;
-                } else if (timeDiff <= 24 * 60 * 60 * 1000) {
-                    // Due within 24 hours
-                    dayElement.style.color = '#FF9500';
-                    dateElement.style.color = '#FF9500';
-                } else {
-                    // Normal timing
-                    dayElement.style.color = 'var(--accent-color)';
-                    dateElement.style.color = 'var(--text-primary)';
-                }
-
-                // Show scheduling recommendation
-                if (recommendationEl && shotInfo.recommendation) {
-                    recommendationEl.textContent = shotInfo.recommendation;
-                    recommendationEl.style.display = 'block';
-
-                    // Color the recommendation based on mode
-                    if (shotInfo.mode === 'smart') {
-                        recommendationEl.style.borderLeft = '3px solid var(--accent-color)';
-                    } else if (shotInfo.mode === 'rolling') {
-                        recommendationEl.style.borderLeft = '3px solid #FF9500';
-                    } else {
-                        recommendationEl.style.borderLeft = '3px solid #34C759';
-                    }
-                }
-            }
-
-            updateCountdownProgress(percentage) {
-                const circle = document.getElementById('countdown-circle');
-                const circumference = 2 * Math.PI * 90; // radius = 90
-                const offset = circumference - (percentage / 100) * circumference;
-                circle.style.strokeDashoffset = offset;
             }
 
             // ====================================
