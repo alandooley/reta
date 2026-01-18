@@ -42,10 +42,32 @@ test.describe('Current Values Check', () => {
 
     // Get all displayed values
     const totalShots = await page.locator('#total-shots').textContent();
+    const lastDose = await page.locator('#last-dose').textContent();
+    const currentLevel = await page.locator('#current-level').textContent();
+    const nextShot = await page.locator('#next-shot').textContent();
     const totalSupply = await page.locator('#total-supply').textContent();
 
+    // Try to get next shot display values
+    let nextShotDay = 'N/A';
+    let nextShotDate = 'N/A';
+    let nextShotTime = 'N/A';
+
+    try {
+      nextShotDay = await page.locator('#next-shot-day').textContent();
+      nextShotDate = await page.locator('#next-shot-date').textContent();
+      nextShotTime = await page.locator('#next-shot-time').textContent();
+    } catch (e) {
+      console.log('Could not get next shot display values:', e.message);
+    }
+
     console.log(`Currently displayed Total Shots: "${totalShots}"`);
+    console.log(`Currently displayed Last Dose: "${lastDose}"`);
+    console.log(`Currently displayed Level at Last Shot: "${currentLevel}"`);
+    console.log(`Currently displayed Next Shot: "${nextShot}"`);
     console.log(`Currently displayed Total Supply: "${totalSupply}"`);
+    console.log(`Currently displayed Next Shot Day: "${nextShotDay}"`);
+    console.log(`Currently displayed Next Shot Date: "${nextShotDate}"`);
+    console.log(`Currently displayed Next Shot Time: "${nextShotTime}"`);
 
     console.log('=== ANALYSIS ===');
     console.log(`If sample data is loaded:`);
@@ -54,6 +76,8 @@ test.describe('Current Values Check', () => {
     console.log('');
     console.log(`What values SHOULD be after importing your data:`);
     console.log(`- Total Shots: ${importData.injections.length}`);
+    console.log(`- Last Dose: ${lastInjection.dose_mg} mg`);
+    console.log(`- Level at Last Shot: ${lastInjection.medication_level_at_injection}.0 mg`);
     console.log(`- Total Supply: ${totalSupplyMg}.0 mg`);
 
     // Check localStorage to see what data is actually loaded
