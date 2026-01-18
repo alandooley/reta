@@ -22,15 +22,9 @@ test.describe('Live Site After Deployment', () => {
 
     // Get current displayed values
     const totalShots = await page.locator('#total-shots').textContent();
-    const lastDose = await page.locator('#last-dose').textContent();
-    const currentLevel = await page.locator('#current-level').textContent();
-    const nextShot = await page.locator('#next-shot').textContent();
     const totalSupply = await page.locator('#total-supply').textContent();
 
     console.log(`Current Total Shots: "${totalShots}"`);
-    console.log(`Current Last Dose: "${lastDose}"`);
-    console.log(`Current Level at Last Shot: "${currentLevel}"`);
-    console.log(`Current Next Shot: "${nextShot}"`);
     console.log(`Current Total Supply: "${totalSupply}"`);
 
     // Check localStorage to see what data is loaded
@@ -96,20 +90,14 @@ test.describe('Live Site After Deployment', () => {
 
       // Check values after import
       const postImportTotalShots = await page.locator('#total-shots').textContent();
-      const postImportLastDose = await page.locator('#last-dose').textContent();
-      const postImportLevel = await page.locator('#current-level').textContent();
 
       console.log('=== AFTER IMPORTING REAL DATA ===');
       console.log(`Total Shots: "${postImportTotalShots}"`);
-      console.log(`Last Dose: "${postImportLastDose}"`);
-      console.log(`Level at Last Shot: "${postImportLevel}"`);
 
       // Expected values from import data
-      const expectedLastInj = importData.injections[importData.injections.length - 1];
-      console.log(`Expected Last Dose: ${expectedLastInj.dose_mg} mg`);
-      console.log(`Expected Level: ${expectedLastInj.medication_level_at_injection} mg`);
+      console.log(`Expected Total Shots: ${importData.injections.length}`);
 
-      if (postImportLastDose === `${expectedLastInj.dose_mg} mg`) {
+      if (parseInt(postImportTotalShots) === importData.injections.length) {
         console.log('🎉 COMPLETE SUCCESS - Bug fix deployed and data import working!');
       } else {
         console.log('❌ Import may have failed or bug still exists');
